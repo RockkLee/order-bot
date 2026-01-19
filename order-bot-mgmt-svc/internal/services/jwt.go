@@ -1,4 +1,4 @@
-package auth
+package services
 
 import (
 	"crypto/hmac"
@@ -8,6 +8,8 @@ import (
 	"errors"
 	"strings"
 	"time"
+
+	"order-bot-mgmt-svc/internal/models"
 )
 
 var errInvalidToken = errors.New("invalid token")
@@ -17,15 +19,7 @@ type jwtHeader struct {
 	Typ string `json:"typ"`
 }
 
-type Claims struct {
-	Sub   string `json:"sub"`
-	Email string `json:"email"`
-	Exp   int64  `json:"exp"`
-	Iat   int64  `json:"iat"`
-	Typ   string `json:"typ"`
-}
-
-func signJWT(secret []byte, claims Claims) (string, error) {
+func signJWT(secret []byte, claims models.Claims) (string, error) {
 	header := jwtHeader{Alg: "HS256", Typ: "JWT"}
 	headerBytes, err := json.Marshal(header)
 	if err != nil {
@@ -44,31 +38,31 @@ func signJWT(secret []byte, claims Claims) (string, error) {
 	return signingInput + "." + sigB64, nil
 }
 
-func parseJWT(secret []byte, token string) (Claims, error) {
+func parseJWT(secret []byte, token string) (models.Claims, error) {
 	parts := strings.Split(token, ".")
 	if len(parts) != 3 {
-		return Claims{}, errInvalidToken
+		return models.Claims{}, errInvalidToken
 	}
 	enc := base64.RawURLEncoding
 	signingInput := parts[0] + "." + parts[1]
 	sig, err := enc.DecodeString(parts[2])
 	if err != nil {
-		return Claims{}, errInvalidToken
+		return models.Claims{}, errInvalidToken
 	}
 	expectedSig := hmacSHA256(signingInput, secret)
 	if !hmac.Equal(sig, expectedSig) {
-		return Claims{}, errInvalidToken
+		return models.Claims{}, errInvalidToken
 	}
 	payloadBytes, err := enc.DecodeString(parts[1])
 	if err != nil {
-		return Claims{}, errInvalidToken
+		return models.Claims{}, errInvalidToken
 	}
-	var claims Claims
+	var claims models.Claims
 	if err := json.Unmarshal(payloadBytes, &claims); err != nil {
-		return Claims{}, errInvalidToken
+		return models.Claims{}, errInvalidToken
 	}
 	if claims.Exp <= time.Now().Unix() {
-		return Claims{}, errInvalidToken
+		return models.Claims{}, errInvalidToken
 	}
 	return claims, nil
 }

@@ -1,4 +1,4 @@
-package auth
+package services
 
 import (
 	"crypto/rand"
@@ -7,6 +7,8 @@ import (
 	"os"
 	"sync"
 	"time"
+
+	"order-bot-mgmt-svc/internal/models"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -17,26 +19,10 @@ var (
 	ErrInvalidToken       = errors.New("invalid token")
 )
 
-type User struct {
-	ID           string
-	Email        string
-	PasswordHash string
-}
-
-type RefreshRecord struct {
-	UserID    string
-	ExpiresAt time.Time
-}
-
-type TokenPair struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-}
-
 type Service struct {
 	mu              sync.Mutex
-	usersByEmail    map[string]User
-	refreshTokens   map[string]RefreshRecord
+	usersByEmail    map[string]models.User
+	refreshTokens   map[string]models.RefreshRecord
 	accessSecret    []byte
 	refreshSecret   []byte
 	accessTokenTTL  time.Duration
@@ -53,8 +39,8 @@ func NewService() *Service {
 		refreshSecret = "dev-refresh-secret"
 	}
 	return &Service{
-		usersByEmail:    make(map[string]User),
-		refreshTokens:   make(map[string]RefreshRecord),
+		usersByEmail:    make(map[string]models.User),
+		refreshTokens:   make(map[string]models.RefreshRecord),
 		accessSecret:    []byte(accessSecret),
 		refreshSecret:   []byte(refreshSecret),
 		accessTokenTTL:  parseDurationEnv("JWT_ACCESS_TTL", 15*time.Minute),
@@ -62,21 +48,21 @@ func NewService() *Service {
 	}
 }
 
-func (s *Service) Signup(email, password string) (TokenPair, error) {
+func (s *Service) Signup(email, password string) (models.TokenPair, error) {
 	if email == "" || password == "" {
-		return TokenPair{}, ErrInvalidCredentials
+		return models.TokenPair{}, ErrInvalidCredentials
 	}
 	s.mu.Lock()
 	if _, exists := s.usersByEmail[email]; exists {
 		s.mu.Unlock()
-		return TokenPair{}, ErrUserExists
+		return models.TokenPair{}, ErrUserExists
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		s.mu.Unlock()
-		return TokenPair{}, err
+		return models.TokenPair{}, err
 	}
-	user := User{
+	user := models.User{
 		ID:           newID(),
 		Email:        email,
 		PasswordHash: string(hash),
@@ -86,15 +72,15 @@ func (s *Service) Signup(email, password string) (TokenPair, error) {
 	return s.issueTokens(user)
 }
 
-func (s *Service) Login(email, password string) (TokenPair, error) {
+func (s *Service) Login(email, password string) (models.TokenPair, error) {
 	s.mu.Lock()
 	user, exists := s.usersByEmail[email]
 	s.mu.Unlock()
 	if !exists {
-		return TokenPair{}, ErrInvalidCredentials
+		return models.TokenPair{}, ErrInvalidCredentials
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
-		return TokenPair{}, ErrInvalidCredentials
+		return models.TokenPair{}, ErrInvalidCredentials
 	}
 	return s.issueTokens(user)
 }
@@ -117,16 +103,16 @@ func (s *Service) Logout(refreshToken string) error {
 	return nil
 }
 
-func (s *Service) issueTokens(user User) (TokenPair, error) {
+func (s *Service) issueTokens(user models.User) (models.TokenPair, error) {
 	now := time.Now()
-	accessClaims := Claims{
+	accessClaims := models.Claims{
 		Sub:   user.ID,
 		Email: user.Email,
 		Exp:   now.Add(s.accessTokenTTL).Unix(),
 		Iat:   now.Unix(),
 		Typ:   "access",
 	}
-	refreshClaims := Claims{
+	refreshClaims := models.Claims{
 		Sub:   user.ID,
 		Email: user.Email,
 		Exp:   now.Add(s.refreshTokenTTL).Unix(),
@@ -135,19 +121,19 @@ func (s *Service) issueTokens(user User) (TokenPair, error) {
 	}
 	accessToken, err := signJWT(s.accessSecret, accessClaims)
 	if err != nil {
-		return TokenPair{}, err
+		return models.TokenPair{}, err
 	}
 	refreshToken, err := signJWT(s.refreshSecret, refreshClaims)
 	if err != nil {
-		return TokenPair{}, err
+		return models.TokenPair{}, err
 	}
 	s.mu.Lock()
-	s.refreshTokens[refreshToken] = RefreshRecord{
+	s.refreshTokens[refreshToken] = models.RefreshRecord{
 		UserID:    user.ID,
 		ExpiresAt: now.Add(s.refreshTokenTTL),
 	}
 	s.mu.Unlock()
-	return TokenPair{
+	return models.TokenPair{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}, nil

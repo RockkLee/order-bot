@@ -1,4 +1,4 @@
-package server
+package handlers
 
 import (
 	"fmt"
@@ -9,15 +9,15 @@ import (
 
 	_ "github.com/joho/godotenv/autoload"
 
-	"order-bot-mgmt-svc/internal/auth"
-	"order-bot-mgmt-svc/internal/database"
+	"order-bot-mgmt-svc/internal/repository"
+	"order-bot-mgmt-svc/internal/services"
 )
 
 type Server struct {
 	port int
 
-	db   database.Service
-	auth *auth.Service
+	db   repository.Service
+	auth *services.Service
 }
 
 func NewServer() *http.Server {
@@ -25,8 +25,8 @@ func NewServer() *http.Server {
 	NewServer := &Server{
 		port: port,
 
-		db:   database.New(),
-		auth: auth.NewService(),
+		db:   repository.New(),
+		auth: services.NewService(),
 	}
 
 	// Declare Server config
