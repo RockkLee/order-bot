@@ -1,10 +1,9 @@
 package services
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"golang.org/x/crypto/bcrypt"
 	"order-bot-mgmt-svc/internal/models"
+	"order-bot-mgmt-svc/internal/util"
 	"os"
 	"time"
 )
@@ -24,7 +23,7 @@ func (s *Service) Signup(email, password string) (models.TokenPair, error) {
 		return models.TokenPair{}, err
 	}
 	user := models.User{
-		ID:           newID(),
+		ID:           util.NewID(),
 		Email:        email,
 		PasswordHash: string(hash),
 	}
@@ -98,15 +97,6 @@ func (s *Service) issueTokens(user models.User) (models.TokenPair, error) {
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}, nil
-}
-
-func newID() string {
-	buf := make([]byte, 16)
-	_, err := rand.Read(buf)
-	if err != nil {
-		return time.Now().UTC().Format("20060102150405.000000000")
-	}
-	return hex.EncodeToString(buf)
 }
 
 func parseDurationEnv(key string, fallback time.Duration) time.Duration {
