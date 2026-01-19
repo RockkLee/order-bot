@@ -5,11 +5,17 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
+	_ "github.com/joho/godotenv/autoload"
+
 	"order-bot-mgmt-svc/internal/handlers"
+	"order-bot-mgmt-svc/internal/repository"
+	"order-bot-mgmt-svc/internal/services"
 )
 
 func gracefulShutdown(apiServer *http.Server, done chan bool) {
@@ -39,7 +45,10 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 
 func main() {
 
-	server := handlers.NewServer()
+	port, _ := strconv.Atoi(os.Getenv("PORT"))
+	db := repository.New()
+	auth := services.NewService()
+	server := handlers.NewServer(port, db, auth)
 
 	// Create a done channel to signal when the shutdown is complete
 	done := make(chan bool, 1)
