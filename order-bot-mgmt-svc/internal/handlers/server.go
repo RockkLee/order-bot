@@ -6,22 +6,22 @@ import (
 	"sync"
 	"time"
 
-	"order-bot-mgmt-svc/internal/repository"
+	"order-bot-mgmt-svc/internal/postgres"
 	"order-bot-mgmt-svc/internal/services"
 )
 
 type Server struct {
 	port int
 
-	dbInit   func() repository.Service
+	dbInit   func() postgres.Service
 	authInit func() *services.Service
 	dbOnce   sync.Once
 	authOnce sync.Once
-	db       repository.Service
+	db       postgres.Service
 	auth     *services.Service
 }
 
-func NewServer(port int, dbInit func() repository.Service, authInit func() *services.Service) *http.Server {
+func NewServer(port int, dbInit func() postgres.Service, authInit func() *services.Service) *http.Server {
 	srv := &Server{
 		port: port,
 
@@ -41,7 +41,7 @@ func NewServer(port int, dbInit func() repository.Service, authInit func() *serv
 	return server
 }
 
-func (s *Server) dbService() repository.Service {
+func (s *Server) dbService() postgres.Service {
 	s.dbOnce.Do(func() {
 		s.db = s.dbInit()
 	})

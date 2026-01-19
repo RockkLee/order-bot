@@ -1,4 +1,4 @@
-package repository
+package postgres
 
 import (
 	"context"
@@ -22,9 +22,12 @@ type Service interface {
 	// Close terminates the database connection.
 	// It returns an error if the connection cannot be closed.
 	Close() error
+
+	// Conn returns the underlying SQL connection.
+	Conn() *sql.DB
 }
 
-type service struct {
+type DB struct {
 	db *sql.DB
 }
 
@@ -35,10 +38,10 @@ var (
 	port       = os.Getenv("BLUEPRINT_DB_PORT")
 	host       = os.Getenv("BLUEPRINT_DB_HOST")
 	schema     = os.Getenv("BLUEPRINT_DB_SCHEMA")
-	dbInstance *service
+	dbInstance *DB
 )
 
-func NewPostgresql() Service {
+func New() Service {
 	// Reuse Connection
 	if dbInstance != nil {
 		return dbInstance
@@ -48,7 +51,7 @@ func NewPostgresql() Service {
 	if err != nil {
 		log.Fatal(err)
 	}
-	dbInstance = &service{
+	dbInstance = &DB{
 		db: db,
 	}
 	return dbInstance
@@ -56,7 +59,7 @@ func NewPostgresql() Service {
 
 // Health checks the health of the database connection by pinging the database.
 // It returns a map with keys indicating various health statistics.
-func (s *service) Health() map[string]string {
+func (s *DB) Health() map[string]string {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
@@ -109,7 +112,11 @@ func (s *service) Health() map[string]string {
 // It logs a message indicating the disconnection from the specific database.
 // If the connection is successfully closed, it returns nil.
 // If an error occurs while closing the connection, it returns the error.
-func (s *service) Close() error {
+func (s *DB) Close() error {
 	log.Printf("Disconnected from database: %s", database)
 	return s.db.Close()
+}
+
+func (s *DB) Conn() *sql.DB {
+	return s.db
 }

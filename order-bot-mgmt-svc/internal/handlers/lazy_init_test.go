@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"context"
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -8,7 +10,8 @@ import (
 	"testing"
 
 	"order-bot-mgmt-svc/internal/models"
-	"order-bot-mgmt-svc/internal/repository"
+	"order-bot-mgmt-svc/internal/postgres"
+	postgresuser "order-bot-mgmt-svc/internal/postgres/user"
 	"order-bot-mgmt-svc/internal/services"
 )
 
@@ -24,19 +27,43 @@ func (f *fakeRepository) Close() error {
 	return nil
 }
 
+func (f *fakeRepository) Conn() *sql.DB {
+	return nil
+}
+
+type fakeUserStore struct {
+	users map[string]models.User
+}
+
+func (f *fakeUserStore) Create(_ context.Context, user models.User) error {
+	if _, exists := f.users[user.Email]; exists {
+		return postgresuser.ErrUserExists
+	}
+	f.users[user.Email] = user
+	return nil
+}
+
+func (f *fakeUserStore) FindByEmail(_ context.Context, email string) (models.User, error) {
+	user, exists := f.users[email]
+	if !exists {
+		return models.User{}, postgresuser.ErrNotFound
+	}
+	return user, nil
+}
+
 func TestServerLazyServicesInit(t *testing.T) {
 	dbCalled := 0
 	authCalled := 0
 	db := &fakeRepository{health: map[string]string{"status": "ok"}}
 	server := NewServer(
 		0,
-		func() repository.Service {
+		func() postgres.Service {
 			dbCalled++
 			return db
 		},
 		func() *services.Service {
 			authCalled++
-			return services.NewService()
+			return services.NewService(&fakeUserStore{users: make(map[string]models.User)})
 		},
 	)
 

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"os"
 	"sync"
@@ -16,16 +17,22 @@ var (
 )
 
 type Service struct {
-	mu              sync.Mutex
-	usersByEmail    map[string]models.User
-	refreshTokens   map[string]models.RefreshRecord
-	accessSecret    []byte
-	refreshSecret   []byte
-	accessTokenTTL  time.Duration
-	refreshTokenTTL time.Duration
+	mu               sync.Mutex
+	userStore        UserStore
+	refreshTokens    map[string]models.RefreshRecord
+	accessSecret     []byte
+	refreshSecret    []byte
+	accessTokenTTL   time.Duration
+	refreshTokenTTL  time.Duration
+	userQueryTimeout time.Duration
 }
 
-func NewService() *Service {
+type UserStore interface {
+	Create(ctx context.Context, user models.User) error
+	FindByEmail(ctx context.Context, email string) (models.User, error)
+}
+
+func NewService(userStore UserStore) *Service {
 	accessSecret := os.Getenv("JWT_ACCESS_SECRET")
 	refreshSecret := os.Getenv("JWT_REFRESH_SECRET")
 	if accessSecret == "" {
@@ -35,11 +42,12 @@ func NewService() *Service {
 		refreshSecret = "dev-refresh-secret"
 	}
 	return &Service{
-		usersByEmail:    make(map[string]models.User),
-		refreshTokens:   make(map[string]models.RefreshRecord),
-		accessSecret:    []byte(accessSecret),
-		refreshSecret:   []byte(refreshSecret),
-		accessTokenTTL:  parseDurationEnv("JWT_ACCESS_TTL", 15*time.Minute),
-		refreshTokenTTL: parseDurationEnv("JWT_REFRESH_TTL", 7*24*time.Hour),
+		userStore:        userStore,
+		refreshTokens:    make(map[string]models.RefreshRecord),
+		accessSecret:     []byte(accessSecret),
+		refreshSecret:    []byte(refreshSecret),
+		accessTokenTTL:   parseDurationEnv("JWT_ACCESS_TTL", 15*time.Minute),
+		refreshTokenTTL:  parseDurationEnv("JWT_REFRESH_TTL", 7*24*time.Hour),
+		userQueryTimeout: parseDurationEnv("USER_QUERY_TIMEOUT", 2*time.Second),
 	}
 }
