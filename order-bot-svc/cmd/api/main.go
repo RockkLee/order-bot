@@ -45,8 +45,7 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 func main() {
 
 	port, _ := strconv.Atoi(os.Getenv("PORT"))
-	db := database.New()
-	server := server.NewServer(port, db)
+	server := server.NewServer(port, database.New)
 
 	// Create a done channel to signal when the shutdown is complete
 	done := make(chan bool, 1)

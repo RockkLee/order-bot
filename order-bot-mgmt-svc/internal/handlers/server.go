@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"order-bot-mgmt-svc/internal/repository"
@@ -12,16 +13,20 @@ import (
 type Server struct {
 	port int
 
-	db   repository.Service
-	auth *services.Service
+	dbInit   func() repository.Service
+	authInit func() *services.Service
+	dbOnce   sync.Once
+	authOnce sync.Once
+	db       repository.Service
+	auth     *services.Service
 }
 
-func NewServer(port int, db repository.Service, auth *services.Service) *http.Server {
+func NewServer(port int, dbInit func() repository.Service, authInit func() *services.Service) *http.Server {
 	srv := &Server{
 		port: port,
 
-		db:   db,
-		auth: auth,
+		dbInit:   dbInit,
+		authInit: authInit,
 	}
 
 	// Declare Server config
@@ -34,4 +39,20 @@ func NewServer(port int, db repository.Service, auth *services.Service) *http.Se
 	}
 
 	return server
+}
+
+func (s *Server) dbService() repository.Service {
+	s.dbOnce.Do(func() {
+		s.db = s.dbInit()
+	})
+
+	return s.db
+}
+
+func (s *Server) authService() *services.Service {
+	s.authOnce.Do(func() {
+		s.auth = s.authInit()
+	})
+
+	return s.auth
 }

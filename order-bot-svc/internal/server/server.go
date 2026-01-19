@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"order-bot-svc/internal/database"
@@ -11,14 +12,16 @@ import (
 type Server struct {
 	port int
 
-	db database.Service
+	dbInit func() database.Service
+	dbOnce sync.Once
+	db     database.Service
 }
 
-func NewServer(port int, db database.Service) *http.Server {
+func NewServer(port int, dbInit func() database.Service) *http.Server {
 	srv := &Server{
 		port: port,
 
-		db: db,
+		dbInit: dbInit,
 	}
 
 	// Declare Server config
@@ -31,4 +34,12 @@ func NewServer(port int, db database.Service) *http.Server {
 	}
 
 	return server
+}
+
+func (s *Server) dbService() database.Service {
+	s.dbOnce.Do(func() {
+		s.db = s.dbInit()
+	})
+
+	return s.db
 }

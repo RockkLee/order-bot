@@ -23,7 +23,7 @@ func (s *Server) signupHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
-	tokens, err := s.auth.Signup(req.Email, req.Password)
+	tokens, err := s.authService().Signup(req.Email, req.Password)
 	if err != nil {
 		switch err {
 		case services.ErrUserExists:
@@ -48,7 +48,7 @@ func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
-	tokens, err := s.auth.Login(req.Email, req.Password)
+	tokens, err := s.authService().Login(req.Email, req.Password)
 	if err != nil {
 		switch err {
 		case services.ErrInvalidCredentials:
@@ -71,7 +71,7 @@ func (s *Server) logoutHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
-	if err := s.auth.Logout(req.RefreshToken); err != nil {
+	if err := s.authService().Logout(req.RefreshToken); err != nil {
 		http.Error(w, "invalid refresh token", http.StatusUnauthorized)
 		return
 	}
