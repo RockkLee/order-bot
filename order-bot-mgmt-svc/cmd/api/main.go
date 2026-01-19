@@ -14,7 +14,8 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 
 	"order-bot-mgmt-svc/internal/handlers"
-	"order-bot-mgmt-svc/internal/repository"
+	"order-bot-mgmt-svc/internal/postgres"
+	postgresuser "order-bot-mgmt-svc/internal/postgres/user"
 	"order-bot-mgmt-svc/internal/services"
 )
 
@@ -46,7 +47,10 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 func main() {
 
 	port, _ := strconv.Atoi(os.Getenv("PORT"))
-	server := handlers.NewServer(port, repository.NewPostgresql, services.NewService)
+	server := handlers.NewServer(port, postgres.New, func() *services.Service {
+		db := postgres.New()
+		return services.NewService(postgresuser.NewStore(db.Conn()))
+	})
 
 	// Create a done channel to signal when the shutdown is complete
 	done := make(chan bool, 1)

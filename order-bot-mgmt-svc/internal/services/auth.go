@@ -1,43 +1,56 @@
 package services
 
 import (
-	"golang.org/x/crypto/bcrypt"
-	"order-bot-mgmt-svc/internal/models"
-	"order-bot-mgmt-svc/internal/util"
+	"context"
+	"errors"
 	"os"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
+	"order-bot-mgmt-svc/internal/models"
+	postgresuser "order-bot-mgmt-svc/internal/postgres/user"
+	"order-bot-mgmt-svc/internal/util"
 )
 
 func (s *Service) Signup(email, password string) (models.TokenPair, error) {
 	if email == "" || password == "" {
 		return models.TokenPair{}, ErrInvalidCredentials
 	}
-	s.mu.Lock()
-	if _, exists := s.usersByEmail[email]; exists {
-		s.mu.Unlock()
-		return models.TokenPair{}, ErrUserExists
+	if s.userStore == nil {
+		return models.TokenPair{}, errors.New("user store not configured")
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		s.mu.Unlock()
 		return models.TokenPair{}, err
 	}
-	user := models.User{
+	newUser := models.User{
 		ID:           util.NewID(),
 		Email:        email,
 		PasswordHash: string(hash),
 	}
-	s.usersByEmail[email] = user
-	s.mu.Unlock()
-	return s.issueTokens(user)
+	ctx, cancel := s.userContext()
+	defer cancel()
+	if err := s.userStore.Create(ctx, newUser); err != nil {
+		if errors.Is(err, postgresuser.ErrUserExists) {
+			return models.TokenPair{}, ErrUserExists
+		}
+		return models.TokenPair{}, err
+	}
+	return s.issueTokens(newUser)
 }
 
 func (s *Service) Login(email, password string) (models.TokenPair, error) {
-	s.mu.Lock()
-	user, exists := s.usersByEmail[email]
-	s.mu.Unlock()
-	if !exists {
-		return models.TokenPair{}, ErrInvalidCredentials
+	if s.userStore == nil {
+		return models.TokenPair{}, errors.New("user store not configured")
+	}
+	ctx, cancel := s.userContext()
+	defer cancel()
+	user, err := s.userStore.FindByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, postgresuser.ErrNotFound) {
+			return models.TokenPair{}, ErrInvalidCredentials
+		}
+		return models.TokenPair{}, err
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
 		return models.TokenPair{}, ErrInvalidCredentials
@@ -97,6 +110,10 @@ func (s *Service) issueTokens(user models.User) (models.TokenPair, error) {
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}, nil
+}
+
+func (s *Service) userContext() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), s.userQueryTimeout)
 }
 
 func parseDurationEnv(key string, fallback time.Duration) time.Duration {
