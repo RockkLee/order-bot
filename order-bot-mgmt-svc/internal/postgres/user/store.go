@@ -4,9 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"order-bot-mgmt-svc/internal/models/entities"
 
 	"github.com/jackc/pgx/v5/pgconn"
-	"order-bot-mgmt-svc/internal/models"
 )
 
 const (
@@ -28,7 +28,7 @@ func NewStore(db *sql.DB) *Store {
 	return &Store{db: db}
 }
 
-func (s *Store) Create(ctx context.Context, user models.User) error {
+func (s *Store) Create(ctx context.Context, user entities.User) error {
 	record := RecordFromModel(user)
 	_, err := s.db.ExecContext(ctx, insertUserQuery, record.ID, record.Email, record.PasswordHash)
 	if err != nil {
@@ -41,14 +41,14 @@ func (s *Store) Create(ctx context.Context, user models.User) error {
 	return nil
 }
 
-func (s *Store) FindByEmail(ctx context.Context, email string) (models.User, error) {
+func (s *Store) FindByEmail(ctx context.Context, email string) (entities.User, error) {
 	var record Record
 	err := s.db.QueryRowContext(ctx, selectUserByEmail, email).Scan(&record.ID, &record.Email, &record.PasswordHash)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return models.User{}, ErrNotFound
+			return entities.User{}, ErrNotFound
 		}
-		return models.User{}, err
+		return entities.User{}, err
 	}
 	return record.ToModel(), nil
 }

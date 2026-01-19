@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 	"errors"
-	"os"
+	"order-bot-mgmt-svc/internal/models/entities"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -23,7 +23,7 @@ func (s *Service) Signup(email, password string) (models.TokenPair, error) {
 	if err != nil {
 		return models.TokenPair{}, err
 	}
-	newUser := models.User{
+	newUser := entities.User{
 		ID:           util.NewID(),
 		Email:        email,
 		PasswordHash: string(hash),
@@ -76,7 +76,7 @@ func (s *Service) Logout(refreshToken string) error {
 	return nil
 }
 
-func (s *Service) issueTokens(user models.User) (models.TokenPair, error) {
+func (s *Service) issueTokens(user entities.User) (models.TokenPair, error) {
 	now := time.Now()
 	accessClaims := models.Claims{
 		Sub:   user.ID,
@@ -114,16 +114,4 @@ func (s *Service) issueTokens(user models.User) (models.TokenPair, error) {
 
 func (s *Service) userContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), s.userQueryTimeout)
-}
-
-func parseDurationEnv(key string, fallback time.Duration) time.Duration {
-	value := os.Getenv(key)
-	if value == "" {
-		return fallback
-	}
-	parsed, err := time.ParseDuration(value)
-	if err != nil {
-		return fallback
-	}
-	return parsed
 }

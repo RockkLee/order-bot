@@ -1,6 +1,8 @@
 package user
 
-import "order-bot-mgmt-svc/internal/models"
+import (
+	"order-bot-mgmt-svc/internal/models/entities"
+)
 
 type Record struct {
 	ID           string
@@ -8,7 +10,7 @@ type Record struct {
 	PasswordHash string
 }
 
-func RecordFromModel(user models.User) Record {
+func RecordFromModel(user entities.User) Record {
 	return Record{
 		ID:           user.ID,
 		Email:        user.Email,
@@ -16,8 +18,8 @@ func RecordFromModel(user models.User) Record {
 	}
 }
 
-func (r Record) ToModel() models.User {
-	return models.User{
+func (r Record) ToModel() entities.User {
+	return entities.User{
 		ID:           r.ID,
 		Email:        r.Email,
 		PasswordHash: r.PasswordHash,

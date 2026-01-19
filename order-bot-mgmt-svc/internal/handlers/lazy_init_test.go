@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"order-bot-mgmt-svc/internal/models/entities"
 	"strings"
 	"testing"
 
@@ -32,10 +33,10 @@ func (f *fakeRepository) Conn() *sql.DB {
 }
 
 type fakeUserStore struct {
-	users map[string]models.User
+	users map[string]entities.User
 }
 
-func (f *fakeUserStore) Create(_ context.Context, user models.User) error {
+func (f *fakeUserStore) Create(_ context.Context, user entities.User) error {
 	if _, exists := f.users[user.Email]; exists {
 		return postgresuser.ErrUserExists
 	}
@@ -43,10 +44,10 @@ func (f *fakeUserStore) Create(_ context.Context, user models.User) error {
 	return nil
 }
 
-func (f *fakeUserStore) FindByEmail(_ context.Context, email string) (models.User, error) {
+func (f *fakeUserStore) FindByEmail(_ context.Context, email string) (entities.User, error) {
 	user, exists := f.users[email]
 	if !exists {
-		return models.User{}, postgresuser.ErrNotFound
+		return entities.User{}, postgresuser.ErrNotFound
 	}
 	return user, nil
 }
@@ -63,7 +64,7 @@ func TestServerLazyServicesInit(t *testing.T) {
 		},
 		func() *services.Service {
 			authCalled++
-			return services.NewService(&fakeUserStore{users: make(map[string]models.User)})
+			return services.NewService(&fakeUserStore{users: make(map[string]entities.User)})
 		},
 	)
 

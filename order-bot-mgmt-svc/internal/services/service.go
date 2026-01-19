@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"order-bot-mgmt-svc/internal/models/entities"
 	"os"
 	"sync"
 	"time"
@@ -28,8 +29,8 @@ type Service struct {
 }
 
 type UserStore interface {
-	Create(ctx context.Context, user models.User) error
-	FindByEmail(ctx context.Context, email string) (models.User, error)
+	Create(ctx context.Context, user entities.User) error
+	FindByEmail(ctx context.Context, email string) (entities.User, error)
 }
 
 func NewService(userStore UserStore) *Service {
@@ -50,4 +51,16 @@ func NewService(userStore UserStore) *Service {
 		refreshTokenTTL:  parseDurationEnv("JWT_REFRESH_TTL", 7*24*time.Hour),
 		userQueryTimeout: parseDurationEnv("USER_QUERY_TIMEOUT", 2*time.Second),
 	}
+}
+
+func parseDurationEnv(key string, fallback time.Duration) time.Duration {
+	value := os.Getenv(key)
+	if value == "" {
+		return fallback
+	}
+	parsed, err := time.ParseDuration(value)
+	if err != nil {
+		return fallback
+	}
+	return parsed
 }

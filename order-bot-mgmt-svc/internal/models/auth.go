@@ -2,12 +2,6 @@ package models
 
 import "time"
 
-type User struct {
-	ID           string
-	Email        string
-	PasswordHash string
-}
-
 type RefreshRecord struct {
 	UserID    string
 	ExpiresAt time.Time
