@@ -38,7 +38,7 @@ var (
 	dbInstance *service
 )
 
-func New() Service {
+func NewPostgresql() Service {
 	// Reuse Connection
 	if dbInstance != nil {
 		return dbInstance
