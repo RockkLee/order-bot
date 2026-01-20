@@ -2,12 +2,9 @@ package services
 
 import (
 	"errors"
-	"order-bot-mgmt-svc/internal/store"
 	"os"
 	"sync"
 	"time"
-
-	"order-bot-mgmt-svc/internal/models"
 )
 
 var (
@@ -15,37 +12,6 @@ var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrInvalidToken       = errors.New("invalid token")
 )
-
-type Service struct {
-	mu               sync.Mutex
-	userStore        store.User
-	refreshTokens    map[string]models.RefreshRecord
-	accessSecret     []byte
-	refreshSecret    []byte
-	accessTokenTTL   time.Duration
-	refreshTokenTTL  time.Duration
-	userQueryTimeout time.Duration
-}
-
-func NewService(userStore store.User) *Service {
-	accessSecret := os.Getenv("JWT_ACCESS_SECRET")
-	refreshSecret := os.Getenv("JWT_REFRESH_SECRET")
-	if accessSecret == "" {
-		accessSecret = "dev-access-secret"
-	}
-	if refreshSecret == "" {
-		refreshSecret = "dev-refresh-secret"
-	}
-	return &Service{
-		userStore:        userStore,
-		refreshTokens:    make(map[string]models.RefreshRecord),
-		accessSecret:     []byte(accessSecret),
-		refreshSecret:    []byte(refreshSecret),
-		accessTokenTTL:   parseDurationEnv("JWT_ACCESS_TTL", 15*time.Minute),
-		refreshTokenTTL:  parseDurationEnv("JWT_REFRESH_TTL", 7*24*time.Hour),
-		userQueryTimeout: parseDurationEnv("USER_QUERY_TIMEOUT", 2*time.Second),
-	}
-}
 
 func parseDurationEnv(key string, fallback time.Duration) time.Duration {
 	value := os.Getenv(key)
@@ -57,4 +23,46 @@ func parseDurationEnv(key string, fallback time.Duration) time.Duration {
 		return fallback
 	}
 	return parsed
+}
+
+type lazy[T any] struct {
+	once sync.Once
+	init func() *T
+	val  *T
+}
+
+func (l *lazy[T]) Get() *T {
+	if l == nil {
+		return nil
+	}
+	l.once.Do(func() {
+		if l.init != nil {
+			l.val = l.init()
+		}
+	})
+	return l.val
+}
+
+type Services struct {
+	auth lazy[AuthService]
+	menu lazy[MenuService]
+}
+
+func NewServices(authInit func() *AuthService, menuInit func() *MenuService) *Services {
+	return &Services{
+		auth: lazy[AuthService]{
+			init: authInit,
+		},
+		menu: lazy[MenuService]{
+			init: menuInit,
+		},
+	}
+}
+
+func (s *Services) Auth() *AuthService {
+	return s.auth.Get()
+}
+
+func (s *Services) Menu() *MenuService {
+	return s.menu.Get()
 }

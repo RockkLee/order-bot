@@ -1,4 +1,4 @@
-package handlers
+package httphdlrs
 
 import (
 	"context"
@@ -6,13 +6,13 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"order-bot-mgmt-svc/internal/infra/postgres"
+	postgresuser "order-bot-mgmt-svc/internal/infra/postgres/user"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"strings"
 	"testing"
 
 	"order-bot-mgmt-svc/internal/models"
-	"order-bot-mgmt-svc/internal/postgres"
-	postgresuser "order-bot-mgmt-svc/internal/postgres/user"
 	"order-bot-mgmt-svc/internal/services"
 )
 
@@ -55,6 +55,7 @@ func (f *fakeUserStore) FindByEmail(_ context.Context, email string) (entities.U
 func TestServerLazyServicesInit(t *testing.T) {
 	dbCalled := 0
 	authCalled := 0
+	menuCalled := 0
 	db := &fakeRepository{health: map[string]string{"status": "ok"}}
 	server := NewServer(
 		0,
@@ -62,9 +63,14 @@ func TestServerLazyServicesInit(t *testing.T) {
 			dbCalled++
 			return db
 		},
-		func() *services.Service {
-			authCalled++
-			return services.NewService(&fakeUserStore{users: make(map[string]entities.User)})
+		func() *services.Services {
+			return services.NewServices(func() *services.AuthService {
+				authCalled++
+				return services.NewAuthService(&fakeUserStore{users: make(map[string]entities.User)})
+			}, func() *services.MenuService {
+				menuCalled++
+				return services.NewMenuService()
+			})
 		},
 	)
 
@@ -80,6 +86,9 @@ func TestServerLazyServicesInit(t *testing.T) {
 	}
 	if dbCalled != 0 {
 		t.Fatalf("expected db factory to be unused for auth handler, got %d", dbCalled)
+	}
+	if menuCalled != 0 {
+		t.Fatalf("expected menu factory to be unused for auth handler, got %d", menuCalled)
 	}
 
 	var payload models.TokenPair

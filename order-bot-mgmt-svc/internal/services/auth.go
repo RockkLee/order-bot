@@ -3,16 +3,50 @@ package services
 import (
 	"context"
 	"errors"
+	postgresuser "order-bot-mgmt-svc/internal/infra/postgres/user"
 	"order-bot-mgmt-svc/internal/models/entities"
+	"order-bot-mgmt-svc/internal/store"
+	"os"
+	"sync"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
 	"order-bot-mgmt-svc/internal/models"
-	postgresuser "order-bot-mgmt-svc/internal/postgres/user"
 	"order-bot-mgmt-svc/internal/util"
 )
 
-func (s *Service) Signup(email, password string) (models.TokenPair, error) {
+type AuthService struct {
+	mu               sync.Mutex
+	userStore        store.User
+	refreshTokens    map[string]models.RefreshRecord
+	accessSecret     []byte
+	refreshSecret    []byte
+	accessTokenTTL   time.Duration
+	refreshTokenTTL  time.Duration
+	userQueryTimeout time.Duration
+}
+
+func NewAuthService(userStore store.User) *AuthService {
+	accessSecret := os.Getenv("JWT_ACCESS_SECRET")
+	refreshSecret := os.Getenv("JWT_REFRESH_SECRET")
+	if accessSecret == "" {
+		accessSecret = "dev-access-secret"
+	}
+	if refreshSecret == "" {
+		refreshSecret = "dev-refresh-secret"
+	}
+	return &AuthService{
+		userStore:        userStore,
+		refreshTokens:    make(map[string]models.RefreshRecord),
+		accessSecret:     []byte(accessSecret),
+		refreshSecret:    []byte(refreshSecret),
+		accessTokenTTL:   parseDurationEnv("JWT_ACCESS_TTL", 15*time.Minute),
+		refreshTokenTTL:  parseDurationEnv("JWT_REFRESH_TTL", 7*24*time.Hour),
+		userQueryTimeout: parseDurationEnv("USER_QUERY_TIMEOUT", 2*time.Second),
+	}
+}
+
+func (s *AuthService) Signup(email, password string) (models.TokenPair, error) {
 	if email == "" || password == "" {
 		return models.TokenPair{}, ErrInvalidCredentials
 	}
@@ -39,7 +73,7 @@ func (s *Service) Signup(email, password string) (models.TokenPair, error) {
 	return s.issueTokens(newUser)
 }
 
-func (s *Service) Login(email, password string) (models.TokenPair, error) {
+func (s *AuthService) Login(email, password string) (models.TokenPair, error) {
 	if s.userStore == nil {
 		return models.TokenPair{}, errors.New("user store not configured")
 	}
@@ -47,7 +81,7 @@ func (s *Service) Login(email, password string) (models.TokenPair, error) {
 	defer cancel()
 	user, err := s.userStore.FindByEmail(ctx, email)
 	if err != nil {
-		if errors.Is(err, postgresuser.ErrNotFound) {
+		if errors.Is(err, user.ErrNotFound) {
 			return models.TokenPair{}, ErrInvalidCredentials
 		}
 		return models.TokenPair{}, err
@@ -58,7 +92,7 @@ func (s *Service) Login(email, password string) (models.TokenPair, error) {
 	return s.issueTokens(user)
 }
 
-func (s *Service) Logout(refreshToken string) error {
+func (s *AuthService) Logout(refreshToken string) error {
 	if refreshToken == "" {
 		return ErrInvalidToken
 	}
@@ -76,7 +110,7 @@ func (s *Service) Logout(refreshToken string) error {
 	return nil
 }
 
-func (s *Service) issueTokens(user entities.User) (models.TokenPair, error) {
+func (s *AuthService) issueTokens(user entities.User) (models.TokenPair, error) {
 	now := time.Now()
 	accessClaims := models.Claims{
 		Sub:   user.ID,
@@ -112,6 +146,6 @@ func (s *Service) issueTokens(user entities.User) (models.TokenPair, error) {
 	}, nil
 }
 
-func (s *Service) userContext() (context.Context, context.CancelFunc) {
+func (s *AuthService) userContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), s.userQueryTimeout)
 }

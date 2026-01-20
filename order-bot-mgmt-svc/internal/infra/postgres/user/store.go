@@ -9,15 +9,15 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
+var (
+	ErrNotFound   = errors.New("user not found")
+	ErrUserExists = errors.New("user already exists")
+)
+
 const (
 	insertUserQuery     = `INSERT INTO users (id, email, password_hash) VALUES ($1, $2, $3);`
 	selectUserByEmail   = `SELECT id, email, password_hash FROM users WHERE email = $1;`
 	uniqueViolationCode = "23505"
-)
-
-var (
-	ErrNotFound   = errors.New("user not found")
-	ErrUserExists = errors.New("user already exists")
 )
 
 type Store struct {

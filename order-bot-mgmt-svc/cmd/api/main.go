@@ -2,9 +2,13 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"order-bot-mgmt-svc/internal/infra/httphdlrs"
+	"order-bot-mgmt-svc/internal/infra/postgres"
+	postgresuser "order-bot-mgmt-svc/internal/infra/postgres/user"
 	"os"
 	"os/signal"
 	"strconv"
@@ -13,9 +17,6 @@ import (
 
 	_ "github.com/joho/godotenv/autoload"
 
-	"order-bot-mgmt-svc/internal/handlers"
-	"order-bot-mgmt-svc/internal/postgres"
-	postgresuser "order-bot-mgmt-svc/internal/postgres/user"
 	"order-bot-mgmt-svc/internal/services"
 )
 
@@ -44,13 +45,26 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 	done <- true
 }
 
+func newServices() *services.Services {
+	return services.NewServices(
+		func() *services.AuthService {
+			db := postgres.New()
+			return services.NewAuthService(postgresuser.NewStore(db.Conn()))
+		},
+		func() *services.MenuService {
+			return services.NewMenuService()
+		},
+	)
+}
+
 func main() {
 
 	port, _ := strconv.Atoi(os.Getenv("PORT"))
-	server := handlers.NewServer(port, postgres.New, func() *services.Service {
-		db := postgres.New()
-		return services.NewService(postgresuser.NewStore(db.Conn()))
-	})
+	server := httphdlrs.NewServer(
+		port,
+		postgres.New,
+		func() *services.Services { return newServices() },
+	)
 
 	// Create a done channel to signal when the shutdown is complete
 	done := make(chan bool, 1)
@@ -59,7 +73,7 @@ func main() {
 	go gracefulShutdown(server, done)
 
 	err := server.ListenAndServe()
-	if err != nil && err != http.ErrServerClosed {
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		panic(fmt.Sprintf("http server error: %s", err))
 	}
 
