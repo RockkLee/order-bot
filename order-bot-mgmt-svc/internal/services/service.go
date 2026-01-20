@@ -1,9 +1,8 @@
 package services
 
 import (
-	"context"
 	"errors"
-	"order-bot-mgmt-svc/internal/models/entities"
+	"order-bot-mgmt-svc/internal/store"
 	"os"
 	"sync"
 	"time"
@@ -19,7 +18,7 @@ var (
 
 type Service struct {
 	mu               sync.Mutex
-	userStore        UserStore
+	userStore        store.User
 	refreshTokens    map[string]models.RefreshRecord
 	accessSecret     []byte
 	refreshSecret    []byte
@@ -28,12 +27,7 @@ type Service struct {
 	userQueryTimeout time.Duration
 }
 
-type UserStore interface {
-	Create(ctx context.Context, user entities.User) error
-	FindByEmail(ctx context.Context, email string) (entities.User, error)
-}
-
-func NewService(userStore UserStore) *Service {
+func NewService(userStore store.User) *Service {
 	accessSecret := os.Getenv("JWT_ACCESS_SECRET")
 	refreshSecret := os.Getenv("JWT_REFRESH_SECRET")
 	if accessSecret == "" {
