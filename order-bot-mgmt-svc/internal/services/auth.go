@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"errors"
-	postgresuser "order-bot-mgmt-svc/internal/infra/postgres/user"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
 	"os"
@@ -65,7 +64,7 @@ func (s *AuthService) Signup(email, password string) (models.TokenPair, error) {
 	ctx, cancel := s.userContext()
 	defer cancel()
 	if err := s.userStore.Create(ctx, newUser); err != nil {
-		if errors.Is(err, postgresuser.ErrUserExists) {
+		if errors.Is(err, store.ErrUserExists) {
 			return models.TokenPair{}, ErrUserExists
 		}
 		return models.TokenPair{}, err
@@ -81,7 +80,7 @@ func (s *AuthService) Login(email, password string) (models.TokenPair, error) {
 	defer cancel()
 	user, err := s.userStore.FindByEmail(ctx, email)
 	if err != nil {
-		if errors.Is(err, user.ErrNotFound) {
+		if errors.Is(err, store.ErrNotFound) {
 			return models.TokenPair{}, ErrInvalidCredentials
 		}
 		return models.TokenPair{}, err

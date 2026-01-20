@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"order-bot-mgmt-svc/internal/infra/postgres"
-	postgresuser "order-bot-mgmt-svc/internal/infra/postgres/user"
 	"order-bot-mgmt-svc/internal/models/entities"
+	"order-bot-mgmt-svc/internal/store"
 	"strings"
 	"testing"
 
@@ -38,7 +38,7 @@ type fakeUserStore struct {
 
 func (f *fakeUserStore) Create(_ context.Context, user entities.User) error {
 	if _, exists := f.users[user.Email]; exists {
-		return postgresuser.ErrUserExists
+		return store.ErrUserExists
 	}
 	f.users[user.Email] = user
 	return nil
@@ -47,7 +47,7 @@ func (f *fakeUserStore) Create(_ context.Context, user entities.User) error {
 func (f *fakeUserStore) FindByEmail(_ context.Context, email string) (entities.User, error) {
 	user, exists := f.users[email]
 	if !exists {
-		return entities.User{}, postgresuser.ErrNotFound
+		return entities.User{}, store.ErrNotFound
 	}
 	return user, nil
 }

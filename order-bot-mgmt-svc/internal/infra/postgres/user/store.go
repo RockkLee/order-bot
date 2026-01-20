@@ -5,13 +5,9 @@ import (
 	"database/sql"
 	"errors"
 	"order-bot-mgmt-svc/internal/models/entities"
+	"order-bot-mgmt-svc/internal/store"
 
 	"github.com/jackc/pgx/v5/pgconn"
-)
-
-var (
-	ErrNotFound   = errors.New("user not found")
-	ErrUserExists = errors.New("user already exists")
 )
 
 const (
@@ -34,7 +30,7 @@ func (s *Store) Create(ctx context.Context, user entities.User) error {
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == uniqueViolationCode {
-			return ErrUserExists
+			return store.ErrUserExists
 		}
 		return err
 	}
@@ -46,7 +42,7 @@ func (s *Store) FindByEmail(ctx context.Context, email string) (entities.User, e
 	err := s.db.QueryRowContext(ctx, selectUserByEmail, email).Scan(&record.ID, &record.Email, &record.PasswordHash)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return entities.User{}, ErrNotFound
+			return entities.User{}, store.ErrNotFound
 		}
 		return entities.User{}, err
 	}
