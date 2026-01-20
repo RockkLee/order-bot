@@ -5,6 +5,7 @@ import (
 	"errors"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
+	"order-bot-mgmt-svc/internal/util/jwtutil"
 	"os"
 	"sync"
 	"time"
@@ -95,7 +96,7 @@ func (s *AuthService) Logout(refreshToken string) error {
 	if refreshToken == "" {
 		return ErrInvalidToken
 	}
-	claims, err := parseJWT(s.refreshSecret, refreshToken)
+	claims, err := jwtutil.ParseJWT(s.refreshSecret, refreshToken)
 	if err != nil || claims.Typ != "refresh" {
 		return ErrInvalidToken
 	}
@@ -125,11 +126,11 @@ func (s *AuthService) issueTokens(user entities.User) (models.TokenPair, error) 
 		Iat:   now.Unix(),
 		Typ:   "refresh",
 	}
-	accessToken, err := signJWT(s.accessSecret, accessClaims)
+	accessToken, err := jwtutil.SignJWT(s.accessSecret, accessClaims)
 	if err != nil {
 		return models.TokenPair{}, err
 	}
-	refreshToken, err := signJWT(s.refreshSecret, refreshClaims)
+	refreshToken, err := jwtutil.SignJWT(s.refreshSecret, refreshClaims)
 	if err != nil {
 		return models.TokenPair{}, err
 	}
