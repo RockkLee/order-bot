@@ -1,4 +1,4 @@
-package postgres
+package pqsql
 
 import (
 	"order-bot-mgmt-svc/internal/models/entities"

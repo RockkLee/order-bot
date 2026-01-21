@@ -3,7 +3,7 @@ package httpserver
 import (
 	"fmt"
 	"net/http"
-	"order-bot-mgmt-svc/internal/infra/postgres"
+	"order-bot-mgmt-svc/internal/infra/pqsql/pqsqldb"
 	"order-bot-mgmt-svc/internal/services/authsvc"
 	"order-bot-mgmt-svc/internal/services/menusvc"
 	"time"
@@ -14,11 +14,11 @@ import (
 type Server struct {
 	port int
 
-	db       postgres.Service
+	db       pqsqldb.Service
 	services *services.Services
 }
 
-func NewServer(port int, db postgres.Service, services *services.Services) *http.Server {
+func NewServer(port int, db pqsqldb.Service, services *services.Services) *http.Server {
 	srv := &Server{
 		port: port,
 		db:   db,
@@ -38,7 +38,7 @@ func NewServer(port int, db postgres.Service, services *services.Services) *http
 	return server
 }
 
-func (s *Server) dbService() postgres.Service {
+func (s *Server) dbService() pqsqldb.Service {
 	return s.db
 }
 

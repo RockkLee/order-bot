@@ -8,7 +8,8 @@ import (
 	"net/http"
 	"order-bot-mgmt-svc/internal/config"
 	"order-bot-mgmt-svc/internal/infra/httphdlrs/httpserver"
-	"order-bot-mgmt-svc/internal/infra/postgres"
+	"order-bot-mgmt-svc/internal/infra/pqsql"
+	"order-bot-mgmt-svc/internal/infra/pqsql/pqsqldb"
 	"order-bot-mgmt-svc/internal/services/authsvc"
 	"order-bot-mgmt-svc/internal/services/menusvc"
 	"os/signal"
@@ -45,10 +46,10 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 	done <- true
 }
 
-func newServices(db *postgres.DB, cfg config.Config) *services.Services {
+func newServices(db *pqsqldb.DB, cfg config.Config) *services.Services {
 	return services.NewServices(
 		func() *authsvc.Svc {
-			return authsvc.NewSvc(postgres.NewUserStore(db.Conn()), cfg.Auth)
+			return authsvc.NewSvc(pqsql.NewUserStore(db.Conn()), cfg.Auth)
 		},
 		func() *menusvc.Svc {
 			return menusvc.NewSvc()
@@ -60,7 +61,7 @@ func main() {
 
 	cfg := config.Load()
 	port := cfg.App.Port
-	db, err := postgres.New(cfg.DB)
+	db, err := pqsqldb.New(cfg.DB)
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
