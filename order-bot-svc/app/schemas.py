@@ -1,0 +1,59 @@
+from typing import Literal
+from pydantic import BaseModel, Field
+
+
+class ChatRequest(BaseModel):
+    message: str = Field(..., min_length=1)
+
+
+class MenuItemOut(BaseModel):
+    sku: str
+    name: str
+    description: str | None
+    price_cents: int
+
+
+class CartItemOut(BaseModel):
+    sku: str
+    name: str
+    quantity: int
+    unit_price_cents: int
+    line_total_cents: int
+
+
+class CartSummary(BaseModel):
+    session_id: str
+    status: str
+    items: list[CartItemOut] = Field(default_factory=list)
+    total_cents: int = 0
+
+
+class IntentItem(BaseModel):
+    sku: str
+    quantity: int
+
+
+class IntentResult(BaseModel):
+    valid: bool
+    intent_type: Literal[
+        "search_menu",
+        "add_item",
+        "update_item",
+        "remove_item",
+        "show_cart",
+        "checkout",
+        "unknown",
+    ]
+    items: list[IntentItem] = Field(default_factory=list)
+    query: str | None = None
+    confirmed: bool = False
+    reason: str | None = None
+
+
+class ChatResponse(BaseModel):
+    session_id: str
+    reply: str
+    intent: IntentResult
+    cart: CartSummary
+    order_id: str | None = None
+    menu_results: list[MenuItemOut] = Field(default_factory=list)
