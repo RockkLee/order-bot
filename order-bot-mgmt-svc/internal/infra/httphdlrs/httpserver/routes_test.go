@@ -1,4 +1,4 @@
-package httphdlrs
+package httpserver
 
 import (
 	"io"

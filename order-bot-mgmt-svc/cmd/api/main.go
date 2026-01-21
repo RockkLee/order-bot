@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 	"order-bot-mgmt-svc/internal/config"
-	"order-bot-mgmt-svc/internal/infra/httphdlrs"
+	"order-bot-mgmt-svc/internal/infra/httphdlrs/httpserver"
 	"order-bot-mgmt-svc/internal/infra/postgres"
 	postgresuser "order-bot-mgmt-svc/internal/infra/postgres/user"
 	"os/signal"
@@ -70,7 +70,7 @@ func main() {
 	}()
 	serviceContainer := newServices(db, cfg)
 
-	server := httphdlrs.NewServer(
+	server := httpserver.NewServer(
 		port,
 		db,
 		serviceContainer,

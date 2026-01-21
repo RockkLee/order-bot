@@ -1,9 +1,10 @@
-package httphdlrs
+package httpserver
 
 import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"order-bot-mgmt-svc/internal/infra/httphdlrs"
 )
 
 func (s *Server) RegisterRoutes() http.Handler {
@@ -13,9 +14,9 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("/", s.HelloWorldHandler)
 
 	mux.HandleFunc("/health", s.healthHandler)
-	mux.HandleFunc("/auth/signup", s.signupHandler)
-	mux.HandleFunc("/auth/login", s.loginHandler)
-	mux.HandleFunc("/auth/logout", s.logoutHandler)
+	mux.HandleFunc("/auth/signup", httphdlrs.SignupHandler(s))
+	mux.HandleFunc("/auth/login", httphdlrs.LoginHandler(s))
+	mux.HandleFunc("/auth/logout", httphdlrs.LogoutHandler(s))
 
 	// Wrap the mux with CORS middleware
 	return s.corsMiddleware(mux)

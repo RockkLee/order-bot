@@ -1,4 +1,4 @@
-package httphdlrs
+package httpserver
 
 import (
 	"fmt"
@@ -40,7 +40,7 @@ func (s *Server) dbService() postgres.Service {
 	return s.db
 }
 
-func (s *Server) authService() *services.AuthService {
+func (s *Server) AuthService() *services.AuthService {
 	if s.services == nil {
 		return nil
 	}
