@@ -1,14 +1,9 @@
 package services
 
 import (
-	"errors"
 	"sync"
-)
 
-var (
-	ErrUserExists         = errors.New("user already exists")
-	ErrInvalidCredentials = errors.New("invalid credentials")
-	ErrInvalidToken       = errors.New("invalid token")
+	"order-bot-mgmt-svc/internal/services/authsvc"
 )
 
 type lazy[T any] struct {
@@ -35,18 +30,18 @@ func (l *lazy[T]) Get() *T {
 }
 
 type Services struct {
-	auth *lazy[AuthService]
+	auth *lazy[authsvc.Auth]
 	menu *lazy[MenuService]
 }
 
-func NewServices(authInit func() *AuthService, menuInit func() *MenuService) *Services {
+func NewServices(authInit func() *authsvc.Auth, menuInit func() *MenuService) *Services {
 	return &Services{
 		auth: newLazy(authInit),
 		menu: newLazy(menuInit),
 	}
 }
 
-func (s *Services) Auth() *AuthService {
+func (s *Services) Auth() *authsvc.Auth {
 	if s == nil {
 		return nil
 	}

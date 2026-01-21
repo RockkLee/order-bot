@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"order-bot-mgmt-svc/internal/infra/postgres"
+	"order-bot-mgmt-svc/internal/services/authsvc"
 	"time"
 
 	"order-bot-mgmt-svc/internal/services"
@@ -40,7 +41,7 @@ func (s *Server) dbService() postgres.Service {
 	return s.db
 }
 
-func (s *Server) AuthService() *services.AuthService {
+func (s *Server) AuthService() *authsvc.Auth {
 	if s.services == nil {
 		return nil
 	}

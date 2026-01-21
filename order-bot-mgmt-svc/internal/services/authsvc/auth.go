@@ -1,4 +1,4 @@
-package services
+package authsvc
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 	"order-bot-mgmt-svc/internal/util"
 )
 
-type AuthService struct {
+type Auth struct {
 	mu               sync.Mutex
 	userStore        store.User
 	refreshTokens    map[string]models.RefreshRecord
@@ -26,8 +26,8 @@ type AuthService struct {
 	userQueryTimeout time.Duration
 }
 
-func NewAuthService(userStore store.User, cfg config.Auth) *AuthService {
-	return &AuthService{
+func NewAuthService(userStore store.User, cfg config.Auth) *Auth {
+	return &Auth{
 		userStore:        userStore,
 		refreshTokens:    make(map[string]models.RefreshRecord),
 		accessSecret:     []byte(cfg.AccessSecret),
@@ -38,7 +38,7 @@ func NewAuthService(userStore store.User, cfg config.Auth) *AuthService {
 	}
 }
 
-func (s *AuthService) Signup(email, password string) (models.TokenPair, error) {
+func (s *Auth) Signup(email, password string) (models.TokenPair, error) {
 	if email == "" || password == "" {
 		return models.TokenPair{}, ErrInvalidCredentials
 	}
@@ -65,7 +65,7 @@ func (s *AuthService) Signup(email, password string) (models.TokenPair, error) {
 	return s.issueTokens(newUser)
 }
 
-func (s *AuthService) Login(email, password string) (models.TokenPair, error) {
+func (s *Auth) Login(email, password string) (models.TokenPair, error) {
 	if s.userStore == nil {
 		return models.TokenPair{}, errors.New("user store not configured")
 	}
@@ -84,7 +84,7 @@ func (s *AuthService) Login(email, password string) (models.TokenPair, error) {
 	return s.issueTokens(user)
 }
 
-func (s *AuthService) Logout(refreshToken string) error {
+func (s *Auth) Logout(refreshToken string) error {
 	if refreshToken == "" {
 		return ErrInvalidToken
 	}
@@ -102,7 +102,7 @@ func (s *AuthService) Logout(refreshToken string) error {
 	return nil
 }
 
-func (s *AuthService) issueTokens(user entities.User) (models.TokenPair, error) {
+func (s *Auth) issueTokens(user entities.User) (models.TokenPair, error) {
 	now := time.Now()
 	accessClaims := models.Claims{
 		Sub:   user.ID,
@@ -138,6 +138,6 @@ func (s *AuthService) issueTokens(user entities.User) (models.TokenPair, error) 
 	}, nil
 }
 
-func (s *AuthService) userContext() (context.Context, context.CancelFunc) {
+func (s *Auth) userContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), s.userQueryTimeout)
 }

@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"order-bot-mgmt-svc/internal/services"
+	"order-bot-mgmt-svc/internal/services/authsvc"
 )
 
 type Server interface {
-	AuthService() *services.AuthService
+	AuthService() *authsvc.Auth
 }
 
 type authRequest struct {
@@ -31,9 +31,9 @@ func SignupHandler(s Server) http.HandlerFunc {
 		tokens, err := s.AuthService().Signup(req.Email, req.Password)
 		if err != nil {
 			switch err {
-			case services.ErrUserExists:
+			case authsvc.ErrUserExists:
 				http.Error(w, "user already exists", http.StatusConflict)
-			case services.ErrInvalidCredentials:
+			case authsvc.ErrInvalidCredentials:
 				http.Error(w, "invalid credentials", http.StatusBadRequest)
 			default:
 				http.Error(w, "failed to create user", http.StatusInternalServerError)
@@ -58,7 +58,7 @@ func LoginHandler(s Server) http.HandlerFunc {
 		tokens, err := s.AuthService().Login(req.Email, req.Password)
 		if err != nil {
 			switch err {
-			case services.ErrInvalidCredentials:
+			case authsvc.ErrInvalidCredentials:
 				http.Error(w, "invalid credentials", http.StatusUnauthorized)
 			default:
 				http.Error(w, "failed to login", http.StatusInternalServerError)
