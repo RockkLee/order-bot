@@ -64,9 +64,19 @@ func TestServerDependencies(t *testing.T) {
 		RefreshTokenTTL:  time.Minute,
 		UserQueryTimeout: time.Second,
 	}
-	authService := services.NewAuthService(&fakeUserStore{users: make(map[string]entities.User)}, authCfg)
-	menuService := services.NewMenuService()
-	server := NewServer(0, db, authService, menuService)
+	authInitCalls := 0
+	menuInitCalls := 0
+	serviceContainer := services.NewServices(
+		func() *services.AuthService {
+			authInitCalls++
+			return services.NewAuthService(&fakeUserStore{users: make(map[string]entities.User)}, authCfg)
+		},
+		func() *services.MenuService {
+			menuInitCalls++
+			return services.NewMenuService()
+		},
+	)
+	server := NewServer(0, db, serviceContainer)
 
 	req := httptest.NewRequest(http.MethodPost, "/auth/signup", strings.NewReader(`{"email":"test@example.com","password":"secret"}`))
 	rec := httptest.NewRecorder()
@@ -77,6 +87,12 @@ func TestServerDependencies(t *testing.T) {
 	}
 	if db.calls != 0 {
 		t.Fatalf("expected db health to be unused for auth handler, got %d", db.calls)
+	}
+	if authInitCalls != 1 {
+		t.Fatalf("expected auth init to be called once, got %d", authInitCalls)
+	}
+	if menuInitCalls != 0 {
+		t.Fatalf("expected menu init to be unused for auth handler, got %d", menuInitCalls)
 	}
 
 	var payload models.TokenPair
@@ -93,5 +109,8 @@ func TestServerDependencies(t *testing.T) {
 
 	if db.calls != 1 {
 		t.Fatalf("expected db health to be called once after health check, got %d", db.calls)
+	}
+	if menuInitCalls != 0 {
+		t.Fatalf("expected menu init to be unused for health handler, got %d", menuInitCalls)
 	}
 }

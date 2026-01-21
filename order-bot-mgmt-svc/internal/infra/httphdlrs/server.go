@@ -12,18 +12,16 @@ import (
 type Server struct {
 	port int
 
-	db      postgres.Service
-	authSvc *services.AuthService
-	menuSvc *services.MenuService
+	db       postgres.Service
+	services *services.Services
 }
 
-func NewServer(port int, db postgres.Service, authService *services.AuthService, menuService *services.MenuService) *http.Server {
+func NewServer(port int, db postgres.Service, services *services.Services) *http.Server {
 	srv := &Server{
 		port: port,
 		db:   db,
 
-		authSvc: authService,
-		menuSvc: menuService,
+		services: services,
 	}
 
 	// Declare Server config
@@ -43,9 +41,15 @@ func (s *Server) dbService() postgres.Service {
 }
 
 func (s *Server) authService() *services.AuthService {
-	return s.authSvc
+	if s.services == nil {
+		return nil
+	}
+	return s.services.Auth()
 }
 
 func (s *Server) menuService() *services.MenuService {
-	return s.menuSvc
+	if s.services == nil {
+		return nil
+	}
+	return s.services.Menu()
 }

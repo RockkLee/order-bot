@@ -57,14 +57,17 @@ func main() {
 			log.Printf("failed to close database: %v", err)
 		}
 	}()
-	authService := services.NewAuthService(postgresuser.NewStore(db.Conn()), cfg.Auth)
-	menuService := services.NewMenuService()
+	serviceContainer := services.NewServices(
+		func() *services.AuthService {
+			return services.NewAuthService(postgresuser.NewStore(db.Conn()), cfg.Auth)
+		},
+		services.NewMenuService,
+	)
 
 	server := httphdlrs.NewServer(
 		port,
 		db,
-		authService,
-		menuService,
+		serviceContainer,
 	)
 
 	// Create a done channel to signal when the shutdown is complete
