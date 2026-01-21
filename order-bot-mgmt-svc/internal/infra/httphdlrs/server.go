@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"order-bot-mgmt-svc/internal/infra/postgres"
-	"sync"
 	"time"
 
 	"order-bot-mgmt-svc/internal/services"
@@ -13,21 +12,16 @@ import (
 type Server struct {
 	port int
 
-	dbInit       func() postgres.Service
-	dbOnce       sync.Once
-	db           postgres.Service
-	servicesInit func() *services.Services
-	servicesOnce sync.Once
-	services     *services.Services
+	db       postgres.Service
+	services *services.Services
 }
 
-func NewServer(port int, dbInit func() postgres.Service, servicesInit func() *services.Services) *http.
-	Server {
+func NewServer(port int, db postgres.Service, services *services.Services) *http.Server {
 	srv := &Server{
 		port: port,
+		db:   db,
 
-		dbInit:       dbInit,
-		servicesInit: servicesInit,
+		services: services,
 	}
 
 	// Declare Server config
@@ -43,21 +37,19 @@ func NewServer(port int, dbInit func() postgres.Service, servicesInit func() *se
 }
 
 func (s *Server) dbService() postgres.Service {
-	s.dbOnce.Do(func() {
-		s.db = s.dbInit()
-	})
-
 	return s.db
 }
 
-func (s *Server) servicesContainer() *services.Services {
-	s.servicesOnce.Do(func() {
-		s.services = s.servicesInit()
-	})
-
-	return s.services
+func (s *Server) authService() *services.AuthService {
+	if s.services == nil {
+		return nil
+	}
+	return s.services.Auth()
 }
 
-func (s *Server) authService() *services.AuthService {
-	return s.servicesContainer().Auth()
+func (s *Server) menuService() *services.MenuService {
+	if s.services == nil {
+		return nil
+	}
+	return s.services.Menu()
 }

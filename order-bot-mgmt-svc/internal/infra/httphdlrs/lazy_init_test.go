@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"order-bot-mgmt-svc/internal/infra/postgres"
+	"order-bot-mgmt-svc/internal/config"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
 	"strings"
 	"testing"
+	"time"
 
 	"order-bot-mgmt-svc/internal/models"
 	"order-bot-mgmt-svc/internal/services"
@@ -18,10 +19,12 @@ import (
 
 type fakeRepository struct {
 	health map[string]string
+	calls  int
 }
 
-func (f *fakeRepository) Health() map[string]string {
-	return f.health
+func (f *fakeRepository) Health() (map[string]string, error) {
+	f.calls++
+	return f.health, nil
 }
 
 func (f *fakeRepository) Close() error {
@@ -52,27 +55,28 @@ func (f *fakeUserStore) FindByEmail(_ context.Context, email string) (entities.U
 	return user, nil
 }
 
-func TestServerLazyServicesInit(t *testing.T) {
-	dbCalled := 0
-	authCalled := 0
-	menuCalled := 0
+func TestServerDependencies(t *testing.T) {
 	db := &fakeRepository{health: map[string]string{"status": "ok"}}
-	server := NewServer(
-		0,
-		func() postgres.Service {
-			dbCalled++
-			return db
+	authCfg := config.Auth{
+		AccessSecret:     "access",
+		RefreshSecret:    "refresh",
+		AccessTokenTTL:   time.Minute,
+		RefreshTokenTTL:  time.Minute,
+		UserQueryTimeout: time.Second,
+	}
+	authInitCalls := 0
+	menuInitCalls := 0
+	serviceContainer := services.NewServices(
+		func() *services.AuthService {
+			authInitCalls++
+			return services.NewAuthService(&fakeUserStore{users: make(map[string]entities.User)}, authCfg)
 		},
-		func() *services.Services {
-			return services.NewServices(func() *services.AuthService {
-				authCalled++
-				return services.NewAuthService(&fakeUserStore{users: make(map[string]entities.User)})
-			}, func() *services.MenuService {
-				menuCalled++
-				return services.NewMenuService()
-			})
+		func() *services.MenuService {
+			menuInitCalls++
+			return services.NewMenuService()
 		},
 	)
+	server := NewServer(0, db, serviceContainer)
 
 	req := httptest.NewRequest(http.MethodPost, "/auth/signup", strings.NewReader(`{"email":"test@example.com","password":"secret"}`))
 	rec := httptest.NewRecorder()
@@ -81,14 +85,14 @@ func TestServerLazyServicesInit(t *testing.T) {
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("expected status %d, got %d", http.StatusCreated, rec.Code)
 	}
-	if authCalled != 1 {
-		t.Fatalf("expected auth factory to be called once, got %d", authCalled)
+	if db.calls != 0 {
+		t.Fatalf("expected db health to be unused for auth handler, got %d", db.calls)
 	}
-	if dbCalled != 0 {
-		t.Fatalf("expected db factory to be unused for auth handler, got %d", dbCalled)
+	if authInitCalls != 1 {
+		t.Fatalf("expected auth init to be called once, got %d", authInitCalls)
 	}
-	if menuCalled != 0 {
-		t.Fatalf("expected menu factory to be unused for auth handler, got %d", menuCalled)
+	if menuInitCalls != 0 {
+		t.Fatalf("expected menu init to be unused for auth handler, got %d", menuInitCalls)
 	}
 
 	var payload models.TokenPair
@@ -103,7 +107,10 @@ func TestServerLazyServicesInit(t *testing.T) {
 	rec = httptest.NewRecorder()
 	server.Handler.ServeHTTP(rec, req)
 
-	if dbCalled != 1 {
-		t.Fatalf("expected db factory to be called once after health check, got %d", dbCalled)
+	if db.calls != 1 {
+		t.Fatalf("expected db health to be called once after health check, got %d", db.calls)
+	}
+	if menuInitCalls != 0 {
+		t.Fatalf("expected menu init to be unused for health handler, got %d", menuInitCalls)
 	}
 }

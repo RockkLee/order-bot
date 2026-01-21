@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"order-bot-mgmt-svc/internal/config"
 	"order-bot-mgmt-svc/internal/infra/httphdlrs"
 	"order-bot-mgmt-svc/internal/infra/postgres"
 	postgresuser "order-bot-mgmt-svc/internal/infra/postgres/user"
-	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -45,11 +44,10 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 	done <- true
 }
 
-func newServices() *services.Services {
+func newServices(db *postgres.DB, cfg config.Config) *services.Services {
 	return services.NewServices(
 		func() *services.AuthService {
-			db := postgres.New()
-			return services.NewAuthService(postgresuser.NewStore(db.Conn()))
+			return services.NewAuthService(postgresuser.NewStore(db.Conn()), cfg.Auth)
 		},
 		func() *services.MenuService {
 			return services.NewMenuService()
@@ -59,11 +57,23 @@ func newServices() *services.Services {
 
 func main() {
 
-	port, _ := strconv.Atoi(os.Getenv("PORT"))
+	cfg := config.Load()
+	port := cfg.App.Port
+	db, err := postgres.New(cfg.DB)
+	if err != nil {
+		log.Fatalf("failed to connect to database: %v", err)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Printf("failed to close database: %v", err)
+		}
+	}()
+	serviceContainer := newServices(db, cfg)
+
 	server := httphdlrs.NewServer(
 		port,
-		postgres.New,
-		func() *services.Services { return newServices() },
+		db,
+		serviceContainer,
 	)
 
 	// Create a done channel to signal when the shutdown is complete
@@ -72,7 +82,7 @@ func main() {
 	// Run graceful shutdown in a separate goroutine
 	go gracefulShutdown(server, done)
 
-	err := server.ListenAndServe()
+	err = server.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		panic(fmt.Sprintf("http server error: %s", err))
 	}

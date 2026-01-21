@@ -2,9 +2,7 @@ package services
 
 import (
 	"errors"
-	"os"
 	"sync"
-	"time"
 )
 
 var (
@@ -13,56 +11,51 @@ var (
 	ErrInvalidToken       = errors.New("invalid token")
 )
 
-func parseDurationEnv(key string, fallback time.Duration) time.Duration {
-	value := os.Getenv(key)
-	if value == "" {
-		return fallback
-	}
-	parsed, err := time.ParseDuration(value)
-	if err != nil {
-		return fallback
-	}
-	return parsed
+type lazy[T any] struct {
+	once func()
+	val  *T
 }
 
-type lazy[T any] struct {
-	once sync.Once
-	init func() *T
-	val  *T
+func newLazy[T any](init func() *T) *lazy[T] {
+	l := &lazy[T]{}
+	l.once = sync.OnceFunc(func() {
+		if init != nil {
+			l.val = init()
+		}
+	})
+	return l
 }
 
 func (l *lazy[T]) Get() *T {
 	if l == nil {
 		return nil
 	}
-	l.once.Do(func() {
-		if l.init != nil {
-			l.val = l.init()
-		}
-	})
+	l.once()
 	return l.val
 }
 
 type Services struct {
-	auth lazy[AuthService]
-	menu lazy[MenuService]
+	auth *lazy[AuthService]
+	menu *lazy[MenuService]
 }
 
 func NewServices(authInit func() *AuthService, menuInit func() *MenuService) *Services {
 	return &Services{
-		auth: lazy[AuthService]{
-			init: authInit,
-		},
-		menu: lazy[MenuService]{
-			init: menuInit,
-		},
+		auth: newLazy(authInit),
+		menu: newLazy(menuInit),
 	}
 }
 
 func (s *Services) Auth() *AuthService {
+	if s == nil {
+		return nil
+	}
 	return s.auth.Get()
 }
 
 func (s *Services) Menu() *MenuService {
+	if s == nil {
+		return nil
+	}
 	return s.menu.Get()
 }

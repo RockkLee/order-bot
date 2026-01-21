@@ -3,10 +3,10 @@ package services
 import (
 	"context"
 	"errors"
+	"order-bot-mgmt-svc/internal/config"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/util/jwtutil"
-	"os"
 	"sync"
 	"time"
 
@@ -26,23 +26,15 @@ type AuthService struct {
 	userQueryTimeout time.Duration
 }
 
-func NewAuthService(userStore store.User) *AuthService {
-	accessSecret := os.Getenv("JWT_ACCESS_SECRET")
-	refreshSecret := os.Getenv("JWT_REFRESH_SECRET")
-	if accessSecret == "" {
-		accessSecret = "dev-access-secret"
-	}
-	if refreshSecret == "" {
-		refreshSecret = "dev-refresh-secret"
-	}
+func NewAuthService(userStore store.User, cfg config.Auth) *AuthService {
 	return &AuthService{
 		userStore:        userStore,
 		refreshTokens:    make(map[string]models.RefreshRecord),
-		accessSecret:     []byte(accessSecret),
-		refreshSecret:    []byte(refreshSecret),
-		accessTokenTTL:   parseDurationEnv("JWT_ACCESS_TTL", 15*time.Minute),
-		refreshTokenTTL:  parseDurationEnv("JWT_REFRESH_TTL", 7*24*time.Hour),
-		userQueryTimeout: parseDurationEnv("USER_QUERY_TIMEOUT", 2*time.Second),
+		accessSecret:     []byte(cfg.AccessSecret),
+		refreshSecret:    []byte(cfg.RefreshSecret),
+		accessTokenTTL:   cfg.AccessTokenTTL,
+		refreshTokenTTL:  cfg.RefreshTokenTTL,
+		userQueryTimeout: cfg.UserQueryTimeout,
 	}
 }
 

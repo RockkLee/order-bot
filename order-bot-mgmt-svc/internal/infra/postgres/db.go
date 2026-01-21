@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
+	"order-bot-mgmt-svc/internal/config"
 	"strconv"
 	"time"
 
@@ -17,7 +17,7 @@ import (
 type Service interface {
 	// Health returns a map of health status information.
 	// The keys and values in the map are service-specific.
-	Health() map[string]string
+	Health() (map[string]string, error)
 
 	// Close terminates the database connection.
 	// It returns an error if the connection cannot be closed.
@@ -31,35 +31,28 @@ type DB struct {
 	db *sql.DB
 }
 
-var (
-	database   = os.Getenv("BLUEPRINT_DB_DATABASE")
-	password   = os.Getenv("BLUEPRINT_DB_PASSWORD")
-	username   = os.Getenv("BLUEPRINT_DB_USERNAME")
-	port       = os.Getenv("BLUEPRINT_DB_PORT")
-	host       = os.Getenv("BLUEPRINT_DB_HOST")
-	schema     = os.Getenv("BLUEPRINT_DB_SCHEMA")
-	dbInstance *DB
-)
-
-func New() Service {
-	// Reuse Connection
-	if dbInstance != nil {
-		return dbInstance
-	}
-	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&search_path=%s", username, password, host, port, database, schema)
+func New(cfg config.DB) (*DB, error) {
+	connStr := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable&search_path=%s",
+		cfg.Username,
+		cfg.Password,
+		cfg.Host,
+		cfg.Port,
+		cfg.Database,
+		cfg.Schema,
+	)
 	db, err := sql.Open("pgx", connStr)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	dbInstance = &DB{
+	return &DB{
 		db: db,
-	}
-	return dbInstance
+	}, nil
 }
 
 // Health checks the health of the database connection by pinging the database.
 // It returns a map with keys indicating various health statistics.
-func (s *DB) Health() map[string]string {
+func (s *DB) Health() (map[string]string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
@@ -70,8 +63,8 @@ func (s *DB) Health() map[string]string {
 	if err != nil {
 		stats["status"] = "down"
 		stats["error"] = fmt.Sprintf("db down: %v", err)
-		log.Fatalf("db down: %v", err) // Log the error and terminate the program
-		return stats
+		log.Printf("db down: %v", err)
+		return stats, err
 	}
 
 	// Database is up, add more statistics
@@ -105,7 +98,7 @@ func (s *DB) Health() map[string]string {
 		stats["message"] = "Many connections are being closed due to max lifetime, consider increasing max lifetime or revising the connection usage pattern."
 	}
 
-	return stats
+	return stats, nil
 }
 
 // Close closes the database connection.
@@ -113,7 +106,7 @@ func (s *DB) Health() map[string]string {
 // If the connection is successfully closed, it returns nil.
 // If an error occurs while closing the connection, it returns the error.
 func (s *DB) Close() error {
-	log.Printf("Disconnected from database: %s", database)
+	log.Printf("Disconnected from database")
 	return s.db.Close()
 }
 
