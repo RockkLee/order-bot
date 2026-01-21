@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"order-bot-mgmt-svc/internal/config"
 	"order-bot-mgmt-svc/internal/infra/httphdlrs"
 	"order-bot-mgmt-svc/internal/infra/postgres"
 	postgresuser "order-bot-mgmt-svc/internal/infra/postgres/user"
-	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -45,25 +44,27 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 	done <- true
 }
 
-func newServices() *services.Services {
-	return services.NewServices(
-		func() *services.AuthService {
-			db := postgres.New()
-			return services.NewAuthService(postgresuser.NewStore(db.Conn()))
-		},
-		func() *services.MenuService {
-			return services.NewMenuService()
-		},
-	)
-}
-
 func main() {
 
-	port, _ := strconv.Atoi(os.Getenv("PORT"))
+	cfg := config.Load()
+	port := cfg.App.Port
+	db, err := postgres.New(cfg.DB)
+	if err != nil {
+		log.Fatalf("failed to connect to database: %v", err)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Printf("failed to close database: %v", err)
+		}
+	}()
+	authService := services.NewAuthService(postgresuser.NewStore(db.Conn()), cfg.Auth)
+	menuService := services.NewMenuService()
+
 	server := httphdlrs.NewServer(
 		port,
-		postgres.New,
-		func() *services.Services { return newServices() },
+		db,
+		authService,
+		menuService,
 	)
 
 	// Create a done channel to signal when the shutdown is complete
