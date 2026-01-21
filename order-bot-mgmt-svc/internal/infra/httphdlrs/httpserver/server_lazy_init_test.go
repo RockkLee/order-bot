@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"order-bot-mgmt-svc/internal/config"
 	"order-bot-mgmt-svc/internal/models/entities"
+	"order-bot-mgmt-svc/internal/services/authsvc"
 	"order-bot-mgmt-svc/internal/store"
 	"strings"
 	"testing"
@@ -67,9 +68,9 @@ func TestServerDependencies(t *testing.T) {
 	authInitCalls := 0
 	menuInitCalls := 0
 	serviceContainer := services.NewServices(
-		func() *services.AuthService {
+		func() *authsvc.Auth {
 			authInitCalls++
-			return services.NewAuthService(&fakeUserStore{users: make(map[string]entities.User)}, authCfg)
+			return authsvc.NewAuthService(&fakeUserStore{users: make(map[string]entities.User)}, authCfg)
 		},
 		func() *services.MenuService {
 			menuInitCalls++
