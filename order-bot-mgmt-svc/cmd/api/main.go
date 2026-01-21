@@ -44,6 +44,17 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 	done <- true
 }
 
+func newServices(db *postgres.DB, cfg config.Config) *services.Services {
+	return services.NewServices(
+		func() *services.AuthService {
+			return services.NewAuthService(postgresuser.NewStore(db.Conn()), cfg.Auth)
+		},
+		func() *services.MenuService {
+			return services.NewMenuService()
+		},
+	)
+}
+
 func main() {
 
 	cfg := config.Load()
@@ -57,12 +68,7 @@ func main() {
 			log.Printf("failed to close database: %v", err)
 		}
 	}()
-	serviceContainer := services.NewServices(
-		func() *services.AuthService {
-			return services.NewAuthService(postgresuser.NewStore(db.Conn()), cfg.Auth)
-		},
-		services.NewMenuService,
-	)
+	serviceContainer := newServices(db, cfg)
 
 	server := httphdlrs.NewServer(
 		port,
@@ -76,7 +82,7 @@ func main() {
 	// Run graceful shutdown in a separate goroutine
 	go gracefulShutdown(server, done)
 
-	err := server.ListenAndServe()
+	err = server.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		panic(fmt.Sprintf("http server error: %s", err))
 	}
