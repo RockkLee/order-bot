@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"order-bot-mgmt-svc/internal/infra/postgres"
 	"order-bot-mgmt-svc/internal/services/authsvc"
+	"order-bot-mgmt-svc/internal/services/menusvc"
 	"time"
 
 	"order-bot-mgmt-svc/internal/services"
@@ -41,14 +42,14 @@ func (s *Server) dbService() postgres.Service {
 	return s.db
 }
 
-func (s *Server) AuthService() *authsvc.Auth {
+func (s *Server) AuthService() *authsvc.Svc {
 	if s.services == nil {
 		return nil
 	}
 	return s.services.Auth()
 }
 
-func (s *Server) menuService() *services.MenuService {
+func (s *Server) menuService() *menusvc.Svc {
 	if s.services == nil {
 		return nil
 	}

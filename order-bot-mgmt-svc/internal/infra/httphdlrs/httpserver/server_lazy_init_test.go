@@ -9,6 +9,7 @@ import (
 	"order-bot-mgmt-svc/internal/config"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/services/authsvc"
+	"order-bot-mgmt-svc/internal/services/menusvc"
 	"order-bot-mgmt-svc/internal/store"
 	"strings"
 	"testing"
@@ -68,13 +69,13 @@ func TestServerDependencies(t *testing.T) {
 	authInitCalls := 0
 	menuInitCalls := 0
 	serviceContainer := services.NewServices(
-		func() *authsvc.Auth {
+		func() *authsvc.Svc {
 			authInitCalls++
-			return authsvc.NewAuthService(&fakeUserStore{users: make(map[string]entities.User)}, authCfg)
+			return authsvc.NewSvc(&fakeUserStore{users: make(map[string]entities.User)}, authCfg)
 		},
-		func() *services.MenuService {
+		func() *menusvc.Svc {
 			menuInitCalls++
-			return services.NewMenuService()
+			return menusvc.NewSvc()
 		},
 	)
 	server := NewServer(0, db, serviceContainer)

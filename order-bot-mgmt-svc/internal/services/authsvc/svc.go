@@ -6,7 +6,6 @@ import (
 	"order-bot-mgmt-svc/internal/config"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
-	"order-bot-mgmt-svc/internal/util/jwtutil"
 	"sync"
 	"time"
 
@@ -15,7 +14,7 @@ import (
 	"order-bot-mgmt-svc/internal/util"
 )
 
-type Auth struct {
+type Svc struct {
 	mu               sync.Mutex
 	userStore        store.User
 	refreshTokens    map[string]models.RefreshRecord
@@ -26,8 +25,8 @@ type Auth struct {
 	userQueryTimeout time.Duration
 }
 
-func NewAuthService(userStore store.User, cfg config.Auth) *Auth {
-	return &Auth{
+func NewSvc(userStore store.User, cfg config.Auth) *Svc {
+	return &Svc{
 		userStore:        userStore,
 		refreshTokens:    make(map[string]models.RefreshRecord),
 		accessSecret:     []byte(cfg.AccessSecret),
@@ -38,7 +37,7 @@ func NewAuthService(userStore store.User, cfg config.Auth) *Auth {
 	}
 }
 
-func (s *Auth) Signup(email, password string) (models.TokenPair, error) {
+func (s *Svc) Signup(email, password string) (models.TokenPair, error) {
 	if email == "" || password == "" {
 		return models.TokenPair{}, ErrInvalidCredentials
 	}
@@ -65,7 +64,7 @@ func (s *Auth) Signup(email, password string) (models.TokenPair, error) {
 	return s.issueTokens(newUser)
 }
 
-func (s *Auth) Login(email, password string) (models.TokenPair, error) {
+func (s *Svc) Login(email, password string) (models.TokenPair, error) {
 	if s.userStore == nil {
 		return models.TokenPair{}, errors.New("user store not configured")
 	}
@@ -84,11 +83,11 @@ func (s *Auth) Login(email, password string) (models.TokenPair, error) {
 	return s.issueTokens(user)
 }
 
-func (s *Auth) Logout(refreshToken string) error {
+func (s *Svc) Logout(refreshToken string) error {
 	if refreshToken == "" {
 		return ErrInvalidToken
 	}
-	claims, err := jwtutil.ParseJWT(s.refreshSecret, refreshToken)
+	claims, err := parseJWT(s.refreshSecret, refreshToken)
 	if err != nil || claims.Typ != "refresh" {
 		return ErrInvalidToken
 	}
@@ -102,7 +101,7 @@ func (s *Auth) Logout(refreshToken string) error {
 	return nil
 }
 
-func (s *Auth) issueTokens(user entities.User) (models.TokenPair, error) {
+func (s *Svc) issueTokens(user entities.User) (models.TokenPair, error) {
 	now := time.Now()
 	accessClaims := models.Claims{
 		Sub:   user.ID,
@@ -118,11 +117,11 @@ func (s *Auth) issueTokens(user entities.User) (models.TokenPair, error) {
 		Iat:   now.Unix(),
 		Typ:   "refresh",
 	}
-	accessToken, err := jwtutil.SignJWT(s.accessSecret, accessClaims)
+	accessToken, err := signJWT(s.accessSecret, accessClaims)
 	if err != nil {
 		return models.TokenPair{}, err
 	}
-	refreshToken, err := jwtutil.SignJWT(s.refreshSecret, refreshClaims)
+	refreshToken, err := signJWT(s.refreshSecret, refreshClaims)
 	if err != nil {
 		return models.TokenPair{}, err
 	}
@@ -138,6 +137,6 @@ func (s *Auth) issueTokens(user entities.User) (models.TokenPair, error) {
 	}, nil
 }
 
-func (s *Auth) userContext() (context.Context, context.CancelFunc) {
+func (s *Svc) userContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), s.userQueryTimeout)
 }

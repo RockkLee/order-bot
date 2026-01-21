@@ -8,7 +8,7 @@ import (
 )
 
 type Server interface {
-	AuthService() *authsvc.Auth
+	AuthService() *authsvc.Svc
 }
 
 type authRequest struct {

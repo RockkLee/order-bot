@@ -1,4 +1,4 @@
-package jwtutil
+package authsvc
 
 import (
 	"crypto/hmac"
@@ -19,7 +19,7 @@ type jwtHeader struct {
 	Typ string `json:"typ"`
 }
 
-func SignJWT(secret []byte, claims models.Claims) (string, error) {
+func signJWT(secret []byte, claims models.Claims) (string, error) {
 	header := jwtHeader{Alg: "HS256", Typ: "JWT"}
 	headerBytes, err := json.Marshal(header)
 	if err != nil {
@@ -38,7 +38,7 @@ func SignJWT(secret []byte, claims models.Claims) (string, error) {
 	return signingInput + "." + sigB64, nil
 }
 
-func ParseJWT(secret []byte, token string) (models.Claims, error) {
+func parseJWT(secret []byte, token string) (models.Claims, error) {
 	parts := strings.Split(token, ".")
 	if len(parts) != 3 {
 		return models.Claims{}, errInvalidToken
