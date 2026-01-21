@@ -1,24 +1,24 @@
-package user
+package postgres
 
 import (
 	"order-bot-mgmt-svc/internal/models/entities"
 )
 
-type Record struct {
+type UserRecord struct {
 	ID           string
 	Email        string
 	PasswordHash string
 }
 
-func RecordFromModel(user entities.User) Record {
-	return Record{
+func UserRecordFromModel(user entities.User) UserRecord {
+	return UserRecord{
 		ID:           user.ID,
 		Email:        user.Email,
 		PasswordHash: user.PasswordHash,
 	}
 }
 
-func (r Record) ToModel() entities.User {
+func (r UserRecord) ToModel() entities.User {
 	return entities.User{
 		ID:           r.ID,
 		Email:        r.Email,

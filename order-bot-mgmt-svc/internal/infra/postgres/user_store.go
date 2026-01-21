@@ -1,4 +1,4 @@
-package user
+package postgres
 
 import (
 	"context"
@@ -16,16 +16,16 @@ const (
 	uniqueViolationCode = "23505"
 )
 
-type Store struct {
+type UserStore struct {
 	db *sql.DB
 }
 
-func NewStore(db *sql.DB) *Store {
-	return &Store{db: db}
+func NewUserStore(db *sql.DB) *UserStore {
+	return &UserStore{db: db}
 }
 
-func (s *Store) Create(ctx context.Context, user entities.User) error {
-	record := RecordFromModel(user)
+func (s *UserStore) Create(ctx context.Context, user entities.User) error {
+	record := UserRecordFromModel(user)
 	_, err := s.db.ExecContext(ctx, insertUserQuery, record.ID, record.Email, record.PasswordHash)
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -37,8 +37,8 @@ func (s *Store) Create(ctx context.Context, user entities.User) error {
 	return nil
 }
 
-func (s *Store) FindByEmail(ctx context.Context, email string) (entities.User, error) {
-	var record Record
+func (s *UserStore) FindByEmail(ctx context.Context, email string) (entities.User, error) {
+	var record UserRecord
 	err := s.db.QueryRowContext(ctx, selectUserByEmail, email).Scan(&record.ID, &record.Email, &record.PasswordHash)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

@@ -9,7 +9,6 @@ import (
 	"order-bot-mgmt-svc/internal/config"
 	"order-bot-mgmt-svc/internal/infra/httphdlrs/httpserver"
 	"order-bot-mgmt-svc/internal/infra/postgres"
-	postgresuser "order-bot-mgmt-svc/internal/infra/postgres/user"
 	"order-bot-mgmt-svc/internal/services/authsvc"
 	"order-bot-mgmt-svc/internal/services/menusvc"
 	"os/signal"
@@ -49,7 +48,7 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 func newServices(db *postgres.DB, cfg config.Config) *services.Services {
 	return services.NewServices(
 		func() *authsvc.Svc {
-			return authsvc.NewSvc(postgresuser.NewStore(db.Conn()), cfg.Auth)
+			return authsvc.NewSvc(postgres.NewUserStore(db.Conn()), cfg.Auth)
 		},
 		func() *menusvc.Svc {
 			return menusvc.NewSvc()
