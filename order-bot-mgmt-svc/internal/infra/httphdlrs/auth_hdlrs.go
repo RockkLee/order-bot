@@ -11,12 +11,6 @@ type Server interface {
 	AuthService() *authsvc.Svc
 }
 
-type authRequest struct {
-	Email        string `json:"email"`
-	Password     string `json:"password"`
-	RefreshToken string `json:"refresh_token"`
-}
-
 func SignupHandler(s Server) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
