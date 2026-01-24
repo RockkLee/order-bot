@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"order-bot-mgmt-svc/internal/config"
 	"order-bot-mgmt-svc/internal/infra/httphdlrs/httpserver"
@@ -59,6 +60,9 @@ func newServices(db *pqsqldb.DB, cfg config.Config) *services.Services {
 
 func main() {
 
+	// Set up logger level
+	slog.SetLogLoggerLevel(slog.LevelInfo)
+
 	cfg := config.Load()
 	port := cfg.App.Port
 	db, err := pqsqldb.New(cfg.DB)
@@ -84,6 +88,7 @@ func main() {
 	// Run graceful shutdown in a separate goroutine
 	go gracefulShutdown(server, done)
 
+	slog.Info("running http.ListAndServer...")
 	err = server.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		panic(fmt.Sprintf("http server error: %s", err))
