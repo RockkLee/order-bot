@@ -11,12 +11,18 @@ type Server interface {
 	AuthService() *authsvc.Svc
 }
 
-func SignupHandler(s Server) http.HandlerFunc {
+const AuthPrefix = "/auth"
+
+func AuthHdlr(s Server) http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /signup", signupHdlrFunc(s))
+	mux.HandleFunc("POST /login", loginHdlrFunc(s))
+	mux.HandleFunc("POST /logout", logoutHldrFunc(s))
+	return mux
+}
+
+func signupHdlrFunc(s Server) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			return
-		}
 		var req authRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "invalid request body", http.StatusBadRequest)
@@ -38,12 +44,8 @@ func SignupHandler(s Server) http.HandlerFunc {
 	}
 }
 
-func LoginHandler(s Server) http.HandlerFunc {
+func loginHdlrFunc(s Server) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			return
-		}
 		var req authRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "invalid request body", http.StatusBadRequest)
@@ -63,12 +65,8 @@ func LoginHandler(s Server) http.HandlerFunc {
 	}
 }
 
-func LogoutHandler(s Server) http.HandlerFunc {
+func logoutHldrFunc(s Server) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			return
-		}
 		var req authRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "invalid request body", http.StatusBadRequest)
