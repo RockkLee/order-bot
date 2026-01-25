@@ -1,7 +1,6 @@
 package httphdlrs
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"order-bot-mgmt-svc/internal/services/authsvc"
@@ -23,18 +22,17 @@ func AuthHdlr(s Server) http.Handler {
 
 func signupHdlrFunc(s Server) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req authRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, "invalid request body", http.StatusBadRequest)
+		req, ok := decodeJsonRequest[authRequest](w, r)
+		if !ok {
 			return
 		}
 		tokens, err := s.AuthService().Signup(req.Email, req.Password)
 		if err != nil {
 			switch err {
 			case authsvc.ErrUserExists:
-				http.Error(w, "user already exists", http.StatusConflict)
+				http.Error(w, authsvc.ErrUserExists.Error(), http.StatusConflict)
 			case authsvc.ErrInvalidCredentials:
-				http.Error(w, "invalid credentials", http.StatusBadRequest)
+				http.Error(w, authsvc.ErrInvalidCredentials.Error(), http.StatusBadRequest)
 			default:
 				http.Error(w, "failed to create user", http.StatusInternalServerError)
 			}
@@ -46,16 +44,15 @@ func signupHdlrFunc(s Server) http.HandlerFunc {
 
 func loginHdlrFunc(s Server) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req authRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, "invalid request body", http.StatusBadRequest)
+		req, ok := decodeJsonRequest[authRequest](w, r)
+		if !ok {
 			return
 		}
 		tokens, err := s.AuthService().Login(req.Email, req.Password)
 		if err != nil {
 			switch err {
 			case authsvc.ErrInvalidCredentials:
-				http.Error(w, "invalid credentials", http.StatusUnauthorized)
+				http.Error(w, authsvc.ErrInvalidCredentials.Error(), http.StatusUnauthorized)
 			default:
 				http.Error(w, "failed to login", http.StatusInternalServerError)
 			}
@@ -67,21 +64,14 @@ func loginHdlrFunc(s Server) http.HandlerFunc {
 
 func logoutHldrFunc(s Server) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req authRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, "invalid request body", http.StatusBadRequest)
+		req, ok := decodeJsonRequest[authRequest](w, r)
+		if !ok {
 			return
 		}
 		if err := s.AuthService().Logout(req.RefreshToken); err != nil {
-			http.Error(w, "invalid refresh token", http.StatusUnauthorized)
+			WriteError(w, http.StatusUnauthorized, authsvc.ErrInvalidRefreshToken.Error())
 			return
 		}
-		writeJSON(w, http.StatusOK, map[string]string{"message": "logged out"})
+		writeJSON(w, http.StatusOK, map[string]string{"message": authsvc.ErrLoggedOut.Error()})
 	}
-}
-
-func writeJSON(w http.ResponseWriter, status int, payload any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(payload)
 }
