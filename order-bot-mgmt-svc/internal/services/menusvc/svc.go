@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"order-bot-mgmt-svc/internal/models/entities"
+	"order-bot-mgmt-svc/internal/services"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/util"
 	"time"
@@ -147,5 +148,5 @@ func buildMenuItems(menuID string, names []string) []entities.MenuItem {
 }
 
 func (s *Svc) menuContext() (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.Background(), menuQueryTimeout)
+	return services.QueryContext(menuQueryTimeout)
 }

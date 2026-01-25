@@ -5,6 +5,7 @@ import (
 	"errors"
 	"order-bot-mgmt-svc/internal/config"
 	"order-bot-mgmt-svc/internal/models/entities"
+	"order-bot-mgmt-svc/internal/services"
 	"order-bot-mgmt-svc/internal/store"
 	"sync"
 	"time"
@@ -138,5 +139,5 @@ func (s *Svc) issueTokens(user entities.User) (models.TokenPair, error) {
 }
 
 func (s *Svc) userContext() (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.Background(), s.userQueryTimeout)
+	return services.QueryContext(s.userQueryTimeout)
 }
