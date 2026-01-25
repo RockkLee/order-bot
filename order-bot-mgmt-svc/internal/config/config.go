@@ -20,17 +20,21 @@ type DB struct {
 }
 
 type Auth struct {
-	AccessSecret     string
-	RefreshSecret    string
-	AccessTokenTTL   time.Duration
-	RefreshTokenTTL  time.Duration
-	UserQueryTimeout time.Duration
+	AccessSecret    string
+	RefreshSecret   string
+	AccessTokenTTL  time.Duration
+	RefreshTokenTTL time.Duration
+}
+
+type Others struct {
+	QryCtxTimeout time.Duration
 }
 
 type Config struct {
-	App  App
-	DB   DB
-	Auth Auth
+	App    App
+	DB     DB
+	Auth   Auth
+	Others Others
 }
 
 func Load() Config {
@@ -47,11 +51,13 @@ func Load() Config {
 			Schema:   os.Getenv("BLUEPRINT_DB_SCHEMA"),
 		},
 		Auth: Auth{
-			AccessSecret:     envOrDefault("JWT_ACCESS_SECRET", "dev-access-secret"),
-			RefreshSecret:    envOrDefault("JWT_REFRESH_SECRET", "dev-refresh-secret"),
-			AccessTokenTTL:   parseDurationEnv("JWT_ACCESS_TTL", 15*time.Minute),
-			RefreshTokenTTL:  parseDurationEnv("JWT_REFRESH_TTL", 7*24*time.Hour),
-			UserQueryTimeout: parseDurationEnv("USER_QUERY_TIMEOUT", 2*time.Second),
+			AccessSecret:    envOrDefault("JWT_ACCESS_SECRET", "dev-access-secret"),
+			RefreshSecret:   envOrDefault("JWT_REFRESH_SECRET", "dev-refresh-secret"),
+			AccessTokenTTL:  parseDurationEnv("JWT_ACCESS_TTL", 15*time.Minute),
+			RefreshTokenTTL: parseDurationEnv("JWT_REFRESH_TTL", 7*24*time.Hour),
+		},
+		Others: Others{
+			QryCtxTimeout: parseDurationEnv("QRY_CTX_TIMEOUT", 15*time.Second),
 		},
 	}
 }

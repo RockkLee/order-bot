@@ -3,7 +3,6 @@ package pqsql
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
 )

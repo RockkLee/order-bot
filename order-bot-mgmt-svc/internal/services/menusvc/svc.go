@@ -1,10 +1,8 @@
 package menusvc
 
 import (
-	"context"
 	"errors"
 	"order-bot-mgmt-svc/internal/models/entities"
-	"order-bot-mgmt-svc/internal/services"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/util"
 	"time"
@@ -13,14 +11,14 @@ import (
 const menuQueryTimeout = 2 * time.Second
 
 type Svc struct {
-	menuStore  store.Menu
-	ctxFactory services.ContextFactory
+	menuStore store.Menu
+	ctxFunc   util.CtxFunc
 }
 
 func NewSvc(menuStore store.Menu) *Svc {
 	return &Svc{
-		menuStore:  menuStore,
-		ctxFactory: services.NewContextFactory(menuQueryTimeout),
+		menuStore: menuStore,
+		ctxFunc:   util.NewCtxFunc(menuQueryTimeout),
 	}
 }
 
@@ -31,7 +29,7 @@ func (s *Svc) CreateMenu(botID string, itemNames []string) (entities.Menu, []ent
 	if botID == "" {
 		return entities.Menu{}, nil, ErrInvalidMenu
 	}
-	ctx, cancel := s.ctxFactory()
+	ctx, cancel := s.ctxFunc()
 	defer cancel()
 	tx, err := s.menuStore.BeginTx(ctx)
 	if err != nil {
@@ -63,7 +61,7 @@ func (s *Svc) GetMenu(menuID string) (entities.Menu, []entities.MenuItem, error)
 	if menuID == "" {
 		return entities.Menu{}, nil, ErrInvalidMenu
 	}
-	ctx, cancel := s.ctxFactory()
+	ctx, cancel := s.ctxFunc()
 	defer cancel()
 	menu, err := s.menuStore.FindByID(ctx, menuID)
 	if err != nil {
@@ -83,7 +81,7 @@ func (s *Svc) UpdateMenu(menuID, botID string, itemNames []string) (entities.Men
 	if menuID == "" || botID == "" {
 		return entities.Menu{}, nil, ErrInvalidMenu
 	}
-	ctx, cancel := s.ctxFactory()
+	ctx, cancel := s.ctxFunc()
 	defer cancel()
 	tx, err := s.menuStore.BeginTx(ctx)
 	if err != nil {
@@ -119,7 +117,7 @@ func (s *Svc) DeleteMenu(menuID string) error {
 	if menuID == "" {
 		return ErrInvalidMenu
 	}
-	ctx, cancel := s.ctxFactory()
+	ctx, cancel := s.ctxFunc()
 	defer cancel()
 	tx, err := s.menuStore.BeginTx(ctx)
 	if err != nil {

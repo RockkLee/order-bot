@@ -1,18 +1,17 @@
 package authsvc
 
 import (
-	"context"
 	"errors"
 	"order-bot-mgmt-svc/internal/config"
 	"order-bot-mgmt-svc/internal/models/entities"
-	"order-bot-mgmt-svc/internal/services"
 	"order-bot-mgmt-svc/internal/store"
 	"sync"
 	"time"
 
-	"golang.org/x/crypto/bcrypt"
 	"order-bot-mgmt-svc/internal/models"
 	"order-bot-mgmt-svc/internal/util"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Svc struct {
@@ -23,21 +22,18 @@ type Svc struct {
 	refreshSecret   []byte
 	accessTokenTTL  time.Duration
 	refreshTokenTTL time.Duration
-	ctxFactory      services.ContextFactory
+	ctxFunc         util.CtxFunc
 }
 
-func NewSvc(userStore store.User, cfg config.Auth, ctxFactory services.ContextFactory) *Svc {
-	if ctxFactory == nil {
-		ctxFactory = services.NewContextFactory(cfg.UserQueryTimeout)
-	}
+func NewSvc(userStore store.User, cfg config.Config, ctxFunc util.CtxFunc) *Svc {
 	return &Svc{
 		userStore:       userStore,
 		refreshTokens:   make(map[string]models.RefreshRecord),
-		accessSecret:    []byte(cfg.AccessSecret),
-		refreshSecret:   []byte(cfg.RefreshSecret),
-		accessTokenTTL:  cfg.AccessTokenTTL,
-		refreshTokenTTL: cfg.RefreshTokenTTL,
-		ctxFactory:      ctxFactory,
+		accessSecret:    []byte(cfg.Auth.AccessSecret),
+		refreshSecret:   []byte(cfg.Auth.RefreshSecret),
+		accessTokenTTL:  cfg.Auth.AccessTokenTTL,
+		refreshTokenTTL: cfg.Auth.RefreshTokenTTL,
+		ctxFunc:         ctxFunc,
 	}
 }
 
@@ -57,7 +53,7 @@ func (s *Svc) Signup(email, password string) (models.TokenPair, error) {
 		Email:        email,
 		PasswordHash: string(hash),
 	}
-	ctx, cancel := s.ctxFactory()
+	ctx, cancel := s.ctxFunc()
 	defer cancel()
 	if err := s.userStore.Create(ctx, newUser); err != nil {
 		if errors.Is(err, store.ErrUserExists) {
@@ -72,7 +68,7 @@ func (s *Svc) Login(email, password string) (models.TokenPair, error) {
 	if s.userStore == nil {
 		return models.TokenPair{}, errors.New("user store not configured")
 	}
-	ctx, cancel := s.ctxFactory()
+	ctx, cancel := s.ctxFunc()
 	defer cancel()
 	user, err := s.userStore.FindByEmail(ctx, email)
 	if err != nil {

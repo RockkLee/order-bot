@@ -13,6 +13,7 @@ import (
 	"order-bot-mgmt-svc/internal/infra/pqsql/pqsqldb"
 	"order-bot-mgmt-svc/internal/services/authsvc"
 	"order-bot-mgmt-svc/internal/services/menusvc"
+	"order-bot-mgmt-svc/internal/util"
 	"os/signal"
 	"syscall"
 	"time"
@@ -48,10 +49,10 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 }
 
 func newServices(db *pqsqldb.DB, cfg config.Config) *services.Services {
+	ctxFunc := util.NewCtxFunc(cfg.Others.QryCtxTimeout)
 	return services.NewServices(
 		func() *authsvc.Svc {
-			ctxFactory := services.NewContextFactory(cfg.Auth.UserQueryTimeout)
-			return authsvc.NewSvc(pqsql.NewUserStore(db.Conn()), cfg.Auth, ctxFactory)
+			return authsvc.NewSvc(pqsql.NewUserStore(db.Conn()), cfg, ctxFunc)
 		},
 		func() *menusvc.Svc {
 			return menusvc.NewSvc(pqsql.NewMenuStore(db.Conn()))
