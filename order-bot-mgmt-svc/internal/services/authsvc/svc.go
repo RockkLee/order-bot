@@ -54,7 +54,7 @@ func (s *Svc) Signup(email, password string) (models.TokenPair, error) {
 		Email:        email,
 		PasswordHash: string(hash),
 	}
-	ctx, cancel := s.userContext()
+	ctx, cancel := services.QueryContext(s.userQueryTimeout)
 	defer cancel()
 	if err := s.userStore.Create(ctx, newUser); err != nil {
 		if errors.Is(err, store.ErrUserExists) {
@@ -69,7 +69,7 @@ func (s *Svc) Login(email, password string) (models.TokenPair, error) {
 	if s.userStore == nil {
 		return models.TokenPair{}, errors.New("user store not configured")
 	}
-	ctx, cancel := s.userContext()
+	ctx, cancel := services.QueryContext(s.userQueryTimeout)
 	defer cancel()
 	user, err := s.userStore.FindByEmail(ctx, email)
 	if err != nil {
@@ -136,8 +136,4 @@ func (s *Svc) issueTokens(user entities.User) (models.TokenPair, error) {
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}, nil
-}
-
-func (s *Svc) userContext() (context.Context, context.CancelFunc) {
-	return services.QueryContext(s.userQueryTimeout)
 }

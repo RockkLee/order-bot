@@ -27,7 +27,7 @@ func (s *Svc) CreateMenu(botID string, itemNames []string) (entities.Menu, []ent
 	if botID == "" {
 		return entities.Menu{}, nil, ErrInvalidMenu
 	}
-	ctx, cancel := s.menuContext()
+	ctx, cancel := services.QueryContext(menuQueryTimeout)
 	defer cancel()
 	tx, err := s.menuStore.BeginTx(ctx)
 	if err != nil {
@@ -59,7 +59,7 @@ func (s *Svc) GetMenu(menuID string) (entities.Menu, []entities.MenuItem, error)
 	if menuID == "" {
 		return entities.Menu{}, nil, ErrInvalidMenu
 	}
-	ctx, cancel := s.menuContext()
+	ctx, cancel := services.QueryContext(menuQueryTimeout)
 	defer cancel()
 	menu, err := s.menuStore.FindByID(ctx, menuID)
 	if err != nil {
@@ -79,7 +79,7 @@ func (s *Svc) UpdateMenu(menuID, botID string, itemNames []string) (entities.Men
 	if menuID == "" || botID == "" {
 		return entities.Menu{}, nil, ErrInvalidMenu
 	}
-	ctx, cancel := s.menuContext()
+	ctx, cancel := services.QueryContext(menuQueryTimeout)
 	defer cancel()
 	tx, err := s.menuStore.BeginTx(ctx)
 	if err != nil {
@@ -115,7 +115,7 @@ func (s *Svc) DeleteMenu(menuID string) error {
 	if menuID == "" {
 		return ErrInvalidMenu
 	}
-	ctx, cancel := s.menuContext()
+	ctx, cancel := services.QueryContext(menuQueryTimeout)
 	defer cancel()
 	tx, err := s.menuStore.BeginTx(ctx)
 	if err != nil {
@@ -145,8 +145,4 @@ func buildMenuItems(menuID string, names []string) []entities.MenuItem {
 		})
 	}
 	return items
-}
-
-func (s *Svc) menuContext() (context.Context, context.CancelFunc) {
-	return services.QueryContext(menuQueryTimeout)
 }
