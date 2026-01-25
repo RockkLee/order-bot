@@ -53,7 +53,7 @@ func newServices(db *pqsqldb.DB, cfg config.Config) *services.Services {
 			return authsvc.NewSvc(pqsql.NewUserStore(db.Conn()), cfg.Auth)
 		},
 		func() *menusvc.Svc {
-			return menusvc.NewSvc()
+			return menusvc.NewSvc(pqsql.NewMenuStore(db.Conn()))
 		},
 	)
 }

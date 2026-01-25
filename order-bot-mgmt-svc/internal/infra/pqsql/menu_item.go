@@ -1,0 +1,51 @@
+package pqsql
+
+import (
+	"context"
+	"database/sql"
+	"order-bot-mgmt-svc/internal/models/entities"
+)
+
+type MenuItemStore struct {
+	db *sql.DB
+}
+
+const (
+	insertMenuItemQueryStandalone     = `INSERT INTO menu_items (id, menu_id, menu_item_name) VALUES ($1, $2, $3);`
+	selectMenuItemsByMenuIDStandalone = `SELECT id, menu_id, menu_item_name FROM menu_items WHERE menu_id = $1 ORDER BY id;`
+	deleteMenuItemsByMenuIDStandalone = `DELETE FROM menu_items WHERE menu_id = $1;`
+)
+
+func NewMenuItemStore(db *sql.DB) *MenuItemStore {
+	return &MenuItemStore{db: db}
+}
+
+func (s *MenuItemStore) Create(ctx context.Context, item entities.MenuItem) error {
+	_, err := s.db.ExecContext(ctx, insertMenuItemQueryStandalone, item.ID, item.MenuID, item.MenuItemName)
+	return err
+}
+
+func (s *MenuItemStore) FindByMenuID(ctx context.Context, menuID string) ([]entities.MenuItem, error) {
+	rows, err := s.db.QueryContext(ctx, selectMenuItemsByMenuIDStandalone, menuID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []entities.MenuItem
+	for rows.Next() {
+		var item entities.MenuItem
+		if err := rows.Scan(&item.ID, &item.MenuID, &item.MenuItemName); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+func (s *MenuItemStore) DeleteByMenuID(ctx context.Context, menuID string) error {
+	_, err := s.db.ExecContext(ctx, deleteMenuItemsByMenuIDStandalone, menuID)
+	return err
+}
