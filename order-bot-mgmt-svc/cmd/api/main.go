@@ -50,7 +50,8 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 func newServices(db *pqsqldb.DB, cfg config.Config) *services.Services {
 	return services.NewServices(
 		func() *authsvc.Svc {
-			return authsvc.NewSvc(pqsql.NewUserStore(db.Conn()), cfg.Auth)
+			ctxFactory := services.NewContextFactory(cfg.Auth.UserQueryTimeout)
+			return authsvc.NewSvc(pqsql.NewUserStore(db.Conn()), cfg.Auth, ctxFactory)
 		},
 		func() *menusvc.Svc {
 			return menusvc.NewSvc(pqsql.NewMenuStore(db.Conn()))

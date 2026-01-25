@@ -16,25 +16,28 @@ import (
 )
 
 type Svc struct {
-	mu               sync.Mutex
-	userStore        store.User
-	refreshTokens    map[string]models.RefreshRecord
-	accessSecret     []byte
-	refreshSecret    []byte
-	accessTokenTTL   time.Duration
-	refreshTokenTTL  time.Duration
-	userQueryTimeout time.Duration
+	mu              sync.Mutex
+	userStore       store.User
+	refreshTokens   map[string]models.RefreshRecord
+	accessSecret    []byte
+	refreshSecret   []byte
+	accessTokenTTL  time.Duration
+	refreshTokenTTL time.Duration
+	ctxFactory      services.ContextFactory
 }
 
-func NewSvc(userStore store.User, cfg config.Auth) *Svc {
+func NewSvc(userStore store.User, cfg config.Auth, ctxFactory services.ContextFactory) *Svc {
+	if ctxFactory == nil {
+		ctxFactory = services.NewContextFactory(cfg.UserQueryTimeout)
+	}
 	return &Svc{
-		userStore:        userStore,
-		refreshTokens:    make(map[string]models.RefreshRecord),
-		accessSecret:     []byte(cfg.AccessSecret),
-		refreshSecret:    []byte(cfg.RefreshSecret),
-		accessTokenTTL:   cfg.AccessTokenTTL,
-		refreshTokenTTL:  cfg.RefreshTokenTTL,
-		userQueryTimeout: cfg.UserQueryTimeout,
+		userStore:       userStore,
+		refreshTokens:   make(map[string]models.RefreshRecord),
+		accessSecret:    []byte(cfg.AccessSecret),
+		refreshSecret:   []byte(cfg.RefreshSecret),
+		accessTokenTTL:  cfg.AccessTokenTTL,
+		refreshTokenTTL: cfg.RefreshTokenTTL,
+		ctxFactory:      ctxFactory,
 	}
 }
 
@@ -54,7 +57,7 @@ func (s *Svc) Signup(email, password string) (models.TokenPair, error) {
 		Email:        email,
 		PasswordHash: string(hash),
 	}
-	ctx, cancel := services.QueryContext(s.userQueryTimeout)
+	ctx, cancel := s.ctxFactory()
 	defer cancel()
 	if err := s.userStore.Create(ctx, newUser); err != nil {
 		if errors.Is(err, store.ErrUserExists) {
@@ -69,7 +72,7 @@ func (s *Svc) Login(email, password string) (models.TokenPair, error) {
 	if s.userStore == nil {
 		return models.TokenPair{}, errors.New("user store not configured")
 	}
-	ctx, cancel := services.QueryContext(s.userQueryTimeout)
+	ctx, cancel := s.ctxFactory()
 	defer cancel()
 	user, err := s.userStore.FindByEmail(ctx, email)
 	if err != nil {

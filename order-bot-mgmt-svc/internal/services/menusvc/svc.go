@@ -13,11 +13,15 @@ import (
 const menuQueryTimeout = 2 * time.Second
 
 type Svc struct {
-	menuStore store.Menu
+	menuStore  store.Menu
+	ctxFactory services.ContextFactory
 }
 
 func NewSvc(menuStore store.Menu) *Svc {
-	return &Svc{menuStore: menuStore}
+	return &Svc{
+		menuStore:  menuStore,
+		ctxFactory: services.NewContextFactory(menuQueryTimeout),
+	}
 }
 
 func (s *Svc) CreateMenu(botID string, itemNames []string) (entities.Menu, []entities.MenuItem, error) {
@@ -27,7 +31,7 @@ func (s *Svc) CreateMenu(botID string, itemNames []string) (entities.Menu, []ent
 	if botID == "" {
 		return entities.Menu{}, nil, ErrInvalidMenu
 	}
-	ctx, cancel := services.QueryContext(menuQueryTimeout)
+	ctx, cancel := s.ctxFactory()
 	defer cancel()
 	tx, err := s.menuStore.BeginTx(ctx)
 	if err != nil {
@@ -59,7 +63,7 @@ func (s *Svc) GetMenu(menuID string) (entities.Menu, []entities.MenuItem, error)
 	if menuID == "" {
 		return entities.Menu{}, nil, ErrInvalidMenu
 	}
-	ctx, cancel := services.QueryContext(menuQueryTimeout)
+	ctx, cancel := s.ctxFactory()
 	defer cancel()
 	menu, err := s.menuStore.FindByID(ctx, menuID)
 	if err != nil {
@@ -79,7 +83,7 @@ func (s *Svc) UpdateMenu(menuID, botID string, itemNames []string) (entities.Men
 	if menuID == "" || botID == "" {
 		return entities.Menu{}, nil, ErrInvalidMenu
 	}
-	ctx, cancel := services.QueryContext(menuQueryTimeout)
+	ctx, cancel := s.ctxFactory()
 	defer cancel()
 	tx, err := s.menuStore.BeginTx(ctx)
 	if err != nil {
@@ -115,7 +119,7 @@ func (s *Svc) DeleteMenu(menuID string) error {
 	if menuID == "" {
 		return ErrInvalidMenu
 	}
-	ctx, cancel := services.QueryContext(menuQueryTimeout)
+	ctx, cancel := s.ctxFactory()
 	defer cancel()
 	tx, err := s.menuStore.BeginTx(ctx)
 	if err != nil {

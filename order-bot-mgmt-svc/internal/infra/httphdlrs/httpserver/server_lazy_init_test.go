@@ -71,7 +71,8 @@ func TestServerDependencies(t *testing.T) {
 	serviceContainer := services.NewServices(
 		func() *authsvc.Svc {
 			authInitCalls++
-			return authsvc.NewSvc(&fakeUserStore{users: make(map[string]entities.User)}, authCfg)
+			ctxFactory := services.NewContextFactory(authCfg.UserQueryTimeout)
+			return authsvc.NewSvc(&fakeUserStore{users: make(map[string]entities.User)}, authCfg, ctxFactory)
 		},
 		func() *menusvc.Svc {
 			menuInitCalls++
