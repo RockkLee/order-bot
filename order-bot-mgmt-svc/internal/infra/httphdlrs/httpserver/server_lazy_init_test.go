@@ -11,6 +11,7 @@ import (
 	"order-bot-mgmt-svc/internal/services/authsvc"
 	"order-bot-mgmt-svc/internal/services/menusvc"
 	"order-bot-mgmt-svc/internal/store"
+	"order-bot-mgmt-svc/internal/util"
 	"strings"
 	"testing"
 	"time"
@@ -60,22 +61,26 @@ func (f *fakeUserStore) FindByEmail(_ context.Context, email string) (entities.U
 func TestServerDependencies(t *testing.T) {
 	db := &fakeRepository{health: map[string]string{"status": "ok"}}
 	authCfg := config.Auth{
-		AccessSecret:     "access",
-		RefreshSecret:    "refresh",
-		AccessTokenTTL:   time.Minute,
-		RefreshTokenTTL:  time.Minute,
-		UserQueryTimeout: time.Second,
+		AccessSecret:    "access",
+		RefreshSecret:   "refresh",
+		AccessTokenTTL:  time.Minute,
+		RefreshTokenTTL: time.Minute,
+	}
+	cfg := config.Config{
+		Auth:   authCfg,
+		Others: config.Others{QryCtxTimeout: time.Second},
 	}
 	authInitCalls := 0
 	menuInitCalls := 0
 	serviceContainer := services.NewServices(
 		func() *authsvc.Svc {
 			authInitCalls++
-			return authsvc.NewSvc(&fakeUserStore{users: make(map[string]entities.User)}, authCfg)
+			ctxFunc := util.NewCtxFunc(cfg.Others.QryCtxTimeout)
+			return authsvc.NewSvc(&fakeUserStore{users: make(map[string]entities.User)}, cfg, ctxFunc)
 		},
 		func() *menusvc.Svc {
 			menuInitCalls++
-			return menusvc.NewSvc()
+			return menusvc.NewSvc(nil)
 		},
 	)
 	server := NewServer(0, db, serviceContainer)

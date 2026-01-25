@@ -55,3 +55,7 @@ func (s *Server) menuService() *menusvc.Svc {
 	}
 	return s.services.Menu()
 }
+
+func (s *Server) MenuService() *menusvc.Svc {
+	return s.menuService()
+}

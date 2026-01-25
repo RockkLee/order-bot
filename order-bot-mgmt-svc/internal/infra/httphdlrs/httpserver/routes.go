@@ -17,6 +17,10 @@ func (s *Server) RegisterRoutes() http.Handler {
 		fmt.Sprintf("%s/", httphdlrs.AuthPrefix),
 		http.StripPrefix(httphdlrs.AuthPrefix, httphdlrs.AuthHdlr(s)),
 	)
+	mux.Handle(
+		fmt.Sprintf("%s/", httphdlrs.MenuPrefix),
+		http.StripPrefix(httphdlrs.MenuPrefix, httphdlrs.MenuHdlr(s)),
+	)
 
 	// Wrap the mux with CORS middleware
 	middlewareStack := createMiddlewareStack(

@@ -1,7 +1,6 @@
 package authsvc
 
 import (
-	"context"
 	"errors"
 	"order-bot-mgmt-svc/internal/config"
 	"order-bot-mgmt-svc/internal/models/entities"
@@ -9,31 +8,32 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/crypto/bcrypt"
 	"order-bot-mgmt-svc/internal/models"
 	"order-bot-mgmt-svc/internal/util"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Svc struct {
-	mu               sync.Mutex
-	userStore        store.User
-	refreshTokens    map[string]models.RefreshRecord
-	accessSecret     []byte
-	refreshSecret    []byte
-	accessTokenTTL   time.Duration
-	refreshTokenTTL  time.Duration
-	userQueryTimeout time.Duration
+	mu              sync.Mutex
+	userStore       store.User
+	refreshTokens   map[string]models.RefreshRecord
+	accessSecret    []byte
+	refreshSecret   []byte
+	accessTokenTTL  time.Duration
+	refreshTokenTTL time.Duration
+	ctxFunc         util.CtxFunc
 }
 
-func NewSvc(userStore store.User, cfg config.Auth) *Svc {
+func NewSvc(userStore store.User, cfg config.Config, ctxFunc util.CtxFunc) *Svc {
 	return &Svc{
-		userStore:        userStore,
-		refreshTokens:    make(map[string]models.RefreshRecord),
-		accessSecret:     []byte(cfg.AccessSecret),
-		refreshSecret:    []byte(cfg.RefreshSecret),
-		accessTokenTTL:   cfg.AccessTokenTTL,
-		refreshTokenTTL:  cfg.RefreshTokenTTL,
-		userQueryTimeout: cfg.UserQueryTimeout,
+		userStore:       userStore,
+		refreshTokens:   make(map[string]models.RefreshRecord),
+		accessSecret:    []byte(cfg.Auth.AccessSecret),
+		refreshSecret:   []byte(cfg.Auth.RefreshSecret),
+		accessTokenTTL:  cfg.Auth.AccessTokenTTL,
+		refreshTokenTTL: cfg.Auth.RefreshTokenTTL,
+		ctxFunc:         ctxFunc,
 	}
 }
 
@@ -53,7 +53,7 @@ func (s *Svc) Signup(email, password string) (models.TokenPair, error) {
 		Email:        email,
 		PasswordHash: string(hash),
 	}
-	ctx, cancel := s.userContext()
+	ctx, cancel := s.ctxFunc()
 	defer cancel()
 	if err := s.userStore.Create(ctx, newUser); err != nil {
 		if errors.Is(err, store.ErrUserExists) {
@@ -68,7 +68,7 @@ func (s *Svc) Login(email, password string) (models.TokenPair, error) {
 	if s.userStore == nil {
 		return models.TokenPair{}, errors.New("user store not configured")
 	}
-	ctx, cancel := s.userContext()
+	ctx, cancel := s.ctxFunc()
 	defer cancel()
 	user, err := s.userStore.FindByEmail(ctx, email)
 	if err != nil {
@@ -135,8 +135,4 @@ func (s *Svc) issueTokens(user entities.User) (models.TokenPair, error) {
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}, nil
-}
-
-func (s *Svc) userContext() (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.Background(), s.userQueryTimeout)
 }
