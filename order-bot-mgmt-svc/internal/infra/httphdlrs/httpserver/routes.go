@@ -24,7 +24,8 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	// Wrap the mux with CORS middleware
 	middlewareStack := createMiddlewareStack(
-		corsMiddleware,
+		corsMiddleware(s),
+		authMiddleware(s),
 	)
 	return middlewareStack(mux)
 }

@@ -33,9 +33,9 @@ type MenuItemStore struct {
 }
 
 const (
-	insertMenuItemQueryStandalone     = `INSERT INTO menu_items (id, menu_id, menu_item_name) VALUES ($1, $2, $3);`
-	selectMenuItemsByMenuIDStandalone = `SELECT id, menu_id, menu_item_name FROM menu_items WHERE menu_id = $1 ORDER BY id;`
-	deleteMenuItemsByMenuIDStandalone = `DELETE FROM menu_items WHERE menu_id = $1;`
+	insertMenuItemQueryStandalone     = `INSERT INTO menu_item (id, menu_id, menu_item_name) VALUES ($1, $2, $3);`
+	selectMenuItemsByMenuIDStandalone = `SELECT id, menu_id, menu_item_name FROM menu_item WHERE menu_id = $1 ORDER BY id;`
+	deleteMenuItemsByMenuIDStandalone = `DELETE FROM menu_item WHERE menu_id = $1;`
 )
 
 func NewMenuItemStore(db *sql.DB) *MenuItemStore {

@@ -132,6 +132,7 @@ func TestServerDependencies(t *testing.T) {
 	}
 
 	req = httptest.NewRequest(http.MethodGet, "/health", nil)
+	req.Header.Set("Authentication", "Bearer "+payload.RefreshToken)
 	rec = httptest.NewRecorder()
 	server.Handler.ServeHTTP(rec, req)
 

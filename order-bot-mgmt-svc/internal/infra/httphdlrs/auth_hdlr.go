@@ -1,6 +1,7 @@
 package httphdlrs
 
 import (
+	"log/slog"
 	"net/http"
 
 	"order-bot-mgmt-svc/internal/services/authsvc"
@@ -28,6 +29,7 @@ func signupHdlrFunc(s Server) http.HandlerFunc {
 		}
 		tokens, err := s.AuthService().Signup(req.Email, req.Password)
 		if err != nil {
+			slog.Error(err.Error())
 			switch err {
 			case authsvc.ErrUserExists:
 				http.Error(w, authsvc.ErrUserExists.Error(), http.StatusConflict)

@@ -32,8 +32,8 @@ type BotStore struct {
 }
 
 const (
-	insertBotQuery = `INSERT INTO bots (id, bot_name) VALUES ($1, $2);`
-	selectBotByID  = `SELECT id, bot_name FROM bots WHERE id = $1;`
+	insertBotQuery = `INSERT INTO bot (id, bot_name) VALUES ($1, $2);`
+	selectBotByID  = `SELECT id, bot_name FROM bot WHERE id = $1;`
 )
 
 func NewBotStore(db *sql.DB) *BotStore {
