@@ -2,6 +2,7 @@ package pqsqldb
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"order-bot-mgmt-svc/internal/config"
 	"testing"
@@ -33,17 +34,17 @@ func mustStartPostgresContainer() (config.Db, func(context.Context, ...testconta
 				WithStartupTimeout(5*time.Second)),
 	)
 	if err != nil {
-		return config.Db{}, nil, err
+		return config.Db{}, nil, fmt.Errorf("mustStartPostgresContainer: %w", err)
 	}
 
 	dbHost, err := dbContainer.Host(context.Background())
 	if err != nil {
-		return config.Db{}, dbContainer.Terminate, err
+		return config.Db{}, dbContainer.Terminate, fmt.Errorf("mustStartPostgresContainer: %w", err)
 	}
 
 	dbPort, err := dbContainer.MappedPort(context.Background(), "5432/tcp")
 	if err != nil {
-		return config.Db{}, dbContainer.Terminate, err
+		return config.Db{}, dbContainer.Terminate, fmt.Errorf("mustStartPostgresContainer: %w", err)
 	}
 
 	return config.Db{

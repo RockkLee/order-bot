@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/jackc/pgx/v5/pgconn"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
@@ -59,9 +60,9 @@ func (s *UserStore) Create(ctx context.Context, user entities.User) error {
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == uniqueViolationCode {
-			return store.ErrUserExists
+			return fmt.Errorf("sqldb.UserStore.Create: %w", store.ErrUserExists)
 		}
-		return err
+		return fmt.Errorf("sqldb.UserStore.Create: %w", err)
 	}
 	return nil
 }
@@ -71,9 +72,9 @@ func (s *UserStore) FindByEmail(ctx context.Context, email string) (entities.Use
 	err := s.db.QueryRowContext(ctx, selectUserByEmail, email).Scan(&record.ID, &record.Email, &record.PasswordHash, &record.AccessToken, &record.RefreshToken)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return entities.User{}, store.ErrNotFound
+			return entities.User{}, fmt.Errorf("sqldb.UserStore.FindByEmail: %w", store.ErrNotFound)
 		}
-		return entities.User{}, err
+		return entities.User{}, fmt.Errorf("sqldb.UserStore.FindByEmail: %w", err)
 	}
 	return record.ToModel(), nil
 }
@@ -83,9 +84,9 @@ func (s *UserStore) FindByID(ctx context.Context, id string) (entities.User, err
 	err := s.db.QueryRowContext(ctx, selectUserByID, id).Scan(&record.ID, &record.Email, &record.PasswordHash, &record.AccessToken, &record.RefreshToken)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return entities.User{}, store.ErrNotFound
+			return entities.User{}, fmt.Errorf("sqldb.UserStore.FindByID: %w", store.ErrNotFound)
 		}
-		return entities.User{}, err
+		return entities.User{}, fmt.Errorf("sqldb.UserStore.FindByID: %w", err)
 	}
 	return record.ToModel(), nil
 }
@@ -93,14 +94,14 @@ func (s *UserStore) FindByID(ctx context.Context, id string) (entities.User, err
 func (s *UserStore) UpdateTokens(ctx context.Context, id string, accessToken string, refreshToken string) error {
 	result, err := s.db.ExecContext(ctx, updateTokensQuery, accessToken, refreshToken, id)
 	if err != nil {
-		return err
+		return fmt.Errorf("sqldb.UserStore.UpdateTokens: %w", err)
 	}
 	rows, err := result.RowsAffected()
 	if err != nil {
-		return err
+		return fmt.Errorf("sqldb.UserStore.UpdateTokens: %w", err)
 	}
 	if rows == 0 {
-		return store.ErrNotFound
+		return fmt.Errorf("sqldb.UserStore.UpdateTokens: %w", store.ErrNotFound)
 	}
 	return nil
 }

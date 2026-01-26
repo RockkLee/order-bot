@@ -2,6 +2,7 @@ package menusvc
 
 import (
 	"errors"
+	"fmt"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/util"
@@ -24,16 +25,16 @@ func NewSvc(menuStore store.Menu) *Svc {
 
 func (s *Svc) CreateMenu(botID string, itemNames []string) (entities.Menu, []entities.MenuItem, error) {
 	if s.menuStore == nil {
-		return entities.Menu{}, nil, errors.New("menu store not configured")
+		return entities.Menu{}, nil, fmt.Errorf("menusvc.CreateMenu: %w", errors.New("menu store not configured"))
 	}
 	if botID == "" {
-		return entities.Menu{}, nil, ErrInvalidMenu
+		return entities.Menu{}, nil, fmt.Errorf("menusvc.CreateMenu: %w", ErrInvalidMenu)
 	}
 	ctx, cancel := s.ctxFunc()
 	defer cancel()
 	tx, err := s.menuStore.BeginTx(ctx)
 	if err != nil {
-		return entities.Menu{}, nil, err
+		return entities.Menu{}, nil, fmt.Errorf("menusvc.CreateMenu: %w", err)
 	}
 	menu := entities.Menu{
 		ID:    util.NewID(),
@@ -41,51 +42,51 @@ func (s *Svc) CreateMenu(botID string, itemNames []string) (entities.Menu, []ent
 	}
 	if err := tx.CreateMenu(ctx, menu); err != nil {
 		_ = tx.Rollback()
-		return entities.Menu{}, nil, err
+		return entities.Menu{}, nil, fmt.Errorf("menusvc.CreateMenu: %w", err)
 	}
 	items := buildMenuItems(menu.ID, itemNames)
 	if err := tx.CreateMenuItems(ctx, items); err != nil {
 		_ = tx.Rollback()
-		return entities.Menu{}, nil, err
+		return entities.Menu{}, nil, fmt.Errorf("menusvc.CreateMenu: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
-		return entities.Menu{}, nil, err
+		return entities.Menu{}, nil, fmt.Errorf("menusvc.CreateMenu: %w", err)
 	}
 	return menu, items, nil
 }
 
 func (s *Svc) GetMenu(menuID string) (entities.Menu, []entities.MenuItem, error) {
 	if s.menuStore == nil {
-		return entities.Menu{}, nil, errors.New("menu store not configured")
+		return entities.Menu{}, nil, fmt.Errorf("menusvc.GetMenu: %w", errors.New("menu store not configured"))
 	}
 	if menuID == "" {
-		return entities.Menu{}, nil, ErrInvalidMenu
+		return entities.Menu{}, nil, fmt.Errorf("menusvc.GetMenu: %w", ErrInvalidMenu)
 	}
 	ctx, cancel := s.ctxFunc()
 	defer cancel()
 	menu, err := s.menuStore.FindByID(ctx, menuID)
 	if err != nil {
-		return entities.Menu{}, nil, err
+		return entities.Menu{}, nil, fmt.Errorf("menusvc.GetMenu: %w", err)
 	}
 	items, err := s.menuStore.FindItems(ctx, menuID)
 	if err != nil {
-		return entities.Menu{}, nil, err
+		return entities.Menu{}, nil, fmt.Errorf("menusvc.GetMenu: %w", err)
 	}
 	return menu, items, nil
 }
 
 func (s *Svc) UpdateMenu(menuID, botID string, itemNames []string) (entities.Menu, []entities.MenuItem, error) {
 	if s.menuStore == nil {
-		return entities.Menu{}, nil, errors.New("menu store not configured")
+		return entities.Menu{}, nil, fmt.Errorf("menusvc.UpdateMenu: %w", errors.New("menu store not configured"))
 	}
 	if menuID == "" || botID == "" {
-		return entities.Menu{}, nil, ErrInvalidMenu
+		return entities.Menu{}, nil, fmt.Errorf("menusvc.UpdateMenu: %w", ErrInvalidMenu)
 	}
 	ctx, cancel := s.ctxFunc()
 	defer cancel()
 	tx, err := s.menuStore.BeginTx(ctx)
 	if err != nil {
-		return entities.Menu{}, nil, err
+		return entities.Menu{}, nil, fmt.Errorf("menusvc.UpdateMenu: %w", err)
 	}
 	menu := entities.Menu{
 		ID:    menuID,
@@ -93,45 +94,48 @@ func (s *Svc) UpdateMenu(menuID, botID string, itemNames []string) (entities.Men
 	}
 	if err := tx.UpdateMenu(ctx, menu); err != nil {
 		_ = tx.Rollback()
-		return entities.Menu{}, nil, err
+		return entities.Menu{}, nil, fmt.Errorf("menusvc.UpdateMenu: %w", err)
 	}
 	if err := tx.DeleteMenuItems(ctx, menuID); err != nil {
 		_ = tx.Rollback()
-		return entities.Menu{}, nil, err
+		return entities.Menu{}, nil, fmt.Errorf("menusvc.UpdateMenu: %w", err)
 	}
 	items := buildMenuItems(menuID, itemNames)
 	if err := tx.CreateMenuItems(ctx, items); err != nil {
 		_ = tx.Rollback()
-		return entities.Menu{}, nil, err
+		return entities.Menu{}, nil, fmt.Errorf("menusvc.UpdateMenu: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
-		return entities.Menu{}, nil, err
+		return entities.Menu{}, nil, fmt.Errorf("menusvc.UpdateMenu: %w", err)
 	}
 	return menu, items, nil
 }
 
 func (s *Svc) DeleteMenu(menuID string) error {
 	if s.menuStore == nil {
-		return errors.New("menu store not configured")
+		return fmt.Errorf("menusvc.DeleteMenu: %w", errors.New("menu store not configured"))
 	}
 	if menuID == "" {
-		return ErrInvalidMenu
+		return fmt.Errorf("menusvc.DeleteMenu: %w", ErrInvalidMenu)
 	}
 	ctx, cancel := s.ctxFunc()
 	defer cancel()
 	tx, err := s.menuStore.BeginTx(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("menusvc.DeleteMenu: %w", err)
 	}
 	if err := tx.DeleteMenuItems(ctx, menuID); err != nil {
 		_ = tx.Rollback()
-		return err
+		return fmt.Errorf("menusvc.DeleteMenu: %w", err)
 	}
 	if err := tx.DeleteMenu(ctx, menuID); err != nil {
 		_ = tx.Rollback()
-		return err
+		return fmt.Errorf("menusvc.DeleteMenu: %w", err)
 	}
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("menusvc.DeleteMenu: %w", err)
+	}
+	return nil
 }
 
 func buildMenuItems(menuID string, names []string) []entities.MenuItem {

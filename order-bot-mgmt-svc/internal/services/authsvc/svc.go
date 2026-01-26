@@ -2,6 +2,7 @@ package authsvc
 
 import (
 	"errors"
+	"fmt"
 	"order-bot-mgmt-svc/internal/config"
 	"order-bot-mgmt-svc/internal/models"
 	"order-bot-mgmt-svc/internal/models/entities"
@@ -34,11 +35,11 @@ func NewSvc(userStore store.User, cfg config.Config, ctxFunc util.CtxFunc) *Svc 
 
 func (s *Svc) Signup(email, password string) (models.TokenPair, error) {
 	if email == "" || password == "" {
-		return models.TokenPair{}, ErrInvalidCredentials
+		return models.TokenPair{}, fmt.Errorf("authsvc.Signup: %w", ErrInvalidCredentials)
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return models.TokenPair{}, err
+		return models.TokenPair{}, fmt.Errorf("authsvc.Signup: %w", err)
 	}
 	newUser := entities.User{
 		ID:           util.NewID(),
@@ -51,67 +52,75 @@ func (s *Svc) Signup(email, password string) (models.TokenPair, error) {
 	defer cancel()
 	if err := s.userStore.Create(ctx, newUser); err != nil {
 		if errors.Is(err, store.ErrUserExists) {
-			return models.TokenPair{}, ErrUserExists
+			return models.TokenPair{}, fmt.Errorf("authsvc.Signup: %w", ErrUserExists)
 		}
-		return models.TokenPair{}, err
+		return models.TokenPair{}, fmt.Errorf("authsvc.Signup: %w", err)
 	}
-	return s.issueTokens(newUser)
+	tokens, err := s.issueTokens(newUser)
+	if err != nil {
+		return models.TokenPair{}, fmt.Errorf("authsvc.Signup: %w", err)
+	}
+	return tokens, nil
 }
 
 func (s *Svc) Login(email, password string) (models.TokenPair, error) {
 	if s.userStore == nil {
-		return models.TokenPair{}, errors.New("user store not configured")
+		return models.TokenPair{}, fmt.Errorf("authsvc.Login: %w", errors.New("user store not configured"))
 	}
 	ctx, cancel := s.ctxFunc()
 	defer cancel()
 	user, err := s.userStore.FindByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
-			return models.TokenPair{}, ErrInvalidCredentials
+			return models.TokenPair{}, fmt.Errorf("authsvc.Login: %w", ErrInvalidCredentials)
 		}
-		return models.TokenPair{}, err
+		return models.TokenPair{}, fmt.Errorf("authsvc.Login: %w", err)
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
-		return models.TokenPair{}, ErrInvalidCredentials
+		return models.TokenPair{}, fmt.Errorf("authsvc.Login: %w", ErrInvalidCredentials)
 	}
-	return s.issueTokens(user)
+	tokens, err := s.issueTokens(user)
+	if err != nil {
+		return models.TokenPair{}, fmt.Errorf("authsvc.Login: %w", err)
+	}
+	return tokens, nil
 }
 
 func (s *Svc) Logout(refreshToken string) error {
 	userID, err := s.ValidateRefreshToken(refreshToken)
 	if err != nil {
-		return err
+		return fmt.Errorf("authsvc.Logout: %w", err)
 	}
 	ctx, cancel := s.ctxFunc()
 	defer cancel()
 	if err := s.userStore.UpdateTokens(ctx, userID, "", ""); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
-			return ErrInvalidToken
+			return fmt.Errorf("authsvc.Logout: %w", ErrInvalidToken)
 		}
-		return err
+		return fmt.Errorf("authsvc.Logout: %w", err)
 	}
 	return nil
 }
 
 func (s *Svc) ValidateRefreshToken(refreshToken string) (string, error) {
 	if refreshToken == "" {
-		return "", ErrInvalidToken
+		return "", fmt.Errorf("authsvc.ValidateRefreshToken: %w", ErrInvalidToken)
 	}
 	claims, err := parseJWT(s.refreshSecret, refreshToken)
 	if err != nil || claims.Typ != "refresh" {
-		return "", ErrInvalidToken
+		return "", fmt.Errorf("authsvc.ValidateRefreshToken: %w", ErrInvalidToken)
 	}
 	ctx, cancel := s.ctxFunc()
 	defer cancel()
 	user, err := s.userStore.FindByID(ctx, claims.Sub)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
-			return "", ErrInvalidToken
+			return "", fmt.Errorf("authsvc.ValidateRefreshToken: %w", ErrInvalidToken)
 		}
-		return "", err
+		return "", fmt.Errorf("authsvc.ValidateRefreshToken: %w", err)
 	}
 	if user.RefreshToken != refreshToken {
-		return "", ErrInvalidToken
+		return "", fmt.Errorf("authsvc.ValidateRefreshToken: %w", ErrInvalidToken)
 	}
 	return user.ID, nil
 }
@@ -134,16 +143,16 @@ func (s *Svc) issueTokens(user entities.User) (models.TokenPair, error) {
 	}
 	accessToken, err := signJWT(s.accessSecret, accessClaims)
 	if err != nil {
-		return models.TokenPair{}, err
+		return models.TokenPair{}, fmt.Errorf("authsvc.issueTokens: %w", err)
 	}
 	refreshToken, err := signJWT(s.refreshSecret, refreshClaims)
 	if err != nil {
-		return models.TokenPair{}, err
+		return models.TokenPair{}, fmt.Errorf("authsvc.issueTokens: %w", err)
 	}
 	ctx, cancel := s.ctxFunc()
 	defer cancel()
 	if err := s.userStore.UpdateTokens(ctx, user.ID, accessToken, refreshToken); err != nil {
-		return models.TokenPair{}, err
+		return models.TokenPair{}, fmt.Errorf("authsvc.issueTokens: %w", err)
 	}
 	return models.TokenPair{
 		AccessToken:  accessToken,

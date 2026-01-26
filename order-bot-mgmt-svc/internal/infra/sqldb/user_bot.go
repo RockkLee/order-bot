@@ -3,6 +3,7 @@ package sqldb
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
 )
@@ -45,28 +46,31 @@ func NewUserBotStore(db *sql.DB) *UserBotStore {
 func (s *UserBotStore) Create(ctx context.Context, userBot entities.UserBot) error {
 	record := UserBotRecordFromModel(userBot)
 	_, err := s.db.ExecContext(ctx, insertUserBotQuery, record.ID, record.UserID, record.BotID)
-	return err
+	if err != nil {
+		return fmt.Errorf("sqldb.UserBotStore.Create: %w", err)
+	}
+	return nil
 }
 
 func (s *UserBotStore) FindByUserID(ctx context.Context, userID string) ([]entities.UserBot, error) {
 	rows, err := s.db.QueryContext(ctx, selectUserBotsByUser, userID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("sqldb.UserBotStore.FindByUserID: %w", err)
 	}
 	defer rows.Close()
 	var results []entities.UserBot
 	for rows.Next() {
 		var record UserBotRecord
 		if err := rows.Scan(&record.ID, &record.UserID, &record.BotID); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("sqldb.UserBotStore.FindByUserID: %w", err)
 		}
 		results = append(results, record.ToModel())
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("sqldb.UserBotStore.FindByUserID: %w", err)
 	}
 	if len(results) == 0 {
-		return nil, store.ErrUserBotNotFound
+		return nil, fmt.Errorf("sqldb.UserBotStore.FindByUserID: %w", store.ErrUserBotNotFound)
 	}
 	return results, nil
 }
