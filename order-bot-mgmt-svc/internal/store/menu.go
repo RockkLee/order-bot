@@ -12,11 +12,11 @@ type Menu interface {
 }
 
 type MenuTx interface {
+	Commit() error
+	Rollback() error
 	CreateMenu(ctx context.Context, menu entities.Menu) error
 	UpdateMenu(ctx context.Context, menu entities.Menu) error
 	DeleteMenu(ctx context.Context, menuID string) error
 	DeleteMenuItems(ctx context.Context, menuID string) error
 	CreateMenuItems(ctx context.Context, items []entities.MenuItem) error
-	Commit() error
-	Rollback() error
 }

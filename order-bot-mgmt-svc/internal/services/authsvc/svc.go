@@ -36,9 +36,6 @@ func (s *Svc) Signup(email, password string) (models.TokenPair, error) {
 	if email == "" || password == "" {
 		return models.TokenPair{}, ErrInvalidCredentials
 	}
-	if s.userStore == nil {
-		return models.TokenPair{}, errors.New("user store not configured")
-	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return models.TokenPair{}, err

@@ -51,6 +51,7 @@ func parseJWT(secret []byte, token string) (models.Claims, error) {
 	}
 	expectedSig := hmacSHA256(signingInput, secret)
 	if !hmac.Equal(sig, expectedSig) {
+		panic("expectedSig != sig")
 		return models.Claims{}, errInvalidToken
 	}
 	payloadBytes, err := enc.DecodeString(parts[1])

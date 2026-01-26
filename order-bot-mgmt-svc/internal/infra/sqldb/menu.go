@@ -33,13 +33,13 @@ type MenuStore struct {
 }
 
 const (
-	insertMenuQuery         = `INSERT INTO menus (id, bot_id) VALUES ($1, $2);`
-	selectMenuByIDQuery     = `SELECT id, bot_id FROM menus WHERE id = $1;`
-	updateMenuQuery         = `UPDATE menus SET bot_id = $2 WHERE id = $1;`
-	deleteMenuQuery         = `DELETE FROM menus WHERE id = $1;`
-	insertMenuItemQuery     = `INSERT INTO menu_items (id, menu_id, menu_item_name) VALUES ($1, $2, $3);`
-	selectMenuItemsByMenuID = `SELECT id, menu_id, menu_item_name FROM menu_items WHERE menu_id = $1 ORDER BY id;`
-	deleteMenuItemsByMenuID = `DELETE FROM menu_items WHERE menu_id = $1;`
+	insertMenuQuery         = `INSERT INTO menu (id, bot_id) VALUES ($1, $2);`
+	selectMenuByIDQuery     = `SELECT id, bot_id FROM menu WHERE id = $1;`
+	updateMenuQuery         = `UPDATE menu SET bot_id = $2 WHERE id = $1;`
+	deleteMenuQuery         = `DELETE FROM menu WHERE id = $1;`
+	insertMenuItemQuery     = `INSERT INTO menu_item (id, menu_id, menu_item_name) VALUES ($1, $2, $3);`
+	selectMenuItemsByMenuID = `SELECT id, menu_id, menu_item_name FROM menu_item WHERE menu_id = $1 ORDER BY id;`
+	deleteMenuItemsByMenuID = `DELETE FROM menu_item WHERE menu_id = $1;`
 )
 
 func NewMenuStore(db *sql.DB) *MenuStore {
