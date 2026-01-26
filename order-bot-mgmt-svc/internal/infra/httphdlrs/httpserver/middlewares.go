@@ -1,6 +1,10 @@
 package httpserver
 
-import "net/http"
+import (
+	"net/http"
+	"order-bot-mgmt-svc/internal/infra/httphdlrs"
+	"strings"
+)
 
 // Middleware : Define a type called "Middleware", and it's a function that return `http.Handler`
 type Middleware func(http.Handler) http.Handler
@@ -31,6 +35,22 @@ func corsMiddleware(next http.Handler) http.Handler {
 		}
 
 		// Proceed with the next handler
+		next.ServeHTTP(w, r)
+	})
+}
+
+func authMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, httphdlrs.AuthPrefix+"/") || r.URL.Path == httphdlrs.AuthPrefix {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		if r.Header.Get("Authentication") == "" {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
 		next.ServeHTTP(w, r)
 	})
 }
