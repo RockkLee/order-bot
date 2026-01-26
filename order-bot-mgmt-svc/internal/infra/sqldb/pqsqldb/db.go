@@ -45,6 +45,14 @@ func New(cfg config.Db) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	if err := db.PingContext(ctx); err != nil {
+		if closeErr := db.Close(); closeErr != nil {
+			log.Printf("failed to close database after ping failure: %v", closeErr)
+		}
+		return nil, err
+	}
 	return &DB{
 		db: db,
 	}, nil
