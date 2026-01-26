@@ -1,12 +1,5 @@
 package models
 
-import "time"
-
-type RefreshRecord struct {
-	UserID    string
-	ExpiresAt time.Time
-}
-
 type TokenPair struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
