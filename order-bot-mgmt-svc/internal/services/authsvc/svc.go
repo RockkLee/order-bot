@@ -81,32 +81,42 @@ func (s *Svc) Login(email, password string) (models.TokenPair, error) {
 }
 
 func (s *Svc) Logout(refreshToken string) error {
-	if refreshToken == "" {
-		return ErrInvalidToken
-	}
-	claims, err := parseJWT(s.refreshSecret, refreshToken)
-	if err != nil || claims.Typ != "refresh" {
-		return ErrInvalidToken
+	userID, err := s.ValidateRefreshToken(refreshToken)
+	if err != nil {
+		return err
 	}
 	ctx, cancel := s.ctxFunc()
 	defer cancel()
-	user, err := s.userStore.FindByID(ctx, claims.Sub)
-	if err != nil {
-		if errors.Is(err, store.ErrNotFound) {
-			return ErrInvalidToken
-		}
-		return err
-	}
-	if user.RefreshToken != refreshToken {
-		return ErrInvalidToken
-	}
-	if err := s.userStore.UpdateTokens(ctx, user.ID, "", ""); err != nil {
+	if err := s.userStore.UpdateTokens(ctx, userID, "", ""); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return ErrInvalidToken
 		}
 		return err
 	}
 	return nil
+}
+
+func (s *Svc) ValidateRefreshToken(refreshToken string) (string, error) {
+	if refreshToken == "" {
+		return "", ErrInvalidToken
+	}
+	claims, err := parseJWT(s.refreshSecret, refreshToken)
+	if err != nil || claims.Typ != "refresh" {
+		return "", ErrInvalidToken
+	}
+	ctx, cancel := s.ctxFunc()
+	defer cancel()
+	user, err := s.userStore.FindByID(ctx, claims.Sub)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return "", ErrInvalidToken
+		}
+		return "", err
+	}
+	if user.RefreshToken != refreshToken {
+		return "", ErrInvalidToken
+	}
+	return user.ID, nil
 }
 
 func (s *Svc) issueTokens(user entities.User) (models.TokenPair, error) {

@@ -39,14 +39,35 @@ func corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func authMiddleware(next http.Handler) http.Handler {
+func (s *Server) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, httphdlrs.AuthPrefix+"/") || r.URL.Path == httphdlrs.AuthPrefix {
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		if r.Header.Get("Authentication") == "" {
+		authHeader := r.Header.Get("Authentication")
+		if authHeader == "" {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+		const bearerPrefix = "Bearer "
+		if !strings.HasPrefix(authHeader, bearerPrefix) {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+		refreshToken := strings.TrimSpace(strings.TrimPrefix(authHeader, bearerPrefix))
+		if refreshToken == "" {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		authSvc := s.AuthService()
+		if authSvc == nil {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+		if _, err := authSvc.ValidateRefreshToken(refreshToken); err != nil {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
