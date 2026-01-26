@@ -31,7 +31,7 @@ type DB struct {
 	db *sql.DB
 }
 
-func New(cfg config.DB) (*DB, error) {
+func New(cfg config.Db) (*DB, error) {
 	connStr := fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s?sslmode=disable&search_path=%s",
 		cfg.Username,

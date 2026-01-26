@@ -1,10 +1,32 @@
-package pqsql
+package sqldb
 
 import (
 	"context"
 	"database/sql"
 	"order-bot-mgmt-svc/internal/models/entities"
 )
+
+type MenuItemRecord struct {
+	ID           string
+	MenuID       string
+	MenuItemName string
+}
+
+func MenuItemRecordFromModel(item entities.MenuItem) MenuItemRecord {
+	return MenuItemRecord{
+		ID:           item.ID,
+		MenuID:       item.MenuID,
+		MenuItemName: item.MenuItemName,
+	}
+}
+
+func (r MenuItemRecord) ToModel() entities.MenuItem {
+	return entities.MenuItem{
+		ID:           r.ID,
+		MenuID:       r.MenuID,
+		MenuItemName: r.MenuItemName,
+	}
+}
 
 type MenuItemStore struct {
 	db *sql.DB

@@ -1,4 +1,4 @@
-package pqsql
+package sqldb
 
 import (
 	"context"
@@ -24,28 +24,6 @@ func (r MenuRecord) ToModel() entities.Menu {
 	return entities.Menu{
 		ID:    r.ID,
 		BotID: r.BotID,
-	}
-}
-
-type MenuItemRecord struct {
-	ID           string
-	MenuID       string
-	MenuItemName string
-}
-
-func MenuItemRecordFromModel(item entities.MenuItem) MenuItemRecord {
-	return MenuItemRecord{
-		ID:           item.ID,
-		MenuID:       item.MenuID,
-		MenuItemName: item.MenuItemName,
-	}
-}
-
-func (r MenuItemRecord) ToModel() entities.MenuItem {
-	return entities.MenuItem{
-		ID:           r.ID,
-		MenuID:       r.MenuID,
-		MenuItemName: r.MenuItemName,
 	}
 }
 

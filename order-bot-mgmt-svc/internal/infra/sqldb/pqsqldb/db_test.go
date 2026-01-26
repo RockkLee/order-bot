@@ -12,9 +12,9 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-var testConfig config.DB
+var testConfig config.Db
 
-func mustStartPostgresContainer() (config.DB, func(context.Context, ...testcontainers.TerminateOption) error, error) {
+func mustStartPostgresContainer() (config.Db, func(context.Context, ...testcontainers.TerminateOption) error, error) {
 	var (
 		dbName = "database"
 		dbPwd  = "password"
@@ -33,20 +33,20 @@ func mustStartPostgresContainer() (config.DB, func(context.Context, ...testconta
 				WithStartupTimeout(5*time.Second)),
 	)
 	if err != nil {
-		return config.DB{}, nil, err
+		return config.Db{}, nil, err
 	}
 
 	dbHost, err := dbContainer.Host(context.Background())
 	if err != nil {
-		return config.DB{}, dbContainer.Terminate, err
+		return config.Db{}, dbContainer.Terminate, err
 	}
 
 	dbPort, err := dbContainer.MappedPort(context.Background(), "5432/tcp")
 	if err != nil {
-		return config.DB{}, dbContainer.Terminate, err
+		return config.Db{}, dbContainer.Terminate, err
 	}
 
-	return config.DB{
+	return config.Db{
 		Database: dbName,
 		Password: dbPwd,
 		Username: dbUser,

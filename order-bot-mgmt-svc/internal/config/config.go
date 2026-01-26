@@ -10,7 +10,7 @@ type App struct {
 	Port int
 }
 
-type DB struct {
+type Db struct {
 	Database string
 	Password string
 	Username string
@@ -31,10 +31,11 @@ type Others struct {
 }
 
 type Config struct {
-	App    App
-	DB     DB
-	Auth   Auth
-	Others Others
+	App        App
+	Db         Db
+	OrderBotDb Db
+	Auth       Auth
+	Others     Others
 }
 
 func Load() Config {
@@ -42,13 +43,21 @@ func Load() Config {
 		App: App{
 			Port: parseIntEnv("PORT", 0),
 		},
-		DB: DB{
+		Db: Db{
 			Database: os.Getenv("BLUEPRINT_DB_DATABASE"),
 			Password: os.Getenv("BLUEPRINT_DB_PASSWORD"),
 			Username: os.Getenv("BLUEPRINT_DB_USERNAME"),
 			Port:     os.Getenv("BLUEPRINT_DB_PORT"),
 			Host:     os.Getenv("BLUEPRINT_DB_HOST"),
 			Schema:   os.Getenv("BLUEPRINT_DB_SCHEMA"),
+		},
+		OrderBotDb: Db{
+			Database: os.Getenv("BLUEPRINT_DB_DATABASE"),
+			Password: os.Getenv("BLUEPRINT_DB_PASSWORD"),
+			Username: os.Getenv("BLUEPRINT_DB_USERNAME"),
+			Port:     os.Getenv("BLUEPRINT_DB_PORT"),
+			Host:     os.Getenv("BLUEPRINT_DB_HOST"),
+			Schema:   os.Getenv("BLUEPRINT_DB_ORDER_BOT_SCHEMA"),
 		},
 		Auth: Auth{
 			AccessSecret:    envOrDefault("JWT_ACCESS_SECRET", "dev-access-secret"),

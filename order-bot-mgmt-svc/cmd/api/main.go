@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"order-bot-mgmt-svc/internal/config"
 	"order-bot-mgmt-svc/internal/infra/httphdlrs/httpserver"
-	"order-bot-mgmt-svc/internal/infra/pqsql"
-	"order-bot-mgmt-svc/internal/infra/pqsql/pqsqldb"
+	"order-bot-mgmt-svc/internal/infra/sqldb"
+	"order-bot-mgmt-svc/internal/infra/sqldb/pqsqldb"
 	"order-bot-mgmt-svc/internal/services/authsvc"
 	"order-bot-mgmt-svc/internal/services/menusvc"
 	"order-bot-mgmt-svc/internal/util"
@@ -52,10 +52,10 @@ func newServices(db *pqsqldb.DB, cfg config.Config) *services.Services {
 	ctxFunc := util.NewCtxFunc(cfg.Others.QryCtxTimeout)
 	return services.NewServices(
 		func() *authsvc.Svc {
-			return authsvc.NewSvc(pqsql.NewUserStore(db.Conn()), cfg, ctxFunc)
+			return authsvc.NewSvc(sqldb.NewUserStore(db.Conn()), cfg, ctxFunc)
 		},
 		func() *menusvc.Svc {
-			return menusvc.NewSvc(pqsql.NewMenuStore(db.Conn()))
+			return menusvc.NewSvc(sqldb.NewMenuStore(db.Conn()))
 		},
 	)
 }
@@ -67,10 +67,14 @@ func main() {
 
 	cfg := config.Load()
 	port := cfg.App.Port
-	db, err := pqsqldb.New(cfg.DB)
+	db, err := pqsqldb.New(cfg.Db)
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
+	// orderBotDb, orderBotDbErr := pqsqldb.New(cfg.OrderBotDb)
+	// if orderBotDbErr != nil {
+	// 	log.Fatalf("failed to connect to database: %v", orderBotDbErr)
+	// }
 	defer func() {
 		if err := db.Close(); err != nil {
 			log.Printf("failed to close database: %v", err)

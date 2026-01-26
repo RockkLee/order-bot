@@ -1,4 +1,4 @@
-package pqsql
+package sqldb
 
 import (
 	"context"
