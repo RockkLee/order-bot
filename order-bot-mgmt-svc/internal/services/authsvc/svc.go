@@ -3,21 +3,17 @@ package authsvc
 import (
 	"errors"
 	"order-bot-mgmt-svc/internal/config"
+	"order-bot-mgmt-svc/internal/models"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
-	"sync"
-	"time"
-
-	"order-bot-mgmt-svc/internal/models"
 	"order-bot-mgmt-svc/internal/util"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
 type Svc struct {
-	mu              sync.Mutex
 	userStore       store.User
-	refreshTokens   map[string]models.RefreshRecord
 	accessSecret    []byte
 	refreshSecret   []byte
 	accessTokenTTL  time.Duration
@@ -28,7 +24,6 @@ type Svc struct {
 func NewSvc(userStore store.User, cfg config.Config, ctxFunc util.CtxFunc) *Svc {
 	return &Svc{
 		userStore:       userStore,
-		refreshTokens:   make(map[string]models.RefreshRecord),
 		accessSecret:    []byte(cfg.Auth.AccessSecret),
 		refreshSecret:   []byte(cfg.Auth.RefreshSecret),
 		accessTokenTTL:  cfg.Auth.AccessTokenTTL,
@@ -52,6 +47,8 @@ func (s *Svc) Signup(email, password string) (models.TokenPair, error) {
 		ID:           util.NewID(),
 		Email:        email,
 		PasswordHash: string(hash),
+		AccessToken:  "",
+		RefreshToken: "",
 	}
 	ctx, cancel := s.ctxFunc()
 	defer cancel()
@@ -91,13 +88,24 @@ func (s *Svc) Logout(refreshToken string) error {
 	if err != nil || claims.Typ != "refresh" {
 		return ErrInvalidToken
 	}
-	s.mu.Lock()
-	if _, exists := s.refreshTokens[refreshToken]; !exists {
-		s.mu.Unlock()
+	ctx, cancel := s.ctxFunc()
+	defer cancel()
+	user, err := s.userStore.FindByID(ctx, claims.Sub)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return ErrInvalidToken
+		}
+		return err
+	}
+	if user.RefreshToken != refreshToken {
 		return ErrInvalidToken
 	}
-	delete(s.refreshTokens, refreshToken)
-	s.mu.Unlock()
+	if err := s.userStore.UpdateTokens(ctx, user.ID, "", ""); err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return ErrInvalidToken
+		}
+		return err
+	}
 	return nil
 }
 
@@ -125,12 +133,11 @@ func (s *Svc) issueTokens(user entities.User) (models.TokenPair, error) {
 	if err != nil {
 		return models.TokenPair{}, err
 	}
-	s.mu.Lock()
-	s.refreshTokens[refreshToken] = models.RefreshRecord{
-		UserID:    user.ID,
-		ExpiresAt: now.Add(s.refreshTokenTTL),
+	ctx, cancel := s.ctxFunc()
+	defer cancel()
+	if err := s.userStore.UpdateTokens(ctx, user.ID, accessToken, refreshToken); err != nil {
+		return models.TokenPair{}, err
 	}
-	s.mu.Unlock()
 	return models.TokenPair{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,

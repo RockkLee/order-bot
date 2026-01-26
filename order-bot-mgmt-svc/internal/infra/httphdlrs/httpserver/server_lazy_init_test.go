@@ -58,6 +58,27 @@ func (f *fakeUserStore) FindByEmail(_ context.Context, email string) (entities.U
 	return user, nil
 }
 
+func (f *fakeUserStore) FindByID(_ context.Context, id string) (entities.User, error) {
+	for _, user := range f.users {
+		if user.ID == id {
+			return user, nil
+		}
+	}
+	return entities.User{}, store.ErrNotFound
+}
+
+func (f *fakeUserStore) UpdateTokens(_ context.Context, id string, accessToken string, refreshToken string) error {
+	for email, user := range f.users {
+		if user.ID == id {
+			user.AccessToken = accessToken
+			user.RefreshToken = refreshToken
+			f.users[email] = user
+			return nil
+		}
+	}
+	return store.ErrNotFound
+}
+
 func TestServerDependencies(t *testing.T) {
 	db := &fakeRepository{health: map[string]string{"status": "ok"}}
 	authCfg := config.Auth{
