@@ -71,13 +71,16 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
-	// orderBotDb, orderBotDbErr := pqsqldb.New(cfg.OrderBotDb)
-	// if orderBotDbErr != nil {
-	// 	log.Fatalf("failed to connect to database: %v", orderBotDbErr)
-	// }
+	orderBotDb, orderBotDbErr := pqsqldb.New(cfg.OrderBotDb)
+	if orderBotDbErr != nil {
+		log.Fatalf("failed to connect to order-bot database: %v", orderBotDbErr)
+	}
 	defer func() {
 		if err := db.Close(); err != nil {
 			log.Printf("failed to close database: %v", err)
+		}
+		if err := orderBotDb.Close(); err != nil {
+			log.Printf("failed to close order-bot database: %v", err)
 		}
 	}()
 	serviceContainer := newServices(db, cfg)
