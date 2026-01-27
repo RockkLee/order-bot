@@ -14,6 +14,7 @@ import (
 	"order-bot-mgmt-svc/internal/services/authsvc"
 	"order-bot-mgmt-svc/internal/services/menusvc"
 	"order-bot-mgmt-svc/internal/util"
+	"order-bot-mgmt-svc/internal/util/errutil"
 	"os/signal"
 	"syscall"
 	"time"
@@ -69,18 +70,18 @@ func main() {
 	port := cfg.App.Port
 	db, err := pqsqldb.New(cfg.Db)
 	if err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
+		log.Fatalf("failed to connect to database: \n%v", errutil.FormatErrChain(err))
 	}
 	orderBotDb, orderBotDbErr := pqsqldb.New(cfg.OrderBotDb)
 	if orderBotDbErr != nil {
-		log.Fatalf("failed to connect to order-bot database: %v", orderBotDbErr)
+		log.Fatalf("failed to connect to order-bot database: \n%v", orderBotDbErr)
 	}
 	defer func() {
 		if err := db.Close(); err != nil {
-			log.Printf("failed to close database: %v", err)
+			log.Printf("failed to close database: \n%v", errutil.FormatErrChain(err))
 		}
 		if err := orderBotDb.Close(); err != nil {
-			log.Printf("failed to close order-bot database: %v", err)
+			log.Printf("failed to close order-bot database: \n%v", errutil.FormatErrChain(err))
 		}
 	}()
 	serviceContainer := newServices(db, cfg)
