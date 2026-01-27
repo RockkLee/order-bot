@@ -43,7 +43,7 @@ func New(cfg config.Db) (*DB, error) {
 	)
 	db, err := sql.Open("pgx", connStr)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("pqsqldb.New: %w", err)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
@@ -51,7 +51,7 @@ func New(cfg config.Db) (*DB, error) {
 		if closeErr := db.Close(); closeErr != nil {
 			log.Printf("failed to close database after ping failure: %v", closeErr)
 		}
-		return nil, err
+		return nil, fmt.Errorf("pqsqldb.New: %w", err)
 	}
 	return &DB{
 		db: db,
@@ -72,7 +72,7 @@ func (s *DB) Health() (map[string]string, error) {
 		stats["status"] = "down"
 		stats["error"] = fmt.Sprintf("db down: %v", err)
 		log.Printf("db down: %v", err)
-		return stats, err
+		return stats, fmt.Errorf("pqsqldb.DB.Health: %w", err)
 	}
 
 	// Database is up, add more statistics
@@ -115,7 +115,10 @@ func (s *DB) Health() (map[string]string, error) {
 // If an error occurs while closing the connection, it returns the error.
 func (s *DB) Close() error {
 	log.Printf("Disconnected from database")
-	return s.db.Close()
+	if err := s.db.Close(); err != nil {
+		return fmt.Errorf("pqsqldb.DB.Close: %w", err)
+	}
+	return nil
 }
 
 func (s *DB) Conn() *sql.DB {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"order-bot-mgmt-svc/internal/config"
@@ -44,7 +45,7 @@ type fakeUserStore struct {
 
 func (f *fakeUserStore) Create(_ context.Context, user entities.User) error {
 	if _, exists := f.users[user.Email]; exists {
-		return store.ErrUserExists
+		return fmt.Errorf("fakeUserStore.Create: %w", store.ErrUserExists)
 	}
 	f.users[user.Email] = user
 	return nil
@@ -53,7 +54,7 @@ func (f *fakeUserStore) Create(_ context.Context, user entities.User) error {
 func (f *fakeUserStore) FindByEmail(_ context.Context, email string) (entities.User, error) {
 	user, exists := f.users[email]
 	if !exists {
-		return entities.User{}, store.ErrNotFound
+		return entities.User{}, fmt.Errorf("fakeUserStore.FindByEmail: %w", store.ErrNotFound)
 	}
 	return user, nil
 }
@@ -64,7 +65,7 @@ func (f *fakeUserStore) FindByID(_ context.Context, id string) (entities.User, e
 			return user, nil
 		}
 	}
-	return entities.User{}, store.ErrNotFound
+	return entities.User{}, fmt.Errorf("fakeUserStore.FindByID: %w", store.ErrNotFound)
 }
 
 func (f *fakeUserStore) UpdateTokens(_ context.Context, id string, accessToken string, refreshToken string) error {
@@ -76,7 +77,7 @@ func (f *fakeUserStore) UpdateTokens(_ context.Context, id string, accessToken s
 			return nil
 		}
 	}
-	return store.ErrNotFound
+	return fmt.Errorf("fakeUserStore.UpdateTokens: %w", store.ErrNotFound)
 }
 
 func TestServerDependencies(t *testing.T) {

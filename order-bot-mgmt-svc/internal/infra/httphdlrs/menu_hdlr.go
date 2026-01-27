@@ -2,10 +2,12 @@ package httphdlrs
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/services/menusvc"
 	"order-bot-mgmt-svc/internal/store"
+	"order-bot-mgmt-svc/internal/util/errutil"
 )
 
 type MenuServer interface {
@@ -26,16 +28,13 @@ func MenuHdlr(s MenuServer) http.Handler {
 func createMenuHdlrFunc(s MenuServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		service := s.MenuService()
-		if service == nil {
-			WriteError(w, http.StatusInternalServerError, "menu service unavailable")
-			return
-		}
 		req, ok := decodeJsonRequest[menuRequest](w, r)
 		if !ok {
 			return
 		}
 		menu, items, err := service.CreateMenu(req.BotID, extractItemNames(req.Items))
 		if err != nil {
+			slog.Error(errutil.FormatErrChain(err))
 			writeMenuError(w, err)
 			return
 		}
@@ -46,13 +45,10 @@ func createMenuHdlrFunc(s MenuServer) http.HandlerFunc {
 func getMenuHdlrFunc(s MenuServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		service := s.MenuService()
-		if service == nil {
-			WriteError(w, http.StatusInternalServerError, "menu service unavailable")
-			return
-		}
 		menuID := r.PathValue("menuID")
 		menu, items, err := service.GetMenu(menuID)
 		if err != nil {
+			slog.Error(errutil.FormatErrChain(err))
 			writeMenuError(w, err)
 			return
 		}
@@ -63,10 +59,6 @@ func getMenuHdlrFunc(s MenuServer) http.HandlerFunc {
 func updateMenuHdlrFunc(s MenuServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		service := s.MenuService()
-		if service == nil {
-			WriteError(w, http.StatusInternalServerError, "menu service unavailable")
-			return
-		}
 		menuID := r.PathValue("menuID")
 		req, ok := decodeJsonRequest[menuRequest](w, r)
 		if !ok {
@@ -74,6 +66,7 @@ func updateMenuHdlrFunc(s MenuServer) http.HandlerFunc {
 		}
 		menu, items, err := service.UpdateMenu(menuID, req.BotID, extractItemNames(req.Items))
 		if err != nil {
+			slog.Error(errutil.FormatErrChain(err))
 			writeMenuError(w, err)
 			return
 		}
@@ -84,12 +77,9 @@ func updateMenuHdlrFunc(s MenuServer) http.HandlerFunc {
 func deleteMenuHdlrFunc(s MenuServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		service := s.MenuService()
-		if service == nil {
-			WriteError(w, http.StatusInternalServerError, "menu service unavailable")
-			return
-		}
 		menuID := r.PathValue("menuID")
 		if err := service.DeleteMenu(menuID); err != nil {
+			slog.Error(errutil.FormatErrChain(err))
 			writeMenuError(w, err)
 			return
 		}

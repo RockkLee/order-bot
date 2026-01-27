@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
 )
@@ -43,7 +44,10 @@ func NewBotStore(db *sql.DB) *BotStore {
 func (s *BotStore) Create(ctx context.Context, bot entities.Bot) error {
 	record := BotRecordFromModel(bot)
 	_, err := s.db.ExecContext(ctx, insertBotQuery, record.ID, record.BotName)
-	return err
+	if err != nil {
+		return fmt.Errorf("sqldb.BotStore.Create: %w", err)
+	}
+	return nil
 }
 
 func (s *BotStore) FindByID(ctx context.Context, id string) (entities.Bot, error) {
@@ -51,9 +55,9 @@ func (s *BotStore) FindByID(ctx context.Context, id string) (entities.Bot, error
 	err := s.db.QueryRowContext(ctx, selectBotByID, id).Scan(&record.ID, &record.BotName)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return entities.Bot{}, store.ErrBotNotFound
+			return entities.Bot{}, fmt.Errorf("sqldb.BotStore.FindByID: %w", store.ErrBotNotFound)
 		}
-		return entities.Bot{}, err
+		return entities.Bot{}, fmt.Errorf("sqldb.BotStore.FindByID: %w", err)
 	}
 	return record.ToModel(), nil
 }

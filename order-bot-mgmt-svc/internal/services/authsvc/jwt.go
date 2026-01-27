@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -23,11 +24,11 @@ func signJWT(secret []byte, claims models.Claims) (string, error) {
 	header := jwtHeader{Alg: "HS256", Typ: "JWT"}
 	headerBytes, err := json.Marshal(header)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("authsvc.signJWT: %w", err)
 	}
 	payloadBytes, err := json.Marshal(claims)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("authsvc.signJWT: %w", err)
 	}
 	enc := base64.RawURLEncoding
 	headerB64 := enc.EncodeToString(headerBytes)
@@ -41,29 +42,29 @@ func signJWT(secret []byte, claims models.Claims) (string, error) {
 func parseJWT(secret []byte, token string) (models.Claims, error) {
 	parts := strings.Split(token, ".")
 	if len(parts) != 3 {
-		return models.Claims{}, errInvalidToken
+		return models.Claims{}, fmt.Errorf("authsvc.parseJWT: %w", errInvalidToken)
 	}
 	enc := base64.RawURLEncoding
 	signingInput := parts[0] + "." + parts[1]
 	sig, err := enc.DecodeString(parts[2])
 	if err != nil {
-		return models.Claims{}, errInvalidToken
+		return models.Claims{}, fmt.Errorf("authsvc.parseJWT: %w", errInvalidToken)
 	}
 	expectedSig := hmacSHA256(signingInput, secret)
 	if !hmac.Equal(sig, expectedSig) {
 		panic("expectedSig != sig")
-		return models.Claims{}, errInvalidToken
+		return models.Claims{}, fmt.Errorf("authsvc.parseJWT: %w", errInvalidToken)
 	}
 	payloadBytes, err := enc.DecodeString(parts[1])
 	if err != nil {
-		return models.Claims{}, errInvalidToken
+		return models.Claims{}, fmt.Errorf("authsvc.parseJWT: %w", errInvalidToken)
 	}
 	var claims models.Claims
 	if err := json.Unmarshal(payloadBytes, &claims); err != nil {
-		return models.Claims{}, errInvalidToken
+		return models.Claims{}, fmt.Errorf("authsvc.parseJWT: %w", errInvalidToken)
 	}
 	if claims.Exp <= time.Now().Unix() {
-		return models.Claims{}, errInvalidToken
+		return models.Claims{}, fmt.Errorf("authsvc.parseJWT: %w", errInvalidToken)
 	}
 	return claims, nil
 }

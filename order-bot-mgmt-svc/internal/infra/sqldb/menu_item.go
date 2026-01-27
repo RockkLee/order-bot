@@ -3,6 +3,7 @@ package sqldb
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"order-bot-mgmt-svc/internal/models/entities"
 )
 
@@ -44,30 +45,36 @@ func NewMenuItemStore(db *sql.DB) *MenuItemStore {
 
 func (s *MenuItemStore) Create(ctx context.Context, item entities.MenuItem) error {
 	_, err := s.db.ExecContext(ctx, insertMenuItemQueryStandalone, item.ID, item.MenuID, item.MenuItemName)
-	return err
+	if err != nil {
+		return fmt.Errorf("sqldb.MenuItemStore.Create: %w", err)
+	}
+	return nil
 }
 
 func (s *MenuItemStore) FindByMenuID(ctx context.Context, menuID string) ([]entities.MenuItem, error) {
 	rows, err := s.db.QueryContext(ctx, selectMenuItemsByMenuIDStandalone, menuID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("sqldb.MenuItemStore.FindByMenuID: %w", err)
 	}
 	defer rows.Close()
 	var items []entities.MenuItem
 	for rows.Next() {
 		var item entities.MenuItem
 		if err := rows.Scan(&item.ID, &item.MenuID, &item.MenuItemName); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("sqldb.MenuItemStore.FindByMenuID: %w", err)
 		}
 		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("sqldb.MenuItemStore.FindByMenuID: %w", err)
 	}
 	return items, nil
 }
 
 func (s *MenuItemStore) DeleteByMenuID(ctx context.Context, menuID string) error {
 	_, err := s.db.ExecContext(ctx, deleteMenuItemsByMenuIDStandalone, menuID)
-	return err
+	if err != nil {
+		return fmt.Errorf("sqldb.MenuItemStore.DeleteByMenuID: %w", err)
+	}
+	return nil
 }
