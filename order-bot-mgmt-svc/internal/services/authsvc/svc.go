@@ -94,28 +94,45 @@ func (s *Svc) Logout(refreshToken string) error {
 	ctx, cancel := s.ctxFunc()
 	defer cancel()
 	if err := s.userStore.UpdateTokens(ctx, userID, "", ""); err != nil {
-		if errors.Is(err, store.ErrNotFound) {
-			return fmt.Errorf("authsvc.Logout: %w", ErrInvalidToken)
-		}
 		return fmt.Errorf("authsvc.Logout: %w", err)
+	}
+	return nil
+}
+
+func (s *Svc) ValidateAccessToken(accessToken string) error {
+	if accessToken == "" {
+		return fmt.Errorf("authsvc.ValidateAccessToken(): accessToken is empty %w", ErrInvalidToken)
+	}
+	claims, err := parseJWT(s.accessSecret, accessToken)
+	if err != nil {
+		return fmt.Errorf("authsvc.ValidateAccessToken(): %w", err)
+	}
+	if claims.Typ != "access" {
+		return fmt.Errorf("authsvc.ValidateAccessToken(), claims.Typ != 'access': %w", ErrInvalidToken)
+	}
+	if claims.Exp > time.Now().UnixMilli() {
+		return fmt.Errorf("authsvc.ValidateAccessToken(), accessToken is expired: %w", ErrExpiredToken)
 	}
 	return nil
 }
 
 func (s *Svc) ValidateRefreshToken(refreshToken string) (string, error) {
 	if refreshToken == "" {
-		return "", fmt.Errorf("authsvc.ValidateRefreshToken: %w", ErrInvalidToken)
+		return "", fmt.Errorf("authsvc.ValidateRefreshToken(): %w", ErrInvalidToken)
 	}
 	claims, err := parseJWT(s.refreshSecret, refreshToken)
-	if err != nil || claims.Typ != "refresh" {
-		return "", fmt.Errorf("authsvc.ValidateRefreshToken: %w", ErrInvalidToken)
+	if err != nil {
+		return "", fmt.Errorf("authsvc.ValidateRefreshToken(): %w", err)
+	}
+	if claims.Typ != "refresh" {
+		return "", fmt.Errorf("authsvc.ValidateRefreshToken(), claims.Typ != 'refresh': %w", err)
 	}
 	ctx, cancel := s.ctxFunc()
 	defer cancel()
 	user, err := s.userStore.FindByID(ctx, claims.Sub)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
-			return "", fmt.Errorf("authsvc.ValidateRefreshToken: %w", ErrInvalidToken)
+			return "", fmt.Errorf("authsvc.ValidateRefreshToken: %w", err)
 		}
 		return "", fmt.Errorf("authsvc.ValidateRefreshToken: %w", err)
 	}

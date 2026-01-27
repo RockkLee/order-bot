@@ -6,6 +6,7 @@ var (
 	ErrUserExists          = errors.New("user already exists")
 	ErrInvalidCredentials  = errors.New("invalid credentials")
 	ErrInvalidToken        = errors.New("invalid token")
+	ErrExpiredToken        = errors.New("expired token")
 	ErrInvalidRefreshToken = errors.New("invalid refresh token")
 	ErrLoggedOut           = errors.New("logged out")
 )

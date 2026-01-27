@@ -64,7 +64,7 @@ func newServices(db *pqsqldb.DB, cfg config.Config) *services.Services {
 func main() {
 
 	// Set up logger level
-	slog.SetLogLoggerLevel(slog.LevelInfo)
+	slog.SetLogLoggerLevel(slog.LevelDebug)
 
 	cfg := config.Load()
 	port := cfg.App.Port

@@ -1,8 +1,10 @@
 package httpserver
 
 import (
+	"log/slog"
 	"net/http"
 	"order-bot-mgmt-svc/internal/infra/httphdlrs"
+	"order-bot-mgmt-svc/internal/util/errutil"
 	"strings"
 )
 
@@ -59,22 +61,23 @@ func authMiddleware(s *Server) Middleware {
 				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 				return
 			}
-			refreshToken := strings.TrimSpace(strings.TrimPrefix(authHeader, bearerPrefix))
-			if refreshToken == "" {
+			accessToken := strings.TrimSpace(strings.TrimPrefix(authHeader, bearerPrefix))
+			if accessToken == "" {
 				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 				return
 			}
 
-			authSvc := s.AuthService()
-			if authSvc == nil {
+			authService := s.AuthService()
+			if authService == nil {
 				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 				return
 			}
-			if _, err := authSvc.ValidateRefreshToken(refreshToken); err != nil {
+			err := authService.ValidateAccessToken(accessToken)
+			if err != nil {
+				slog.Debug(errutil.FormatErrChain(err))
 				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 				return
 			}
-
 			next.ServeHTTP(w, r)
 		})
 	}

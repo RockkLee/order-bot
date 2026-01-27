@@ -5,15 +5,12 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"order-bot-mgmt-svc/internal/models"
 )
-
-var errInvalidToken = errors.New("invalid token")
 
 type jwtHeader struct {
 	Alg string `json:"alg"`
@@ -42,29 +39,29 @@ func signJWT(secret []byte, claims models.Claims) (string, error) {
 func parseJWT(secret []byte, token string) (models.Claims, error) {
 	parts := strings.Split(token, ".")
 	if len(parts) != 3 {
-		return models.Claims{}, fmt.Errorf("authsvc.parseJWT: %w", errInvalidToken)
+		return models.Claims{}, fmt.Errorf("authsvc.parseJWT(), len(parts) != 3: %w", ErrInvalidToken)
 	}
+	tokenHeader, tokenPayload, tokenSignature := parts[0], parts[1], parts[2]
 	enc := base64.RawURLEncoding
-	signingInput := parts[0] + "." + parts[1]
-	sig, err := enc.DecodeString(parts[2])
+	signingInput := tokenHeader + "." + tokenPayload
+	sign, err := enc.DecodeString(tokenSignature)
 	if err != nil {
-		return models.Claims{}, fmt.Errorf("authsvc.parseJWT: %w", errInvalidToken)
+		return models.Claims{}, fmt.Errorf("authsvc.parseJWT(), failed to decode jwt signature: %w", ErrInvalidToken)
 	}
-	expectedSig := hmacSHA256(signingInput, secret)
-	if !hmac.Equal(sig, expectedSig) {
-		panic("expectedSig != sig")
-		return models.Claims{}, fmt.Errorf("authsvc.parseJWT: %w", errInvalidToken)
+	expectedSign := hmacSHA256(signingInput, secret)
+	if !hmac.Equal(sign, expectedSign) {
+		return models.Claims{}, fmt.Errorf("authsvc.parseJWT(), signature check failed : %w", ErrInvalidToken)
 	}
 	payloadBytes, err := enc.DecodeString(parts[1])
 	if err != nil {
-		return models.Claims{}, fmt.Errorf("authsvc.parseJWT: %w", errInvalidToken)
+		return models.Claims{}, fmt.Errorf("authsvc.parseJWT(), failed to decode decoded header: %w", ErrInvalidToken)
 	}
 	var claims models.Claims
 	if err := json.Unmarshal(payloadBytes, &claims); err != nil {
-		return models.Claims{}, fmt.Errorf("authsvc.parseJWT: %w", errInvalidToken)
+		return models.Claims{}, fmt.Errorf("authsvc.parseJWT: %w", ErrInvalidToken)
 	}
 	if claims.Exp <= time.Now().Unix() {
-		return models.Claims{}, fmt.Errorf("authsvc.parseJWT: %w", errInvalidToken)
+		return models.Claims{}, fmt.Errorf("authsvc.parseJWT: %w", ErrExpiredToken)
 	}
 	return claims, nil
 }
