@@ -8,13 +8,13 @@ import (
 	"order-bot-mgmt-svc/internal/services/authsvc"
 )
 
-type Server interface {
+type AuthServer interface {
 	AuthService() *authsvc.Svc
 }
 
 const AuthPrefix = "/auth"
 
-func AuthHdlr(s Server) http.Handler {
+func AuthHdlr(s AuthServer) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /signup", signupHdlrFunc(s))
 	mux.HandleFunc("POST /login", loginHdlrFunc(s))
@@ -22,7 +22,7 @@ func AuthHdlr(s Server) http.Handler {
 	return mux
 }
 
-func signupHdlrFunc(s Server) http.HandlerFunc {
+func signupHdlrFunc(s AuthServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req, ok := decodeJsonRequest[authRequest](w, r)
 		if !ok {
@@ -45,7 +45,7 @@ func signupHdlrFunc(s Server) http.HandlerFunc {
 	}
 }
 
-func loginHdlrFunc(s Server) http.HandlerFunc {
+func loginHdlrFunc(s AuthServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req, ok := decodeJsonRequest[authRequest](w, r)
 		if !ok {
@@ -66,7 +66,7 @@ func loginHdlrFunc(s Server) http.HandlerFunc {
 	}
 }
 
-func logoutHldrFunc(s Server) http.HandlerFunc {
+func logoutHldrFunc(s AuthServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req, ok := decodeJsonRequest[authRequest](w, r)
 		if !ok {
