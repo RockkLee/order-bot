@@ -7,6 +7,6 @@ type Tx interface {
 	Rollback() error
 }
 
-type TxStore interface {
+type DBStore interface {
 	BeginTx(ctx context.Context) (Tx, error)
 }
