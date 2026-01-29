@@ -49,14 +49,6 @@ func NewMenuStore(db *sql.DB) *MenuStore {
 	return &MenuStore{db: db}
 }
 
-func (s *MenuStore) BeginTx(ctx context.Context) (store.Tx, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, fmt.Errorf("sqldb.MenuStore.BeginTx: %w", err)
-	}
-	return tx, nil
-}
-
 func (s *MenuStore) FindByID(ctx context.Context, menuID string) (entities.Menu, error) {
 	var record MenuRecord
 	err := s.db.QueryRowContext(ctx, selectMenuByIDQuery, menuID).Scan(&record.ID, &record.BotID)
