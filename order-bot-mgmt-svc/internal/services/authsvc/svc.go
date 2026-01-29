@@ -69,12 +69,12 @@ func (s *Svc) Signup(email, password string) (models.TokenPair, error) {
 func (s *Svc) Login(email, password string) (models.TokenPair, error) {
 	ctx, cancel := s.ctxFunc()
 	defer cancel()
-	user, err := s.userStore.FindByEmail(ctx, email)
-	if err != nil {
-		if errors.Is(err, store.ErrNotFound) {
+	user, errFindUsr := s.userStore.FindByEmail(ctx, email)
+	if errFindUsr != nil {
+		if errors.Is(errFindUsr, store.ErrNotFound) {
 			return models.TokenPair{}, fmt.Errorf("authsvc.Login: %w", ErrInvalidCredentials)
 		}
-		return models.TokenPair{}, fmt.Errorf("authsvc.Login: %w", err)
+		return models.TokenPair{}, fmt.Errorf("authsvc.Login: %w", errFindUsr)
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
 		return models.TokenPair{}, fmt.Errorf("authsvc.Login: %w", ErrInvalidCredentials)
@@ -87,9 +87,9 @@ func (s *Svc) Login(email, password string) (models.TokenPair, error) {
 }
 
 func (s *Svc) Logout(refreshToken string) error {
-	userID, err := s.ValidateRefreshToken(refreshToken)
-	if err != nil {
-		return fmt.Errorf("authsvc.Logout: %w", err)
+	userID, errValidation := s.ValidateRefreshToken(refreshToken)
+	if errValidation != nil {
+		return fmt.Errorf("authsvc.Logout: %w", errValidation)
 	}
 	ctx, cancel := s.ctxFunc()
 	defer cancel()
