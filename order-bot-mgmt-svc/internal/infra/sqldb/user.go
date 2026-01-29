@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgconn"
+	"order-bot-mgmt-svc/internal/infra/sqldb/pqsqldb"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
 )
@@ -50,11 +51,11 @@ const (
 	uniqueViolationCode = "23505"
 )
 
-func NewUserStore(db *sql.DB) *UserStore {
+func NewUserStore(db *pqsqldb.DB) *UserStore {
 	if db == nil {
 		panic("sqldb.NewUserStore(), the db ptr is nil")
 	}
-	return &UserStore{db: db}
+	return &UserStore{db: db.Conn()}
 }
 
 func (s *UserStore) Create(ctx context.Context, user entities.User) error {

@@ -2,6 +2,7 @@ package menusvc
 
 import (
 	"fmt"
+	"order-bot-mgmt-svc/internal/infra/sqldb/pqsqldb"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/util"
@@ -12,15 +13,17 @@ const menuQueryTimeout = 2 * time.Second
 
 type Svc struct {
 	menuStore store.Menu
+	db        *pqsqldb.DB
 	ctxFunc   util.CtxFunc
 }
 
-func NewSvc(menuStore store.Menu) *Svc {
-	if menuStore == nil {
-		panic("menusvc.NewSvc(), menuStore is nil")
+func NewSvc(menuStore store.Menu, db *pqsqldb.DB) *Svc {
+	if menuStore == nil || db == nil {
+		panic("menusvc.NewSvc(), menuStore or db is nil")
 	}
 	return &Svc{
 		menuStore: menuStore,
+		db:        db,
 		ctxFunc:   util.NewCtxFunc(menuQueryTimeout),
 	}
 }
@@ -28,7 +31,7 @@ func NewSvc(menuStore store.Menu) *Svc {
 func (s *Svc) CreateMenu(botID string, itemNames []string) (entities.Menu, []entities.MenuItem, error) {
 	ctx, cancel := s.ctxFunc()
 	defer cancel()
-	tx, errTx := s.menuStore.BeginTx(ctx)
+	tx, errTx := s.db.BeginTx(ctx)
 	if errTx != nil {
 		return entities.Menu{}, nil, fmt.Errorf("menusvc.CreateMenu: %w", errTx)
 	}
@@ -68,7 +71,7 @@ func (s *Svc) GetMenu(menuID string) (entities.Menu, []entities.MenuItem, error)
 func (s *Svc) UpdateMenu(menuID, botID string, itemNames []string) (entities.Menu, []entities.MenuItem, error) {
 	ctx, cancel := s.ctxFunc()
 	defer cancel()
-	tx, errTx := s.menuStore.BeginTx(ctx)
+	tx, errTx := s.db.BeginTx(ctx)
 	if errTx != nil {
 		return entities.Menu{}, nil, fmt.Errorf("menusvc.UpdateMenu: %w", errTx)
 	}
@@ -98,7 +101,7 @@ func (s *Svc) UpdateMenu(menuID, botID string, itemNames []string) (entities.Men
 func (s *Svc) DeleteMenu(menuID string) error {
 	ctx, cancel := s.ctxFunc()
 	defer cancel()
-	tx, errTx := s.menuStore.BeginTx(ctx)
+	tx, errTx := s.db.BeginTx(ctx)
 	if errTx != nil {
 		return fmt.Errorf("menusvc.DeleteMenu: %w", errTx)
 	}

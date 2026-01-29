@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"order-bot-mgmt-svc/internal/infra/sqldb/pqsqldb"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
 )
@@ -39,11 +40,11 @@ const (
 	selectUserBotsByUser = `SELECT id, user_id, bot_id FROM user_bot WHERE user_id = $1;`
 )
 
-func NewUserBotStore(db *sql.DB) *UserBotStore {
+func NewUserBotStore(db *pqsqldb.DB) *UserBotStore {
 	if db == nil {
 		panic("sqldb.NewUserBotStore(), the db ptr is nil")
 	}
-	return &UserBotStore{db: db}
+	return &UserBotStore{db: db.Conn()}
 }
 
 func (s *UserBotStore) Create(ctx context.Context, userBot entities.UserBot) error {

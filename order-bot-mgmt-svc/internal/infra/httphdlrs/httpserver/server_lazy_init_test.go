@@ -102,7 +102,7 @@ func TestServerDependencies(t *testing.T) {
 		},
 		func() *menusvc.Svc {
 			menuInitCalls++
-			return menusvc.NewSvc(nil)
+			return menusvc.NewSvc(nil, nil)
 		},
 	)
 	server := NewServer(0, db, serviceContainer)

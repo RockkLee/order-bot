@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"order-bot-mgmt-svc/internal/config"
+	"order-bot-mgmt-svc/internal/store"
 	"strconv"
 	"time"
 
@@ -123,4 +124,12 @@ func (s *DB) Close() error {
 
 func (s *DB) Conn() *sql.DB {
 	return s.db
+}
+
+func (s *DB) BeginTx(ctx context.Context) (store.Tx, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("pqsqldb.DB.BeginTx: %w", err)
+	}
+	return tx, nil
 }
