@@ -53,12 +53,11 @@ func newServices(db *pqsqldb.DB, cfg config.Config) *services.Services {
 	ctxFunc := util.NewCtxFunc(cfg.Others.QryCtxTimeout)
 	return services.NewServices(
 		func() *authsvc.Svc {
-			return authsvc.NewSvc(sqldb.NewUserStore(db.Conn()), cfg, ctxFunc)
+			return authsvc.NewSvc(sqldb.NewUserStore(db), cfg, ctxFunc)
 		},
 		func() *menusvc.Svc {
-			menuStore := sqldb.NewMenuStore(db.Conn())
-			dbStore := sqldb.NewDBStore(db.Conn())
-			return menusvc.NewSvc(menuStore, dbStore)
+			menuStore := sqldb.NewMenuStore(db)
+			return menusvc.NewSvc(menuStore, db)
 		},
 	)
 }
