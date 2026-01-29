@@ -11,26 +11,26 @@ import (
 const menuQueryTimeout = 2 * time.Second
 
 type Svc struct {
-	menuStore  store.Menu
-	txBeginner store.TxBeginner
-	ctxFunc    util.CtxFunc
+	menuStore store.Menu
+	txStore   store.TxStore
+	ctxFunc   util.CtxFunc
 }
 
-func NewSvc(menuStore store.Menu, txBeginner store.TxBeginner) *Svc {
-	if menuStore == nil || txBeginner == nil {
-		panic("menusvc.NewSvc(), menuStore or txBeginner is nil")
+func NewSvc(menuStore store.Menu, txStore store.TxStore) *Svc {
+	if menuStore == nil || txStore == nil {
+		panic("menusvc.NewSvc(), menuStore or txStore is nil")
 	}
 	return &Svc{
-		menuStore:  menuStore,
-		txBeginner: txBeginner,
-		ctxFunc:    util.NewCtxFunc(menuQueryTimeout),
+		menuStore: menuStore,
+		txStore:   txStore,
+		ctxFunc:   util.NewCtxFunc(menuQueryTimeout),
 	}
 }
 
 func (s *Svc) CreateMenu(botID string, itemNames []string) (entities.Menu, []entities.MenuItem, error) {
 	ctx, cancel := s.ctxFunc()
 	defer cancel()
-	tx, errTx := s.txBeginner.BeginTx(ctx)
+	tx, errTx := s.txStore.BeginTx(ctx)
 	if errTx != nil {
 		return entities.Menu{}, nil, fmt.Errorf("menusvc.CreateMenu: %w", errTx)
 	}
@@ -70,7 +70,7 @@ func (s *Svc) GetMenu(menuID string) (entities.Menu, []entities.MenuItem, error)
 func (s *Svc) UpdateMenu(menuID, botID string, itemNames []string) (entities.Menu, []entities.MenuItem, error) {
 	ctx, cancel := s.ctxFunc()
 	defer cancel()
-	tx, errTx := s.txBeginner.BeginTx(ctx)
+	tx, errTx := s.txStore.BeginTx(ctx)
 	if errTx != nil {
 		return entities.Menu{}, nil, fmt.Errorf("menusvc.UpdateMenu: %w", errTx)
 	}
@@ -100,7 +100,7 @@ func (s *Svc) UpdateMenu(menuID, botID string, itemNames []string) (entities.Men
 func (s *Svc) DeleteMenu(menuID string) error {
 	ctx, cancel := s.ctxFunc()
 	defer cancel()
-	tx, errTx := s.txBeginner.BeginTx(ctx)
+	tx, errTx := s.txStore.BeginTx(ctx)
 	if errTx != nil {
 		return fmt.Errorf("menusvc.DeleteMenu: %w", errTx)
 	}
