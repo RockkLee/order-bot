@@ -6,17 +6,12 @@ import (
 )
 
 type Menu interface {
-	BeginTx(ctx context.Context) (MenuTx, error)
+	BeginTx(ctx context.Context) (Tx, error)
 	FindByID(ctx context.Context, menuID string) (entities.Menu, error)
 	FindItems(ctx context.Context, menuID string) ([]entities.MenuItem, error)
-}
-
-type MenuTx interface {
-	Commit() error
-	Rollback() error
-	CreateMenu(ctx context.Context, menu entities.Menu) error
-	UpdateMenu(ctx context.Context, menu entities.Menu) error
-	DeleteMenu(ctx context.Context, menuID string) error
-	DeleteMenuItems(ctx context.Context, menuID string) error
-	CreateMenuItems(ctx context.Context, items []entities.MenuItem) error
+	CreateMenu(ctx context.Context, tx Tx, menu entities.Menu) error
+	UpdateMenu(ctx context.Context, tx Tx, menu entities.Menu) error
+	DeleteMenu(ctx context.Context, tx Tx, menuID string) error
+	DeleteMenuItems(ctx context.Context, tx Tx, menuID string) error
+	CreateMenuItems(ctx context.Context, tx Tx, items []entities.MenuItem) error
 }

@@ -8,6 +8,7 @@ import (
 	"order-bot-mgmt-svc/internal/services/menusvc"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/util/errutil"
+	"order-bot-mgmt-svc/internal/util/validatorutil"
 )
 
 type MenuServer interface {
@@ -30,6 +31,10 @@ func createMenuHdlrFunc(s MenuServer) http.HandlerFunc {
 		service := s.MenuService()
 		req, ok := decodeJsonRequest[menuRequest](w, r)
 		if !ok {
+			return
+		}
+		if err := validatorutil.RequiredStrings(req); err != nil {
+			WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody)
 			return
 		}
 		menu, items, err := service.CreateMenu(req.BotID, extractItemNames(req.Items))
@@ -62,6 +67,10 @@ func updateMenuHdlrFunc(s MenuServer) http.HandlerFunc {
 		menuID := r.PathValue("menuID")
 		req, ok := decodeJsonRequest[menuRequest](w, r)
 		if !ok {
+			return
+		}
+		if err := validatorutil.RequiredStrings(req); err != nil {
+			WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody)
 			return
 		}
 		menu, items, err := service.UpdateMenu(menuID, req.BotID, extractItemNames(req.Items))

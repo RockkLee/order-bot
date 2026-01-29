@@ -40,6 +40,9 @@ const (
 )
 
 func NewUserBotStore(db *sql.DB) *UserBotStore {
+	if db == nil {
+		panic("sqldb.NewUserBotStore(), the db ptr is nil")
+	}
 	return &UserBotStore{db: db}
 }
 

@@ -51,6 +51,9 @@ const (
 )
 
 func NewUserStore(db *sql.DB) *UserStore {
+	if db == nil {
+		panic("sqldb.NewUserStore(), the db ptr is nil")
+	}
 	return &UserStore{db: db}
 }
 

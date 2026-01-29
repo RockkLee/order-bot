@@ -1,11 +1,11 @@
 package httphdlrs
 
 type menuItemRequest struct {
-	Name string `json:"name"`
+	Name string `json:"name" validate:"required"`
 }
 
 type menuRequest struct {
-	BotID string            `json:"bot_id"`
+	BotID string            `json:"bot_id" validate:"required"`
 	Items []menuItemRequest `json:"items"`
 }
 

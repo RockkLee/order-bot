@@ -30,7 +30,6 @@ func (r MenuRecord) ToModel() entities.Menu {
 
 type MenuStore struct {
 	db *sql.DB
-	tx *sql.Tx
 }
 
 const (
@@ -44,15 +43,18 @@ const (
 )
 
 func NewMenuStore(db *sql.DB) *MenuStore {
+	if db == nil {
+		panic("sqldb.NewMenuStore(), the db ptr is nil")
+	}
 	return &MenuStore{db: db}
 }
 
-func (s *MenuStore) BeginTx(ctx context.Context) (store.MenuTx, error) {
+func (s *MenuStore) BeginTx(ctx context.Context) (store.Tx, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("sqldb.MenuStore.BeginTx: %w", err)
 	}
-	return &MenuStore{db: s.db, tx: tx}, nil
+	return tx, nil
 }
 
 func (s *MenuStore) FindByID(ctx context.Context, menuID string) (entities.Menu, error) {
@@ -87,24 +89,26 @@ func (s *MenuStore) FindItems(ctx context.Context, menuID string) ([]entities.Me
 	return items, nil
 }
 
-func (s *MenuStore) CreateMenu(ctx context.Context, menu entities.Menu) error {
-	if s.tx == nil {
-		return fmt.Errorf("sqldb.MenuStore.CreateMenu: %w", errors.New("menu transaction not initialized"))
+func (s *MenuStore) CreateMenu(ctx context.Context, tx store.Tx, menu entities.Menu) error {
+	sqlTx, ok := tx.(*sql.Tx)
+	if !ok {
+		return fmt.Errorf("sqldb.CreateMenu(): %w", store.ErrInvalidTx)
 	}
 	record := MenuRecordFromModel(menu)
-	_, err := s.tx.ExecContext(ctx, insertMenuQuery, record.ID, record.BotID)
+	_, err := sqlTx.ExecContext(ctx, insertMenuQuery, record.ID, record.BotID)
 	if err != nil {
 		return fmt.Errorf("sqldb.MenuStore.CreateMenu: %w", err)
 	}
 	return nil
 }
 
-func (s *MenuStore) UpdateMenu(ctx context.Context, menu entities.Menu) error {
-	if s.tx == nil {
-		return fmt.Errorf("sqldb.MenuStore.UpdateMenu: %w", errors.New("menu transaction not initialized"))
+func (s *MenuStore) UpdateMenu(ctx context.Context, tx store.Tx, menu entities.Menu) error {
+	sqlTx, ok := tx.(*sql.Tx)
+	if !ok {
+		return fmt.Errorf("sqldb.UpdateMenu(): %w", store.ErrInvalidTx)
 	}
 	record := MenuRecordFromModel(menu)
-	result, err := s.tx.ExecContext(ctx, updateMenuQuery, record.ID, record.BotID)
+	result, err := sqlTx.ExecContext(ctx, updateMenuQuery, record.ID, record.BotID)
 	if err != nil {
 		return fmt.Errorf("sqldb.MenuStore.UpdateMenu: %w", err)
 	}
@@ -118,11 +122,12 @@ func (s *MenuStore) UpdateMenu(ctx context.Context, menu entities.Menu) error {
 	return nil
 }
 
-func (s *MenuStore) DeleteMenu(ctx context.Context, menuID string) error {
-	if s.tx == nil {
-		return fmt.Errorf("sqldb.MenuStore.DeleteMenu: %w", errors.New("menu transaction not initialized"))
+func (s *MenuStore) DeleteMenu(ctx context.Context, tx store.Tx, menuID string) error {
+	sqlTx, ok := tx.(*sql.Tx)
+	if !ok {
+		return fmt.Errorf("sqldb.DeleteMenu(): %w", store.ErrInvalidTx)
 	}
-	result, err := s.tx.ExecContext(ctx, deleteMenuQuery, menuID)
+	result, err := sqlTx.ExecContext(ctx, deleteMenuQuery, menuID)
 	if err != nil {
 		return fmt.Errorf("sqldb.MenuStore.DeleteMenu: %w", err)
 	}
@@ -136,46 +141,31 @@ func (s *MenuStore) DeleteMenu(ctx context.Context, menuID string) error {
 	return nil
 }
 
-func (s *MenuStore) DeleteMenuItems(ctx context.Context, menuID string) error {
-	if s.tx == nil {
-		return fmt.Errorf("sqldb.MenuStore.DeleteMenuItems: %w", errors.New("menu transaction not initialized"))
+func (s *MenuStore) DeleteMenuItems(ctx context.Context, tx store.Tx, menuID string) error {
+	sqlTx, ok := tx.(*sql.Tx)
+	if !ok {
+		return fmt.Errorf("sqldb.DeleteMenuItems(): %w", store.ErrInvalidTx)
 	}
-	_, err := s.tx.ExecContext(ctx, deleteMenuItemsByMenuID, menuID)
+	_, err := sqlTx.ExecContext(ctx, deleteMenuItemsByMenuID, menuID)
 	if err != nil {
 		return fmt.Errorf("sqldb.MenuStore.DeleteMenuItems: %w", err)
 	}
 	return nil
 }
 
-func (s *MenuStore) CreateMenuItems(ctx context.Context, items []entities.MenuItem) error {
-	if s.tx == nil {
-		return fmt.Errorf("sqldb.MenuStore.CreateMenuItems: %w", errors.New("menu transaction not initialized"))
+func (s *MenuStore) CreateMenuItems(
+	ctx context.Context, tx store.Tx,
+	items []entities.MenuItem,
+) error {
+	sqlTx, ok := tx.(*sql.Tx)
+	if !ok {
+		return fmt.Errorf("sqldb.CreateMenuItems(): %w", store.ErrInvalidTx)
 	}
 	for _, item := range items {
 		record := MenuItemRecordFromModel(item)
-		if _, err := s.tx.ExecContext(ctx, insertMenuItemQuery, record.ID, record.MenuID, record.MenuItemName); err != nil {
+		if _, err := sqlTx.ExecContext(ctx, insertMenuItemQuery, record.ID, record.MenuID, record.MenuItemName); err != nil {
 			return fmt.Errorf("sqldb.MenuStore.CreateMenuItems: %w", err)
 		}
-	}
-	return nil
-}
-
-func (s *MenuStore) Commit() error {
-	if s.tx == nil {
-		return fmt.Errorf("sqldb.MenuStore.Commit: %w", errors.New("menu transaction not initialized"))
-	}
-	if err := s.tx.Commit(); err != nil {
-		return fmt.Errorf("sqldb.MenuStore.Commit: %w", err)
-	}
-	return nil
-}
-
-func (s *MenuStore) Rollback() error {
-	if s.tx == nil {
-		return fmt.Errorf("sqldb.MenuStore.Rollback: %w", errors.New("menu transaction not initialized"))
-	}
-	if err := s.tx.Rollback(); err != nil {
-		return fmt.Errorf("sqldb.MenuStore.Rollback: %w", err)
 	}
 	return nil
 }

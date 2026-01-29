@@ -38,6 +38,9 @@ const (
 )
 
 func NewBotStore(db *sql.DB) *BotStore {
+	if db == nil {
+		panic("sqldb.NewBotStore(), the db ptr is nil")
+	}
 	return &BotStore{db: db}
 }
 
