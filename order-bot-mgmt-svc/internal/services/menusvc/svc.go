@@ -17,7 +17,7 @@ type Svc struct {
 
 func NewSvc(menuStore store.Menu) *Svc {
 	if menuStore == nil {
-		return nil
+		panic("menusvc.NewSvc(), menuStore is nil")
 	}
 	return &Svc{
 		menuStore: menuStore,

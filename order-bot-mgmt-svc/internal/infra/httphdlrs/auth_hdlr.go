@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"order-bot-mgmt-svc/internal/util/errutil"
+	"order-bot-mgmt-svc/internal/util/validatorutil"
 
 	"order-bot-mgmt-svc/internal/services/authsvc"
 )
@@ -28,7 +29,7 @@ func signupHdlrFunc(s AuthServer) http.HandlerFunc {
 		if !ok {
 			return
 		}
-		if err := validateRequiredStrings(req); err != nil {
+		if err := validatorutil.RequiredStrings(req); err != nil {
 			WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody)
 			return
 		}
@@ -55,7 +56,7 @@ func loginHdlrFunc(s AuthServer) http.HandlerFunc {
 		if !ok {
 			return
 		}
-		if err := validateRequiredStrings(req); err != nil {
+		if err := validatorutil.RequiredStrings(req); err != nil {
 			WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody)
 			return
 		}
@@ -80,7 +81,7 @@ func logoutHldrFunc(s AuthServer) http.HandlerFunc {
 		if !ok {
 			return
 		}
-		if err := validateRequiredStrings(req); err != nil {
+		if err := validatorutil.RequiredStrings(req); err != nil {
 			WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody)
 			return
 		}

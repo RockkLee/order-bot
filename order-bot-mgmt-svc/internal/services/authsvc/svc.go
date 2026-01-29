@@ -24,7 +24,7 @@ type Svc struct {
 
 func NewSvc(userStore store.User, cfg config.Config, ctxFunc util.CtxFunc) *Svc {
 	if userStore == nil || ctxFunc == nil {
-		return nil
+		panic("authSvc.NewSvc(), userSotre or ctxFunc is nil")
 	}
 	return &Svc{
 		userStore:       userStore,

@@ -45,7 +45,7 @@ const (
 
 func NewMenuStore(db *sql.DB) *MenuStore {
 	if db == nil {
-		return nil
+		panic("sqldb.NewMenuStore(), the db ptr is nil")
 	}
 	return &MenuStore{db: db}
 }
