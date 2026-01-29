@@ -1,7 +1,15 @@
 package httphdlrs
 
-type authRequest struct {
-	Email        string `json:"email"`
-	Password     string `json:"password"`
-	RefreshToken string `json:"refresh_token"`
+type signupRequest struct {
+	Email    string `json:"email" validate:"required"`
+	Password string `json:"password" validate:"required"`
+}
+
+type loginRequest struct {
+	Email    string `json:"email" validate:"required"`
+	Password string `json:"password" validate:"required"`
+}
+
+type logoutRequest struct {
+	RefreshToken string `json:"refresh_token" validate:"required"`
 }

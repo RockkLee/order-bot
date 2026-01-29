@@ -6,9 +6,13 @@ import (
 )
 
 type Menu interface {
-	BeginTx(ctx context.Context) (MenuTx, error)
 	FindByID(ctx context.Context, menuID string) (entities.Menu, error)
 	FindItems(ctx context.Context, menuID string) ([]entities.MenuItem, error)
+}
+
+type MenuStore interface {
+	Menu
+	TxBeginner[MenuTx]
 }
 
 type MenuTx interface {

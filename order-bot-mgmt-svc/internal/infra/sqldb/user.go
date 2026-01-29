@@ -51,6 +51,9 @@ const (
 )
 
 func NewUserStore(db *sql.DB) *UserStore {
+	if db == nil {
+		return nil
+	}
 	return &UserStore{db: db}
 }
 
