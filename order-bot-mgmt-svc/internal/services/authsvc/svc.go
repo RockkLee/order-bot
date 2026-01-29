@@ -23,6 +23,9 @@ type Svc struct {
 }
 
 func NewSvc(userStore store.User, cfg config.Config, ctxFunc util.CtxFunc) *Svc {
+	if userStore == nil || ctxFunc == nil {
+		return nil
+	}
 	return &Svc{
 		userStore:       userStore,
 		accessSecret:    []byte(cfg.Auth.AccessSecret),
@@ -64,9 +67,6 @@ func (s *Svc) Signup(email, password string) (models.TokenPair, error) {
 }
 
 func (s *Svc) Login(email, password string) (models.TokenPair, error) {
-	if s.userStore == nil {
-		return models.TokenPair{}, fmt.Errorf("authsvc.Login: %w", errors.New("user store not configured"))
-	}
 	ctx, cancel := s.ctxFunc()
 	defer cancel()
 	user, err := s.userStore.FindByEmail(ctx, email)

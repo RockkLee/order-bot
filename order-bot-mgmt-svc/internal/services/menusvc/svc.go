@@ -1,7 +1,6 @@
 package menusvc
 
 import (
-	"errors"
 	"fmt"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
@@ -17,6 +16,9 @@ type Svc struct {
 }
 
 func NewSvc(menuStore store.Menu) *Svc {
+	if menuStore == nil {
+		return nil
+	}
 	return &Svc{
 		menuStore: menuStore,
 		ctxFunc:   util.NewCtxFunc(menuQueryTimeout),
@@ -24,9 +26,6 @@ func NewSvc(menuStore store.Menu) *Svc {
 }
 
 func (s *Svc) CreateMenu(botID string, itemNames []string) (entities.Menu, []entities.MenuItem, error) {
-	if s.menuStore == nil {
-		return entities.Menu{}, nil, fmt.Errorf("menusvc.CreateMenu: %w", errors.New("menu store not configured"))
-	}
 	if botID == "" {
 		return entities.Menu{}, nil, fmt.Errorf("menusvc.CreateMenu: %w", ErrInvalidMenu)
 	}
@@ -56,9 +55,6 @@ func (s *Svc) CreateMenu(botID string, itemNames []string) (entities.Menu, []ent
 }
 
 func (s *Svc) GetMenu(menuID string) (entities.Menu, []entities.MenuItem, error) {
-	if s.menuStore == nil {
-		return entities.Menu{}, nil, fmt.Errorf("menusvc.GetMenu: %w", errors.New("menu store not configured"))
-	}
 	if menuID == "" {
 		return entities.Menu{}, nil, fmt.Errorf("menusvc.GetMenu: %w", ErrInvalidMenu)
 	}
@@ -76,9 +72,6 @@ func (s *Svc) GetMenu(menuID string) (entities.Menu, []entities.MenuItem, error)
 }
 
 func (s *Svc) UpdateMenu(menuID, botID string, itemNames []string) (entities.Menu, []entities.MenuItem, error) {
-	if s.menuStore == nil {
-		return entities.Menu{}, nil, fmt.Errorf("menusvc.UpdateMenu: %w", errors.New("menu store not configured"))
-	}
 	if menuID == "" || botID == "" {
 		return entities.Menu{}, nil, fmt.Errorf("menusvc.UpdateMenu: %w", ErrInvalidMenu)
 	}
@@ -112,9 +105,6 @@ func (s *Svc) UpdateMenu(menuID, botID string, itemNames []string) (entities.Men
 }
 
 func (s *Svc) DeleteMenu(menuID string) error {
-	if s.menuStore == nil {
-		return fmt.Errorf("menusvc.DeleteMenu: %w", errors.New("menu store not configured"))
-	}
 	if menuID == "" {
 		return fmt.Errorf("menusvc.DeleteMenu: %w", ErrInvalidMenu)
 	}

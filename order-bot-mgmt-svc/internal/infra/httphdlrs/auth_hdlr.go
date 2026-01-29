@@ -24,8 +24,12 @@ func AuthHdlr(s AuthServer) http.Handler {
 
 func signupHdlrFunc(s AuthServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		req, ok := decodeJsonRequest[authRequest](w, r)
+		req, ok := decodeJsonRequest[signupRequest](w, r)
 		if !ok {
+			return
+		}
+		if err := validateRequiredStrings(req); err != nil {
+			WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody)
 			return
 		}
 		tokens, err := s.AuthService().Signup(req.Email, req.Password)
@@ -47,8 +51,12 @@ func signupHdlrFunc(s AuthServer) http.HandlerFunc {
 
 func loginHdlrFunc(s AuthServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		req, ok := decodeJsonRequest[authRequest](w, r)
+		req, ok := decodeJsonRequest[loginRequest](w, r)
 		if !ok {
+			return
+		}
+		if err := validateRequiredStrings(req); err != nil {
+			WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody)
 			return
 		}
 		tokens, err := s.AuthService().Login(req.Email, req.Password)
@@ -68,8 +76,12 @@ func loginHdlrFunc(s AuthServer) http.HandlerFunc {
 
 func logoutHldrFunc(s AuthServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		req, ok := decodeJsonRequest[authRequest](w, r)
+		req, ok := decodeJsonRequest[logoutRequest](w, r)
 		if !ok {
+			return
+		}
+		if err := validateRequiredStrings(req); err != nil {
+			WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody)
 			return
 		}
 		if err := s.AuthService().Logout(req.RefreshToken); err != nil {

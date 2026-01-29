@@ -44,6 +44,9 @@ const (
 )
 
 func NewMenuStore(db *sql.DB) *MenuStore {
+	if db == nil {
+		return nil
+	}
 	return &MenuStore{db: db}
 }
 

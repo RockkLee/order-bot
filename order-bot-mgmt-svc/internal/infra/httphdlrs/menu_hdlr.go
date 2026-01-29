@@ -32,6 +32,10 @@ func createMenuHdlrFunc(s MenuServer) http.HandlerFunc {
 		if !ok {
 			return
 		}
+		if err := validateRequiredStrings(req); err != nil {
+			WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody)
+			return
+		}
 		menu, items, err := service.CreateMenu(req.BotID, extractItemNames(req.Items))
 		if err != nil {
 			slog.Error(errutil.FormatErrChain(err))
@@ -62,6 +66,10 @@ func updateMenuHdlrFunc(s MenuServer) http.HandlerFunc {
 		menuID := r.PathValue("menuID")
 		req, ok := decodeJsonRequest[menuRequest](w, r)
 		if !ok {
+			return
+		}
+		if err := validateRequiredStrings(req); err != nil {
+			WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody)
 			return
 		}
 		menu, items, err := service.UpdateMenu(menuID, req.BotID, extractItemNames(req.Items))
