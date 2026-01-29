@@ -6,7 +6,6 @@ import (
 )
 
 type Menu interface {
-	BeginTx(ctx context.Context) (Tx, error)
 	FindByID(ctx context.Context, menuID string) (entities.Menu, error)
 	FindItems(ctx context.Context, menuID string) ([]entities.MenuItem, error)
 	CreateMenu(ctx context.Context, tx Tx, menu entities.Menu) error
