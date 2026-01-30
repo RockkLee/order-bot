@@ -12,19 +12,21 @@ import (
 const menuQueryTimeout = 2 * time.Second
 
 type Svc struct {
-	menuStore store.Menu
-	db        *pqsqldb.DB
-	ctxFunc   util.CtxFunc
+	menuStore     store.Menu
+	menuItemStore store.MenuItem
+	db            *pqsqldb.DB
+	ctxFunc       util.CtxFunc
 }
 
-func NewSvc(menuStore store.Menu, db *pqsqldb.DB) *Svc {
-	if menuStore == nil || db == nil {
-		panic("menusvc.NewSvc(), menuStore or db is nil")
+func NewSvc(menuStore store.Menu, menuItemStore store.MenuItem, db *pqsqldb.DB) *Svc {
+	if menuStore == nil || menuItemStore == nil || db == nil {
+		panic("menusvc.NewSvc(), menuStore, menuItemStore or db is nil")
 	}
 	return &Svc{
-		menuStore: menuStore,
-		db:        db,
-		ctxFunc:   util.NewCtxFunc(menuQueryTimeout),
+		menuStore:     menuStore,
+		menuItemStore: menuItemStore,
+		db:            db,
+		ctxFunc:       util.NewCtxFunc(menuQueryTimeout),
 	}
 }
 
@@ -44,7 +46,7 @@ func (s *Svc) CreateMenu(botID string, itemNames []string) (entities.Menu, []ent
 		return entities.Menu{}, nil, fmt.Errorf("menusvc.CreateMenu: %w", err)
 	}
 	items := buildMenuItems(menu.ID, itemNames)
-	if err := s.menuStore.CreateMenuItems(ctx, tx, items); err != nil {
+	if err := s.menuItemStore.CreateMenuItems(ctx, tx, items); err != nil {
 		_ = tx.Rollback()
 		return entities.Menu{}, nil, fmt.Errorf("menusvc.CreateMenu: %w", err)
 	}
@@ -61,7 +63,7 @@ func (s *Svc) GetMenu(menuID string) (entities.Menu, []entities.MenuItem, error)
 	if err != nil {
 		return entities.Menu{}, nil, fmt.Errorf("menusvc.GetMenu: %w", err)
 	}
-	items, err := s.menuStore.FindItems(ctx, menuID)
+	items, err := s.menuItemStore.FindItems(ctx, menuID)
 	if err != nil {
 		return entities.Menu{}, nil, fmt.Errorf("menusvc.GetMenu: %w", err)
 	}
@@ -83,12 +85,12 @@ func (s *Svc) UpdateMenu(menuID, botID string, itemNames []string) (entities.Men
 		_ = tx.Rollback()
 		return entities.Menu{}, nil, fmt.Errorf("menusvc.UpdateMenu: %w", err)
 	}
-	if err := s.menuStore.DeleteMenuItems(ctx, tx, menuID); err != nil {
+	if err := s.menuItemStore.DeleteMenuItems(ctx, tx, menuID); err != nil {
 		_ = tx.Rollback()
 		return entities.Menu{}, nil, fmt.Errorf("menusvc.UpdateMenu: %w", err)
 	}
 	items := buildMenuItems(menuID, itemNames)
-	if err := s.menuStore.CreateMenuItems(ctx, tx, items); err != nil {
+	if err := s.menuItemStore.CreateMenuItems(ctx, tx, items); err != nil {
 		_ = tx.Rollback()
 		return entities.Menu{}, nil, fmt.Errorf("menusvc.UpdateMenu: %w", err)
 	}
@@ -105,7 +107,7 @@ func (s *Svc) DeleteMenu(menuID string) error {
 	if errTx != nil {
 		return fmt.Errorf("menusvc.DeleteMenu: %w", errTx)
 	}
-	if err := s.menuStore.DeleteMenuItems(ctx, tx, menuID); err != nil {
+	if err := s.menuItemStore.DeleteMenuItems(ctx, tx, menuID); err != nil {
 		_ = tx.Rollback()
 		return fmt.Errorf("menusvc.DeleteMenu: %w", err)
 	}

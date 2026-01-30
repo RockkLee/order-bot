@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"order-bot-mgmt-svc/internal/infra/sqldb/pqsqldb"
 	"order-bot-mgmt-svc/internal/models/entities"
+	"order-bot-mgmt-svc/internal/store"
 )
 
 type MenuItemRecord struct {
@@ -35,9 +36,9 @@ type MenuItemStore struct {
 }
 
 const (
-	insertMenuItemQueryStandalone     = `INSERT INTO menu_item (id, menu_id, menu_item_name) VALUES ($1, $2, $3);`
-	selectMenuItemsByMenuIDStandalone = `SELECT id, menu_id, menu_item_name FROM menu_item WHERE menu_id = $1 ORDER BY id;`
-	deleteMenuItemsByMenuIDStandalone = `DELETE FROM menu_item WHERE menu_id = $1;`
+	insertMenuItemQuery     = `INSERT INTO menu_item (id, menu_id, menu_item_name) VALUES ($1, $2, $3);`
+	selectMenuItemsByMenuID = `SELECT id, menu_id, menu_item_name FROM menu_item WHERE menu_id = $1 ORDER BY id;`
+	deleteMenuItemsByMenuID = `DELETE FROM menu_item WHERE menu_id = $1;`
 )
 
 func NewMenuItemStore(db *pqsqldb.DB) *MenuItemStore {
@@ -47,38 +48,51 @@ func NewMenuItemStore(db *pqsqldb.DB) *MenuItemStore {
 	return &MenuItemStore{db: db.Conn()}
 }
 
-func (s *MenuItemStore) Create(ctx context.Context, item entities.MenuItem) error {
-	_, err := s.db.ExecContext(ctx, insertMenuItemQueryStandalone, item.ID, item.MenuID, item.MenuItemName)
+func (s *MenuItemStore) FindItems(ctx context.Context, menuID string) ([]entities.MenuItem, error) {
+	rows, err := s.db.QueryContext(ctx, selectMenuItemsByMenuID, menuID)
 	if err != nil {
-		return fmt.Errorf("sqldb.MenuItemStore.Create: %w", err)
-	}
-	return nil
-}
-
-func (s *MenuItemStore) FindByMenuID(ctx context.Context, menuID string) ([]entities.MenuItem, error) {
-	rows, err := s.db.QueryContext(ctx, selectMenuItemsByMenuIDStandalone, menuID)
-	if err != nil {
-		return nil, fmt.Errorf("sqldb.MenuItemStore.FindByMenuID: %w", err)
+		return nil, fmt.Errorf("sqldb.MenuItemStore.FindItems: %w", err)
 	}
 	defer rows.Close()
 	var items []entities.MenuItem
 	for rows.Next() {
-		var item entities.MenuItem
-		if err := rows.Scan(&item.ID, &item.MenuID, &item.MenuItemName); err != nil {
-			return nil, fmt.Errorf("sqldb.MenuItemStore.FindByMenuID: %w", err)
+		var record MenuItemRecord
+		if err := rows.Scan(&record.ID, &record.MenuID, &record.MenuItemName); err != nil {
+			return nil, fmt.Errorf("sqldb.MenuItemStore.FindItems: %w", err)
 		}
-		items = append(items, item)
+		items = append(items, record.ToModel())
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("sqldb.MenuItemStore.FindByMenuID: %w", err)
+		return nil, fmt.Errorf("sqldb.MenuItemStore.FindItems: %w", err)
 	}
 	return items, nil
 }
 
-func (s *MenuItemStore) DeleteByMenuID(ctx context.Context, menuID string) error {
-	_, err := s.db.ExecContext(ctx, deleteMenuItemsByMenuIDStandalone, menuID)
+func (s *MenuItemStore) DeleteMenuItems(ctx context.Context, tx store.Tx, menuID string) error {
+	sqlTx, ok := tx.(*sql.Tx)
+	if !ok {
+		return fmt.Errorf("sqldb.DeleteMenuItems(): %w", store.ErrInvalidTx)
+	}
+	_, err := sqlTx.ExecContext(ctx, deleteMenuItemsByMenuID, menuID)
 	if err != nil {
-		return fmt.Errorf("sqldb.MenuItemStore.DeleteByMenuID: %w", err)
+		return fmt.Errorf("sqldb.MenuItemStore.DeleteMenuItems: %w", err)
+	}
+	return nil
+}
+
+func (s *MenuItemStore) CreateMenuItems(
+	ctx context.Context, tx store.Tx,
+	items []entities.MenuItem,
+) error {
+	sqlTx, ok := tx.(*sql.Tx)
+	if !ok {
+		return fmt.Errorf("sqldb.CreateMenuItems(): %w", store.ErrInvalidTx)
+	}
+	for _, item := range items {
+		record := MenuItemRecordFromModel(item)
+		if _, err := sqlTx.ExecContext(ctx, insertMenuItemQuery, record.ID, record.MenuID, record.MenuItemName); err != nil {
+			return fmt.Errorf("sqldb.MenuItemStore.CreateMenuItems: %w", err)
+		}
 	}
 	return nil
 }

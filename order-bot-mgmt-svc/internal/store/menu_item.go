@@ -6,7 +6,7 @@ import (
 )
 
 type MenuItem interface {
-	Create(ctx context.Context, item entities.MenuItem) error
-	FindByMenuID(ctx context.Context, menuID string) ([]entities.MenuItem, error)
-	DeleteByMenuID(ctx context.Context, menuID string) error
+	FindItems(ctx context.Context, menuID string) ([]entities.MenuItem, error)
+	DeleteMenuItems(ctx context.Context, tx Tx, menuID string) error
+	CreateMenuItems(ctx context.Context, tx Tx, items []entities.MenuItem) error
 }

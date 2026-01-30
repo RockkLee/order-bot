@@ -57,7 +57,8 @@ func newServices(db *pqsqldb.DB, cfg config.Config) *services.Services {
 		},
 		func() *menusvc.Svc {
 			menuStore := sqldb.NewMenuStore(db)
-			return menusvc.NewSvc(menuStore, db)
+			menuItemStore := sqldb.NewMenuItemStore(db)
+			return menusvc.NewSvc(menuStore, menuItemStore, db)
 		},
 	)
 }
