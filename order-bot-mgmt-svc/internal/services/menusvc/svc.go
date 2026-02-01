@@ -127,7 +127,7 @@ func (s *Svc) PublishMenu(ctx context.Context, botID string) (entities.Menu, []e
 		return entities.Menu{}, nil, fmt.Errorf("menusvc.PublishMenu: %w", err)
 	}
 	if err := s.orderBotDb.WithTx(ctx, func(ctx context.Context, tx store.Tx) error {
-		if err := s.publishedMenuStore.ReplaceMenuItems(ctx, tx, items); err != nil {
+		if err := s.publishedMenuStore.ReplaceMenuItems(ctx, tx, menu, items); err != nil {
 			return fmt.Errorf("menusvc.PublishMenu: %w", err)
 		}
 		return nil

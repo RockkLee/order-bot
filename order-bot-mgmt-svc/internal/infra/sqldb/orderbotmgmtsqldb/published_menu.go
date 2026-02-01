@@ -15,9 +15,10 @@ type PublishedMenuStore struct {
 }
 
 const (
-	deletePublishedMenuItemsQuery = `DELETE FROM menu_items;`
-	insertPublishedMenuItemQuery  = `INSERT INTO menu_items (id, sku, name, description, price_cents, is_available, created_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7);`
+	deletePublishedMenuItemsQuery = `DELETE FROM published_menu_item WHERE bot_id = $1;`
+	insertPublishedMenuQuery      = `INSERT INTO published_menu (id, bot_id) VALUES ($1, $2);`
+	insertPublishedMenuItemQuery  = `INSERT INTO published_menu_item (id, bot_id, sku, name, description, price_cents, is_available, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`
 )
 
 func NewPublishedMenuStore(db *pqsqldb.DB) *PublishedMenuStore {
@@ -27,20 +28,29 @@ func NewPublishedMenuStore(db *pqsqldb.DB) *PublishedMenuStore {
 	return &PublishedMenuStore{db: db.Conn()}
 }
 
-func (s *PublishedMenuStore) ReplaceMenuItems(ctx context.Context, tx store.Tx, items []entities.MenuItem) error {
+func (s *PublishedMenuStore) ReplaceMenuItems(
+	ctx context.Context,
+	tx store.Tx,
+	menu entities.Menu,
+	items []entities.MenuItem,
+) error {
 	execer, err := sqldbexecutor.Executor(s.db, tx)
 	if err != nil {
 		return fmt.Errorf("orderbotmgmtsqldb.PublishedMenuStore.ReplaceMenuItems: %w", err)
 	}
-	if _, err := execer.ExecContext(ctx, deletePublishedMenuItemsQuery); err != nil {
+	if _, err := execer.ExecContext(ctx, insertPublishedMenuQuery, menu.ID, menu.BotID); err != nil {
+		return fmt.Errorf("orderbotmgmtsqldb.PublishedMenuStore.ReplaceMenuItems(), insert menu: %w", err)
+	}
+	if _, err := execer.ExecContext(ctx, deletePublishedMenuItemsQuery, menu.BotID); err != nil {
 		return fmt.Errorf("orderbotmgmtsqldb.PublishedMenuStore.ReplaceMenuItems(), delete: %w", err)
 	}
 	for _, item := range items {
-		record := PublishedMenuItemRecordFromModel(item)
+		record := PublishedMenuItemRecordFromModel(menu.BotID, item)
 		if _, err := execer.ExecContext(
 			ctx,
 			insertPublishedMenuItemQuery,
 			record.ID,
+			record.BotID,
 			record.SKU,
 			record.Name,
 			record.Description,

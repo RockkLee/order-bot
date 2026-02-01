@@ -9,6 +9,7 @@ import (
 
 type PublishedMenuItemRecord struct {
 	ID          string
+	BotID       string
 	SKU         string
 	Name        string
 	Description sql.NullString
@@ -17,10 +18,11 @@ type PublishedMenuItemRecord struct {
 	CreatedAt   time.Time
 }
 
-func PublishedMenuItemRecordFromModel(item entities.MenuItem) PublishedMenuItemRecord {
+func PublishedMenuItemRecordFromModel(botID string, item entities.MenuItem) PublishedMenuItemRecord {
 	priceCents := int(math.Round(item.Price * 100))
 	return PublishedMenuItemRecord{
 		ID:          item.ID,
+		BotID:       botID,
 		SKU:         item.ID,
 		Name:        item.MenuItemName,
 		Description: sql.NullString{},
