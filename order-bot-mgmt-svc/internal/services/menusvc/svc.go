@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"order-bot-mgmt-svc/internal/infra/sqldb/orderbotmgmtsqldb"
 	"order-bot-mgmt-svc/internal/infra/sqldb/pqsqldb"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
@@ -12,21 +13,32 @@ import (
 )
 
 type Svc struct {
-	menuStore     store.Menu
-	menuItemStore store.MenuItem
-	db            *pqsqldb.DB
-	ctxFunc       util.CtxFunc
+	menuStore          store.Menu
+	menuItemStore      store.MenuItem
+	publishedMenuStore *orderbotmgmtsqldb.PublishedMenuStore
+	db                 *pqsqldb.DB
+	orderBotDb         *pqsqldb.DB
+	ctxFunc            util.CtxFunc
 }
 
-func NewSvc(db *pqsqldb.DB, ctxFunc util.CtxFunc, menuStore store.Menu, menuItemStore store.MenuItem) *Svc {
-	if menuStore == nil || menuItemStore == nil || db == nil {
-		panic("menusvc.NewSvc(), menuStore, menuItemStore or db is nil")
+func NewSvc(
+	db *pqsqldb.DB,
+	orderBotDb *pqsqldb.DB,
+	ctxFunc util.CtxFunc,
+	menuStore store.Menu,
+	menuItemStore store.MenuItem,
+	publishedMenuStore *orderbotmgmtsqldb.PublishedMenuStore,
+) *Svc {
+	if menuStore == nil || menuItemStore == nil || db == nil || orderBotDb == nil || publishedMenuStore == nil {
+		panic("menusvc.NewSvc(), menuStore, menuItemStore, publishedMenuStore, db, or orderBotDb is nil")
 	}
 	return &Svc{
-		menuStore:     menuStore,
-		menuItemStore: menuItemStore,
-		db:            db,
-		ctxFunc:       ctxFunc,
+		menuStore:          menuStore,
+		menuItemStore:      menuItemStore,
+		publishedMenuStore: publishedMenuStore,
+		db:                 db,
+		orderBotDb:         orderBotDb,
+		ctxFunc:            ctxFunc,
 	}
 }
 
@@ -49,7 +61,8 @@ func (s *Svc) CreateMenu(ctx context.Context, botID string, menuItems []entities
 			ID:    util.NewID(),
 			BotID: botID,
 		}
-		for idx, _ := range items {
+		items = menuItems
+		for idx := range items {
 			items[idx].MenuID = menu.ID
 		}
 		if err := s.menuStore.CreateMenu(ctx, tx, menu); err != nil {
@@ -86,7 +99,7 @@ func (s *Svc) UpdateMenu(ctx context.Context, botID string, items []entities.Men
 	var menu entities.Menu
 	err := s.db.WithTx(ctx, func(ctx context.Context, tx store.Tx) error {
 		menu, errMenu := s.menuStore.FindByBotID(ctx, botID)
-		for idx, _ := range items {
+		for idx := range items {
 			items[idx].MenuID = menu.ID
 		}
 		if errMenu != nil {
@@ -101,6 +114,24 @@ func (s *Svc) UpdateMenu(ctx context.Context, botID string, items []entities.Men
 		return nil
 	})
 	if err != nil {
+		return entities.Menu{}, nil, err
+	}
+	return menu, items, nil
+}
+
+func (s *Svc) PublishMenu(ctx context.Context, botID string) (entities.Menu, []entities.MenuItem, error) {
+	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
+	defer cancel()
+	menu, items, err := s.GetMenu(ctx, botID)
+	if err != nil {
+		return entities.Menu{}, nil, fmt.Errorf("menusvc.PublishMenu: %w", err)
+	}
+	if err := s.orderBotDb.WithTx(ctx, func(ctx context.Context, tx store.Tx) error {
+		if err := s.publishedMenuStore.ReplaceMenuItems(ctx, tx, items); err != nil {
+			return fmt.Errorf("menusvc.PublishMenu: %w", err)
+		}
+		return nil
+	}); err != nil {
 		return entities.Menu{}, nil, err
 	}
 	return menu, items, nil

@@ -31,6 +31,7 @@ func (r MenuItemRecord) ToModel() entities.MenuItem {
 		ID:           r.ID,
 		MenuID:       r.MenuID,
 		MenuItemName: r.MenuItemName,
+		Price:        r.Price,
 	}
 }
 
@@ -40,7 +41,7 @@ type MenuItemStore struct {
 
 const (
 	insertMenuItemQuery     = `INSERT INTO menu_item (id, menu_id, menu_item_name, price) VALUES ($1, $2, $3, $4);`
-	selectMenuItemsByMenuID = `SELECT id, menu_id, menu_item_name FROM menu_item WHERE menu_id = $1 ORDER BY id;`
+	selectMenuItemsByMenuID = `SELECT id, menu_id, menu_item_name, price FROM menu_item WHERE menu_id = $1 ORDER BY id;`
 	deleteMenuItemsByMenuID = `DELETE FROM menu_item WHERE menu_id = $1;`
 )
 
@@ -64,7 +65,7 @@ func (s *MenuItemStore) FindItems(ctx context.Context, menuID string) ([]entitie
 	var items []entities.MenuItem
 	for rows.Next() {
 		var record MenuItemRecord
-		if err := rows.Scan(&record.ID, &record.MenuID, &record.MenuItemName); err != nil {
+		if err := rows.Scan(&record.ID, &record.MenuID, &record.MenuItemName, &record.Price); err != nil {
 			return nil, fmt.Errorf("sqldb.MenuItemStore.FindItems(), Scan: %w", err)
 		}
 		items = append(items, record.ToModel())
