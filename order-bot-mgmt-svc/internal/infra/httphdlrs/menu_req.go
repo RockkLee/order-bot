@@ -1,21 +1,41 @@
 package httphdlrs
 
-type menuItemRequest struct {
-	Name string `json:"name" validate:"required"`
+import "order-bot-mgmt-svc/internal/models/entities"
+
+type menuItemReq struct {
+	Name  string  `json:"name" validate:"required"`
+	Price float64 `json:"price"`
 }
 
-type menuRequest struct {
-	BotID string            `json:"bot_id" validate:"required"`
-	Items []menuItemRequest `json:"items"`
+type menuReq struct {
+	BotID string        `json:"bot_id" validate:"required"`
+	Items []menuItemReq `json:"items"`
 }
 
-type menuItemResponse struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+type menuItemRes struct {
+	ID    string  `json:"id"`
+	Name  string  `json:"name"`
+	Price float64 `json:"price"`
 }
 
-type menuResponse struct {
-	ID    string             `json:"id"`
-	BotID string             `json:"bot_id"`
-	Items []menuItemResponse `json:"items"`
+type menuRes struct {
+	ID    string        `json:"id"`
+	BotID string        `json:"bot_id"`
+	Items []menuItemRes `json:"items"`
+}
+
+func menuResFromModel(menu entities.Menu, items []entities.MenuItem) menuRes {
+	resItems := make([]menuItemRes, 0, len(items))
+	for _, item := range items {
+		resItems = append(resItems, menuItemRes{
+			ID:    item.ID,
+			Name:  item.MenuItemName,
+			Price: item.Price,
+		})
+	}
+	return menuRes{
+		ID:    menu.ID,
+		BotID: menu.BotID,
+		Items: resItems,
+	}
 }
