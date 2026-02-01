@@ -86,7 +86,7 @@ func (s *Svc) GetMenu(ctx context.Context, botId string) (entities.Menu, []entit
 	if err != nil {
 		return entities.Menu{}, nil, fmt.Errorf("menusvc.GetMenu: %w", err)
 	}
-	items, err := s.menuItemStore.FindItems(ctx, botId)
+	items, err := s.menuItemStore.FindItems(ctx, menu.ID)
 	if err != nil {
 		return entities.Menu{}, nil, fmt.Errorf("menusvc.GetMenu: %w", err)
 	}

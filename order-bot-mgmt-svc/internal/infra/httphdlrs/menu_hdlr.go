@@ -21,7 +21,7 @@ func MenuHdlr(s MenuServer) http.Handler {
 	mux.HandleFunc("POST /", createMenuHdlrFunc(s))
 	mux.HandleFunc("GET /{botId}", getMenuHdlrFunc(s))
 	mux.HandleFunc("PUT /", updateMenuHdlrFunc(s))
-	mux.HandleFunc("POST /{botId}/published", publishMenuHdlrFunc(s))
+	mux.HandleFunc("POST /{botId}/publish", publishMenuHdlrFunc(s))
 	return mux
 }
 
