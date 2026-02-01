@@ -1,6 +1,7 @@
 package botsvc
 
 import (
+	"context"
 	"fmt"
 	"order-bot-mgmt-svc/internal/infra/sqldb/pqsqldb"
 	"order-bot-mgmt-svc/internal/models/entities"
@@ -27,14 +28,14 @@ func NewSvc(botStore store.Bot, userBotStore store.UserBot, db *pqsqldb.DB, ctxF
 	}
 }
 
-func (s *Svc) CreateBot(name string, userId string) error {
-	ctx, cancel := s.ctxFunc()
+func (s *Svc) CreateBot(ctx context.Context, tx store.Tx, name string, userId string) error {
+	ctx, cancel := s.ctxWithFallback(ctx)
 	defer cancel()
 	newBot := entities.Bot{
 		ID:      util.NewID(),
 		BotName: name,
 	}
-	if err := s.botStore.Create(ctx, newBot); err != nil {
+	if err := s.botStore.Create(ctx, tx, newBot); err != nil {
 		return fmt.Errorf("bitsvc.CreateBot: %w", err)
 	}
 	newUserBot := entities.UserBot{
@@ -42,8 +43,15 @@ func (s *Svc) CreateBot(name string, userId string) error {
 		UserID: userId,
 		BotID:  newBot.ID,
 	}
-	if err := s.userBotStore.Create(ctx, newUserBot); err != nil {
+	if err := s.userBotStore.Create(ctx, tx, newUserBot); err != nil {
 		return fmt.Errorf("bitsvc.CreateBot: %w", err)
 	}
 	return nil
+}
+
+func (s *Svc) ctxWithFallback(ctx context.Context) (context.Context, context.CancelFunc) {
+	if ctx == nil {
+		return s.ctxFunc()
+	}
+	return ctx, func() {}
 }

@@ -6,6 +6,6 @@ import (
 )
 
 type UserBot interface {
-	Create(ctx context.Context, userBot entities.UserBot) error
-	FindByUserID(ctx context.Context, userID string) ([]entities.UserBot, error)
+	Create(ctx context.Context, tx Tx, userBot entities.UserBot) error
+	FindByUserID(ctx context.Context, tx Tx, userID string) ([]entities.UserBot, error)
 }

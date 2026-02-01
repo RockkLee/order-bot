@@ -40,11 +40,18 @@ func (f *fakeRepository) Conn() *sql.DB {
 	return nil
 }
 
+func (f *fakeRepository) WithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) error) error {
+	if fn == nil {
+		return fmt.Errorf("fakeRepository.WithTx: fn is nil")
+	}
+	return fn(ctx, nil)
+}
+
 type fakeUserStore struct {
 	users map[string]entities.User
 }
 
-func (f *fakeUserStore) Create(_ context.Context, user entities.User) error {
+func (f *fakeUserStore) Create(_ context.Context, _ store.Tx, user entities.User) error {
 	if _, exists := f.users[user.Email]; exists {
 		return fmt.Errorf("fakeUserStore.Create: %w", store.ErrUserExists)
 	}
@@ -52,7 +59,7 @@ func (f *fakeUserStore) Create(_ context.Context, user entities.User) error {
 	return nil
 }
 
-func (f *fakeUserStore) FindByEmail(_ context.Context, email string) (entities.User, error) {
+func (f *fakeUserStore) FindByEmail(_ context.Context, _ store.Tx, email string) (entities.User, error) {
 	user, exists := f.users[email]
 	if !exists {
 		return entities.User{}, fmt.Errorf("fakeUserStore.FindByEmail: %w", store.ErrNotFound)
@@ -60,7 +67,7 @@ func (f *fakeUserStore) FindByEmail(_ context.Context, email string) (entities.U
 	return user, nil
 }
 
-func (f *fakeUserStore) FindByID(_ context.Context, id string) (entities.User, error) {
+func (f *fakeUserStore) FindByID(_ context.Context, _ store.Tx, id string) (entities.User, error) {
 	for _, user := range f.users {
 		if user.ID == id {
 			return user, nil
@@ -69,7 +76,7 @@ func (f *fakeUserStore) FindByID(_ context.Context, id string) (entities.User, e
 	return entities.User{}, fmt.Errorf("fakeUserStore.FindByBotID: %w", store.ErrNotFound)
 }
 
-func (f *fakeUserStore) UpdateTokens(_ context.Context, id string, accessToken string, refreshToken string) error {
+func (f *fakeUserStore) UpdateTokens(_ context.Context, _ store.Tx, id string, accessToken string, refreshToken string) error {
 	for email, user := range f.users {
 		if user.ID == id {
 			user.AccessToken = accessToken

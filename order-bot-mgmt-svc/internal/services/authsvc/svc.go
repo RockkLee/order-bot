@@ -1,6 +1,7 @@
 package authsvc
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"order-bot-mgmt-svc/internal/config"
@@ -39,7 +40,7 @@ func NewSvc(db *pqsqldb.DB, ctxFunc util.CtxFunc, cfg config.Config, userStore s
 	}
 }
 
-func (s *Svc) Signup(email, password string) (tokenPair models.TokenPair, userId string, err error) {
+func (s *Svc) Signup(ctx context.Context, tx store.Tx, email, password string) (tokenPair models.TokenPair, userId string, err error) {
 	if email == "" || password == "" {
 		return models.TokenPair{}, "", fmt.Errorf("authsvc.Signup: %w", ErrInvalidCredentials)
 	}
@@ -54,25 +55,25 @@ func (s *Svc) Signup(email, password string) (tokenPair models.TokenPair, userId
 		AccessToken:  "",
 		RefreshToken: "",
 	}
-	ctx, cancel := s.ctxFunc()
+	ctx, cancel := s.ctxWithFallback(ctx)
 	defer cancel()
-	if err := s.userStore.Create(ctx, newUser); err != nil {
+	if err := s.userStore.Create(ctx, tx, newUser); err != nil {
 		if errors.Is(err, store.ErrUserExists) {
 			return models.TokenPair{}, "", fmt.Errorf("authsvc.Signup: %w", ErrUserExists)
 		}
 		return models.TokenPair{}, "", fmt.Errorf("authsvc.Signup: %w", err)
 	}
-	tokens, err := s.issueTokens(newUser)
+	tokens, err := s.issueTokens(ctx, tx, newUser)
 	if err != nil {
 		return models.TokenPair{}, "", fmt.Errorf("authsvc.Signup: %w", err)
 	}
 	return tokens, newUser.ID, nil
 }
 
-func (s *Svc) Login(email, password string) (models.TokenPair, error) {
-	ctx, cancel := s.ctxFunc()
+func (s *Svc) Login(ctx context.Context, email, password string) (models.TokenPair, error) {
+	ctx, cancel := s.ctxWithFallback(ctx)
 	defer cancel()
-	user, errFindUsr := s.userStore.FindByEmail(ctx, email)
+	user, errFindUsr := s.userStore.FindByEmail(ctx, nil, email)
 	if errFindUsr != nil {
 		if errors.Is(errFindUsr, store.ErrNotFound) {
 			return models.TokenPair{}, fmt.Errorf("authsvc.Login: %w", ErrInvalidCredentials)
@@ -82,27 +83,27 @@ func (s *Svc) Login(email, password string) (models.TokenPair, error) {
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
 		return models.TokenPair{}, fmt.Errorf("authsvc.Login: %w", ErrInvalidCredentials)
 	}
-	tokens, err := s.issueTokens(user)
+	tokens, err := s.issueTokens(ctx, nil, user)
 	if err != nil {
 		return models.TokenPair{}, fmt.Errorf("authsvc.Login: %w", err)
 	}
 	return tokens, nil
 }
 
-func (s *Svc) Logout(refreshToken string) error {
-	userID, errValidation := s.ValidateRefreshToken(refreshToken)
+func (s *Svc) Logout(ctx context.Context, refreshToken string) error {
+	userID, errValidation := s.ValidateRefreshToken(ctx, refreshToken)
 	if errValidation != nil {
 		return fmt.Errorf("authsvc.Logout: %w", errValidation)
 	}
-	ctx, cancel := s.ctxFunc()
+	ctx, cancel := s.ctxWithFallback(ctx)
 	defer cancel()
-	if err := s.userStore.UpdateTokens(ctx, userID, "", ""); err != nil {
+	if err := s.userStore.UpdateTokens(ctx, nil, userID, "", ""); err != nil {
 		return fmt.Errorf("authsvc.Logout: %w", err)
 	}
 	return nil
 }
 
-func (s *Svc) ValidateAccessToken(accessToken string) error {
+func (s *Svc) ValidateAccessToken(_ context.Context, accessToken string) error {
 	if accessToken == "" {
 		return fmt.Errorf("authsvc.ValidateAccessToken(): accessToken is empty %w", ErrInvalidToken)
 	}
@@ -119,7 +120,7 @@ func (s *Svc) ValidateAccessToken(accessToken string) error {
 	return nil
 }
 
-func (s *Svc) ValidateRefreshToken(refreshToken string) (string, error) {
+func (s *Svc) ValidateRefreshToken(ctx context.Context, refreshToken string) (string, error) {
 	if refreshToken == "" {
 		return "", fmt.Errorf("authsvc.ValidateRefreshToken(): %w", ErrInvalidToken)
 	}
@@ -130,9 +131,9 @@ func (s *Svc) ValidateRefreshToken(refreshToken string) (string, error) {
 	if claims.Typ != "refresh" {
 		return "", fmt.Errorf("authsvc.ValidateRefreshToken(), claims.Typ != 'refresh': %w", err)
 	}
-	ctx, cancel := s.ctxFunc()
+	ctx, cancel := s.ctxWithFallback(ctx)
 	defer cancel()
-	user, err := s.userStore.FindByID(ctx, claims.Sub)
+	user, err := s.userStore.FindByID(ctx, nil, claims.Sub)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return "", fmt.Errorf("authsvc.ValidateRefreshToken: %w", err)
@@ -145,7 +146,7 @@ func (s *Svc) ValidateRefreshToken(refreshToken string) (string, error) {
 	return user.ID, nil
 }
 
-func (s *Svc) issueTokens(user entities.User) (models.TokenPair, error) {
+func (s *Svc) issueTokens(ctx context.Context, tx store.Tx, user entities.User) (models.TokenPair, error) {
 	now := time.Now()
 	accessClaims := models.Claims{
 		Sub:   user.ID,
@@ -169,13 +170,20 @@ func (s *Svc) issueTokens(user entities.User) (models.TokenPair, error) {
 	if err != nil {
 		return models.TokenPair{}, fmt.Errorf("authsvc.issueTokens: %w", err)
 	}
-	ctx, cancel := s.ctxFunc()
+	ctx, cancel := s.ctxWithFallback(ctx)
 	defer cancel()
-	if err := s.userStore.UpdateTokens(ctx, user.ID, accessToken, refreshToken); err != nil {
+	if err := s.userStore.UpdateTokens(ctx, tx, user.ID, accessToken, refreshToken); err != nil {
 		return models.TokenPair{}, fmt.Errorf("authsvc.issueTokens: %w", err)
 	}
 	return models.TokenPair{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}, nil
+}
+
+func (s *Svc) ctxWithFallback(ctx context.Context) (context.Context, context.CancelFunc) {
+	if ctx == nil {
+		return s.ctxFunc()
+	}
+	return ctx, func() {}
 }

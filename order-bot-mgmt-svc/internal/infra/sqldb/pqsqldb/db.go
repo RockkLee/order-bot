@@ -26,6 +26,9 @@ type Service interface {
 
 	// Conn returns the underlying SQL connection.
 	Conn() *sql.DB
+
+	// WithTx runs the given function within a transaction.
+	WithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) error) error
 }
 
 type DB struct {
@@ -132,4 +135,22 @@ func (s *DB) BeginTx(ctx context.Context) (store.Tx, error) {
 		return nil, fmt.Errorf("pqsqldb.DB.BeginTx: %w", err)
 	}
 	return tx, nil
+}
+
+func (s *DB) WithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) error) error {
+	if fn == nil {
+		return fmt.Errorf("pqsqldb.DB.WithTx: fn is nil")
+	}
+	tx, err := s.BeginTx(ctx)
+	if err != nil {
+		return fmt.Errorf("pqsqldb.DB.WithTx: %w", err)
+	}
+	if err := fn(ctx, tx); err != nil {
+		_ = tx.Rollback()
+		return fmt.Errorf("pqsqldb.DB.WithTx: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("pqsqldb.DB.WithTx: %w", err)
+	}
+	return nil
 }
