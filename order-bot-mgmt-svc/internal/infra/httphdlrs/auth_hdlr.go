@@ -1,11 +1,14 @@
 package httphdlrs
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"order-bot-mgmt-svc/internal/models"
 	"order-bot-mgmt-svc/internal/services/botsvc"
+	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/util/errutil"
 	"order-bot-mgmt-svc/internal/util/validatorutil"
 
@@ -15,6 +18,7 @@ import (
 type AuthServer interface {
 	AuthService() *authsvc.Svc
 	BotService() *botsvc.Svc
+	WithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) error) error
 }
 
 const AuthPrefix = "/auth"
@@ -37,7 +41,21 @@ func signupHdlrFunc(s AuthServer) http.HandlerFunc {
 			WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody)
 			return
 		}
-		tokens, userId, err := s.AuthService().Signup(req.Email, req.Password)
+		var (
+			tokens models.TokenPair
+			userId string
+		)
+		err := s.WithTx(r.Context(), func(ctx context.Context, tx store.Tx) error {
+			var err error
+			tokens, userId, err = s.AuthService().Signup(ctx, tx, req.Email, req.Password)
+			if err != nil {
+				return err
+			}
+			if err := s.BotService().CreateBot(ctx, tx, req.BotName, userId); err != nil {
+				return fmt.Errorf("httphdlrs.CreateBot: %w", err)
+			}
+			return nil
+		})
 		if err != nil {
 			slog.Error(errutil.FormatErrChain(err))
 			switch {
@@ -48,12 +66,6 @@ func signupHdlrFunc(s AuthServer) http.HandlerFunc {
 			default:
 				http.Error(w, "failed to create user", http.StatusInternalServerError)
 			}
-			return
-		}
-		if errBot := s.BotService().CreateBot(req.BotName, userId); errBot != nil {
-			slog.Error(errutil.FormatErrChain(
-				fmt.Errorf("httphdlrs.CreateBot: %w", err)))
-			http.Error(w, "failed to create bot", http.StatusInternalServerError)
 			return
 		}
 		writeJSON(w, http.StatusCreated, tokens)
@@ -70,7 +82,7 @@ func loginHdlrFunc(s AuthServer) http.HandlerFunc {
 			WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody)
 			return
 		}
-		tokens, err := s.AuthService().Login(req.Email, req.Password)
+		tokens, err := s.AuthService().Login(r.Context(), req.Email, req.Password)
 		if err != nil {
 			slog.Error(errutil.FormatErrChain(err))
 			switch err {
@@ -95,7 +107,7 @@ func logoutHldrFunc(s AuthServer) http.HandlerFunc {
 			WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody)
 			return
 		}
-		if err := s.AuthService().Logout(req.RefreshToken); err != nil {
+		if err := s.AuthService().Logout(r.Context(), req.RefreshToken); err != nil {
 			slog.Error(errutil.FormatErrChain(err))
 			WriteError(w, http.StatusUnauthorized, authsvc.ErrInvalidRefreshToken.Error())
 			return

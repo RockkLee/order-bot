@@ -47,17 +47,25 @@ func NewUserBotStore(db *pqsqldb.DB) *UserBotStore {
 	return &UserBotStore{db: db.Conn()}
 }
 
-func (s *UserBotStore) Create(ctx context.Context, userBot entities.UserBot) error {
+func (s *UserBotStore) Create(ctx context.Context, tx store.Tx, userBot entities.UserBot) error {
 	record := UserBotRecordFromModel(userBot)
-	_, err := s.db.ExecContext(ctx, insertUserBotQuery, record.ID, record.UserID, record.BotID)
+	exec, err := executorForTx(s.db, tx)
+	if err != nil {
+		return fmt.Errorf("sqldb.UserBotStore.Create(): %w", err)
+	}
+	_, err = exec.ExecContext(ctx, insertUserBotQuery, record.ID, record.UserID, record.BotID)
 	if err != nil {
 		return fmt.Errorf("sqldb.UserBotStore.Create(), ExecContext: %w", err)
 	}
 	return nil
 }
 
-func (s *UserBotStore) FindByUserID(ctx context.Context, userID string) ([]entities.UserBot, error) {
-	rows, err := s.db.QueryContext(ctx, selectUserBotsByUser, userID)
+func (s *UserBotStore) FindByUserID(ctx context.Context, tx store.Tx, userID string) ([]entities.UserBot, error) {
+	exec, err := executorForTx(s.db, tx)
+	if err != nil {
+		return nil, fmt.Errorf("sqldb.UserBotStore.FindByUserID: %w", err)
+	}
+	rows, err := exec.QueryContext(ctx, selectUserBotsByUser, userID)
 	if err != nil {
 		return nil, fmt.Errorf("sqldb.UserBotStore.FindByUserID: %w", err)
 	}

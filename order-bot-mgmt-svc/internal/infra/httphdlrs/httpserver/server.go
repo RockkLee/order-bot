@@ -1,12 +1,14 @@
 package httpserver
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"order-bot-mgmt-svc/internal/infra/sqldb/pqsqldb"
 	"order-bot-mgmt-svc/internal/services/authsvc"
 	"order-bot-mgmt-svc/internal/services/botsvc"
 	"order-bot-mgmt-svc/internal/services/menusvc"
+	"order-bot-mgmt-svc/internal/store"
 	"time"
 
 	"order-bot-mgmt-svc/internal/services"
@@ -41,6 +43,10 @@ func NewServer(port int, db pqsqldb.Service, services *services.Services) *http.
 
 func (s *Server) dbService() pqsqldb.Service {
 	return s.db
+}
+
+func (s *Server) WithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) error) error {
+	return s.db.WithTx(ctx, fn)
 }
 
 func (s *Server) AuthService() *authsvc.Svc {

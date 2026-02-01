@@ -12,3 +12,10 @@ func NewCtxFunc(timeout time.Duration) CtxFunc {
 		return context.WithTimeout(context.Background(), timeout)
 	}
 }
+
+func CallCtxFunc(ctx context.Context, ctxFunc CtxFunc) (context.Context, context.CancelFunc) {
+	if ctx == nil {
+		return ctxFunc()
+	}
+	return ctx, func() {}
+}

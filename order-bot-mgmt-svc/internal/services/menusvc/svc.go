@@ -1,6 +1,7 @@
 package menusvc
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -29,37 +30,42 @@ func NewSvc(db *pqsqldb.DB, ctxFunc util.CtxFunc, menuStore store.Menu, menuItem
 	}
 }
 
-func (s *Svc) CreateMenu(botID string, itemNames []string) (entities.Menu, []entities.MenuItem, error) {
-	ctx, cancel := s.ctxFunc()
+func (s *Svc) CreateMenu(ctx context.Context, botID string, itemNames []string) (entities.Menu, []entities.MenuItem, error) {
+	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
 	defer cancel()
-	tx, errTx := s.db.BeginTx(ctx)
-	if errTx != nil {
-		return entities.Menu{}, nil, fmt.Errorf("menusvc.CreateMenu: %w", errTx)
-	}
-	if _, err := s.menuStore.FindByBotID(ctx, botID); !errors.Is(err, sql.ErrNoRows) {
-		return entities.Menu{}, nil, fmt.Errorf("menusvc.GetMenu: %w", err)
-	}
-	menu := entities.Menu{
-		ID:    util.NewID(),
-		BotID: botID,
-	}
-	if err := s.menuStore.CreateMenu(ctx, tx, menu); err != nil {
-		_ = tx.Rollback()
-		return entities.Menu{}, nil, fmt.Errorf("menusvc.CreateMenu: %w", err)
-	}
-	items := buildMenuItems(menu.ID, itemNames)
-	if err := s.menuItemStore.CreateMenuItems(ctx, tx, items); err != nil {
-		_ = tx.Rollback()
-		return entities.Menu{}, nil, fmt.Errorf("menusvc.CreateMenu: %w", err)
-	}
-	if err := tx.Commit(); err != nil {
-		return entities.Menu{}, nil, fmt.Errorf("menusvc.CreateMenu(), Commit: %w", err)
+	var (
+		menu  entities.Menu
+		items []entities.MenuItem
+	)
+	err := s.db.WithTx(ctx, func(ctx context.Context, tx store.Tx) error {
+		_, err := s.menuStore.FindByBotID(ctx, botID)
+		switch {
+		case err == nil:
+			return ErrInvalidMenu
+		case !errors.Is(err, sql.ErrNoRows):
+			return fmt.Errorf("menusvc.GetMenu: %w", err)
+		}
+		menu = entities.Menu{
+			ID:    util.NewID(),
+			BotID: botID,
+		}
+		if err := s.menuStore.CreateMenu(ctx, tx, menu); err != nil {
+			return fmt.Errorf("menusvc.CreateMenu: %w", err)
+		}
+		items = buildMenuItems(menu.ID, itemNames)
+		if err := s.menuItemStore.CreateMenuItems(ctx, tx, items); err != nil {
+			return fmt.Errorf("menusvc.CreateMenu: %w", err)
+		}
+		return nil
+	})
+	if err != nil {
+		return entities.Menu{}, nil, err
 	}
 	return menu, items, nil
 }
 
-func (s *Svc) GetMenu(botId string) (entities.Menu, []entities.MenuItem, error) {
-	ctx, cancel := s.ctxFunc()
+func (s *Svc) GetMenu(ctx context.Context, botId string) (entities.Menu, []entities.MenuItem, error) {
+	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
 	defer cancel()
 	menu, err := s.menuStore.FindByBotID(ctx, botId)
 	if err != nil {
@@ -72,25 +78,27 @@ func (s *Svc) GetMenu(botId string) (entities.Menu, []entities.MenuItem, error) 
 	return menu, items, nil
 }
 
-func (s *Svc) UpdateMenu(botID string, itemNames []string) (entities.Menu, []entities.MenuItem, error) {
-	ctx, cancel := s.ctxFunc()
+func (s *Svc) UpdateMenu(ctx context.Context, botID string, itemNames []string) (entities.Menu, []entities.MenuItem, error) {
+	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
 	defer cancel()
-	tx, errTx := s.db.BeginTx(ctx)
-	if errTx != nil {
-		return entities.Menu{}, nil, fmt.Errorf("menusvc.UpdateMenu: %w", errTx)
-	}
-	menu, errMenu := s.menuStore.FindByBotID(ctx, botID)
-	if errMenu != nil {
-		_ = tx.Rollback()
-		return entities.Menu{}, nil, fmt.Errorf("menusvc.UpdateMenu: %w", errMenu)
-	}
-	items := buildMenuItems(menu.ID, itemNames)
-	if err := s.menuItemStore.CreateMenuItems(ctx, tx, items); err != nil {
-		_ = tx.Rollback()
-		return entities.Menu{}, nil, fmt.Errorf("menusvc.UpdateMenu: %w", err)
-	}
-	if err := tx.Commit(); err != nil {
-		return entities.Menu{}, nil, fmt.Errorf("menusvc.UpdateMenu: %w", err)
+	var (
+		menu  entities.Menu
+		items []entities.MenuItem
+	)
+	err := s.db.WithTx(ctx, func(ctx context.Context, tx store.Tx) error {
+		var err error
+		menu, err = s.menuStore.FindByBotID(ctx, botID)
+		if err != nil {
+			return fmt.Errorf("menusvc.UpdateMenu: %w", err)
+		}
+		items = buildMenuItems(menu.ID, itemNames)
+		if err := s.menuItemStore.CreateMenuItems(ctx, tx, items); err != nil {
+			return fmt.Errorf("menusvc.UpdateMenu: %w", err)
+		}
+		return nil
+	})
+	if err != nil {
+		return entities.Menu{}, nil, err
 	}
 	return menu, items, nil
 }

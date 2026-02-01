@@ -72,7 +72,7 @@ func authMiddleware(s *Server) Middleware {
 				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 				return
 			}
-			err := authService.ValidateAccessToken(accessToken)
+			err := authService.ValidateAccessToken(r.Context(), accessToken)
 			if err != nil {
 				slog.Debug(errutil.FormatErrChain(err))
 				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)

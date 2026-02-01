@@ -59,9 +59,13 @@ func NewUserStore(db *pqsqldb.DB) *UserStore {
 	return &UserStore{db: db.Conn()}
 }
 
-func (s *UserStore) Create(ctx context.Context, user entities.User) error {
+func (s *UserStore) Create(ctx context.Context, tx store.Tx, user entities.User) error {
 	record := UserRecordFromModel(user)
-	_, err := s.db.ExecContext(ctx, insertUserQuery, record.ID, record.Email, record.PasswordHash, record.AccessToken, record.RefreshToken)
+	exec, err := executorForTx(s.db, tx)
+	if err != nil {
+		return fmt.Errorf("sqldb.UserStore.Create: %w", err)
+	}
+	_, err = exec.ExecContext(ctx, insertUserQuery, record.ID, record.Email, record.PasswordHash, record.AccessToken, record.RefreshToken)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == uniqueViolationCode {
@@ -72,9 +76,13 @@ func (s *UserStore) Create(ctx context.Context, user entities.User) error {
 	return nil
 }
 
-func (s *UserStore) FindByEmail(ctx context.Context, email string) (entities.User, error) {
+func (s *UserStore) FindByEmail(ctx context.Context, tx store.Tx, email string) (entities.User, error) {
 	var record UserRecord
-	err := s.db.QueryRowContext(ctx, selectUserByEmail, email).Scan(&record.ID, &record.Email, &record.PasswordHash, &record.AccessToken, &record.RefreshToken)
+	exec, err := executorForTx(s.db, tx)
+	if err != nil {
+		return entities.User{}, fmt.Errorf("sqldb.UserStore.FindByEmail: %w", err)
+	}
+	err = exec.QueryRowContext(ctx, selectUserByEmail, email).Scan(&record.ID, &record.Email, &record.PasswordHash, &record.AccessToken, &record.RefreshToken)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return entities.User{}, fmt.Errorf("sqldb.UserStore.FindByEmail: %w", store.ErrNotFound)
@@ -84,9 +92,13 @@ func (s *UserStore) FindByEmail(ctx context.Context, email string) (entities.Use
 	return record.ToModel(), nil
 }
 
-func (s *UserStore) FindByID(ctx context.Context, id string) (entities.User, error) {
+func (s *UserStore) FindByID(ctx context.Context, tx store.Tx, id string) (entities.User, error) {
 	var record UserRecord
-	err := s.db.QueryRowContext(ctx, selectUserByID, id).Scan(&record.ID, &record.Email, &record.PasswordHash, &record.AccessToken, &record.RefreshToken)
+	exec, err := executorForTx(s.db, tx)
+	if err != nil {
+		return entities.User{}, fmt.Errorf("sqldb.UserStore.FindByBotID: %w", err)
+	}
+	err = exec.QueryRowContext(ctx, selectUserByID, id).Scan(&record.ID, &record.Email, &record.PasswordHash, &record.AccessToken, &record.RefreshToken)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return entities.User{}, fmt.Errorf("sqldb.UserStore.FindByBotID: %w", store.ErrNotFound)
@@ -96,8 +108,12 @@ func (s *UserStore) FindByID(ctx context.Context, id string) (entities.User, err
 	return record.ToModel(), nil
 }
 
-func (s *UserStore) UpdateTokens(ctx context.Context, id string, accessToken string, refreshToken string) error {
-	result, err := s.db.ExecContext(ctx, updateTokensQuery, accessToken, refreshToken, id)
+func (s *UserStore) UpdateTokens(ctx context.Context, tx store.Tx, id string, accessToken string, refreshToken string) error {
+	exec, err := executorForTx(s.db, tx)
+	if err != nil {
+		return fmt.Errorf("sqldb.UserStore.UpdateTokens: %w", err)
+	}
+	result, err := exec.ExecContext(ctx, updateTokensQuery, accessToken, refreshToken, id)
 	if err != nil {
 		return fmt.Errorf("sqldb.UserStore.UpdateTokens: %w", err)
 	}
