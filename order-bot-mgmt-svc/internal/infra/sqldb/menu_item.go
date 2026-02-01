@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"order-bot-mgmt-svc/internal/infra/sqldb/pqsqldb"
+	"order-bot-mgmt-svc/internal/infra/sqldb/sqldbexecutor"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
 )
@@ -49,9 +50,13 @@ func NewMenuItemStore(db *pqsqldb.DB) *MenuItemStore {
 }
 
 func (s *MenuItemStore) FindItems(ctx context.Context, menuID string) ([]entities.MenuItem, error) {
-	rows, errQry := s.db.QueryContext(ctx, selectMenuItemsByMenuID, menuID)
-	if errQry != nil {
-		return nil, fmt.Errorf("sqldb.MenuItemStore.FindItems: %w", errQry)
+	execer, err := sqldbexecutor.Executor(s.db, nil)
+	if err != nil {
+		return nil, fmt.Errorf("sqldb.MenuItemStore.FindItems: %w", err)
+	}
+	rows, err := execer.QueryContext(ctx, selectMenuItemsByMenuID, menuID)
+	if err != nil {
+		return nil, fmt.Errorf("sqldb.MenuItemStore.FindItems: %w", err)
 	}
 	defer rows.Close()
 	var items []entities.MenuItem
@@ -69,11 +74,11 @@ func (s *MenuItemStore) FindItems(ctx context.Context, menuID string) ([]entitie
 }
 
 func (s *MenuItemStore) DeleteMenuItems(ctx context.Context, tx store.Tx, menuID string) error {
-	sqlTx, ok := tx.(*sql.Tx)
-	if !ok {
-		return fmt.Errorf("sqldb.DeleteMenuItems: %w", store.ErrInvalidTx)
+	execer, err := sqldbexecutor.Executor(s.db, tx)
+	if err != nil {
+		return fmt.Errorf("sqldb.MenuItemStore.DeleteMenuItems: %w", err)
 	}
-	_, err := sqlTx.ExecContext(ctx, deleteMenuItemsByMenuID, menuID)
+	_, err = execer.ExecContext(ctx, deleteMenuItemsByMenuID, menuID)
 	if err != nil {
 		return fmt.Errorf("sqldb.MenuItemStore.DeleteMenuItems(), ExecContext: %w", err)
 	}
@@ -84,13 +89,13 @@ func (s *MenuItemStore) CreateMenuItems(
 	ctx context.Context, tx store.Tx,
 	items []entities.MenuItem,
 ) error {
-	sqlTx, ok := tx.(*sql.Tx)
-	if !ok {
-		return fmt.Errorf("sqldb.CreateMenuItems(): %w", store.ErrInvalidTx)
+	execer, err := sqldbexecutor.Executor(s.db, tx)
+	if err != nil {
+		return fmt.Errorf("sqldb.MenuItemStore.CreateMenuItems: %w", err)
 	}
 	for _, item := range items {
 		record := MenuItemRecordFromModel(item)
-		if _, err := sqlTx.ExecContext(ctx, insertMenuItemQuery, record.ID, record.MenuID, record.MenuItemName); err != nil {
+		if _, err := execer.ExecContext(ctx, insertMenuItemQuery, record.ID, record.MenuID, record.MenuItemName); err != nil {
 			return fmt.Errorf("sqldb.MenuItemStore.CreateMenuItems(), ExecContext: %w", err)
 		}
 	}
