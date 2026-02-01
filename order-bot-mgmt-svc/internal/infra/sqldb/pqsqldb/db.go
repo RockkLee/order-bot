@@ -129,21 +129,13 @@ func (s *DB) Conn() *sql.DB {
 	return s.db
 }
 
-func (s *DB) BeginTx(ctx context.Context) (store.Tx, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, fmt.Errorf("pqsqldb.DB.BeginTx: %w", err)
-	}
-	return tx, nil
-}
-
 func (s *DB) WithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) error) error {
 	if fn == nil {
 		return fmt.Errorf("pqsqldb.DB.WithTx: fn is nil")
 	}
-	tx, err := s.BeginTx(ctx)
-	if err != nil {
-		return fmt.Errorf("pqsqldb.DB.WithTx: %w", err)
+	tx, errTx := s.db.BeginTx(ctx, nil)
+	if errTx != nil {
+		return fmt.Errorf("pqsqldb.DB.WithTx() BeginTx: %w", errTx)
 	}
 	if err := fn(ctx, tx); err != nil {
 		_ = tx.Rollback()

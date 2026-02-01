@@ -31,7 +31,7 @@ func NewSvc(db *pqsqldb.DB, ctxFunc util.CtxFunc, menuStore store.Menu, menuItem
 }
 
 func (s *Svc) CreateMenu(ctx context.Context, botID string, itemNames []string) (entities.Menu, []entities.MenuItem, error) {
-	ctx, cancel := s.ctxWithFallback(ctx)
+	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
 	defer cancel()
 	var (
 		menu  entities.Menu
@@ -65,7 +65,7 @@ func (s *Svc) CreateMenu(ctx context.Context, botID string, itemNames []string) 
 }
 
 func (s *Svc) GetMenu(ctx context.Context, botId string) (entities.Menu, []entities.MenuItem, error) {
-	ctx, cancel := s.ctxWithFallback(ctx)
+	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
 	defer cancel()
 	menu, err := s.menuStore.FindByBotID(ctx, botId)
 	if err != nil {
@@ -79,7 +79,7 @@ func (s *Svc) GetMenu(ctx context.Context, botId string) (entities.Menu, []entit
 }
 
 func (s *Svc) UpdateMenu(ctx context.Context, botID string, itemNames []string) (entities.Menu, []entities.MenuItem, error) {
-	ctx, cancel := s.ctxWithFallback(ctx)
+	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
 	defer cancel()
 	var (
 		menu  entities.Menu
@@ -116,11 +116,4 @@ func buildMenuItems(menuID string, names []string) []entities.MenuItem {
 		})
 	}
 	return items
-}
-
-func (s *Svc) ctxWithFallback(ctx context.Context) (context.Context, context.CancelFunc) {
-	if ctx == nil {
-		return s.ctxFunc()
-	}
-	return ctx, func() {}
 }

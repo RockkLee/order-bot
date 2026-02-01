@@ -29,7 +29,7 @@ func NewSvc(botStore store.Bot, userBotStore store.UserBot, db *pqsqldb.DB, ctxF
 }
 
 func (s *Svc) CreateBot(ctx context.Context, tx store.Tx, name string, userId string) error {
-	ctx, cancel := s.ctxWithFallback(ctx)
+	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
 	defer cancel()
 	newBot := entities.Bot{
 		ID:      util.NewID(),
@@ -47,11 +47,4 @@ func (s *Svc) CreateBot(ctx context.Context, tx store.Tx, name string, userId st
 		return fmt.Errorf("bitsvc.CreateBot: %w", err)
 	}
 	return nil
-}
-
-func (s *Svc) ctxWithFallback(ctx context.Context) (context.Context, context.CancelFunc) {
-	if ctx == nil {
-		return s.ctxFunc()
-	}
-	return ctx, func() {}
 }

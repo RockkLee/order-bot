@@ -55,7 +55,7 @@ func (s *Svc) Signup(ctx context.Context, tx store.Tx, email, password string) (
 		AccessToken:  "",
 		RefreshToken: "",
 	}
-	ctx, cancel := s.ctxWithFallback(ctx)
+	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
 	defer cancel()
 	if err := s.userStore.Create(ctx, tx, newUser); err != nil {
 		if errors.Is(err, store.ErrUserExists) {
@@ -71,7 +71,7 @@ func (s *Svc) Signup(ctx context.Context, tx store.Tx, email, password string) (
 }
 
 func (s *Svc) Login(ctx context.Context, email, password string) (models.TokenPair, error) {
-	ctx, cancel := s.ctxWithFallback(ctx)
+	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
 	defer cancel()
 	user, errFindUsr := s.userStore.FindByEmail(ctx, nil, email)
 	if errFindUsr != nil {
@@ -95,7 +95,7 @@ func (s *Svc) Logout(ctx context.Context, refreshToken string) error {
 	if errValidation != nil {
 		return fmt.Errorf("authsvc.Logout: %w", errValidation)
 	}
-	ctx, cancel := s.ctxWithFallback(ctx)
+	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
 	defer cancel()
 	if err := s.userStore.UpdateTokens(ctx, nil, userID, "", ""); err != nil {
 		return fmt.Errorf("authsvc.Logout: %w", err)
@@ -131,7 +131,7 @@ func (s *Svc) ValidateRefreshToken(ctx context.Context, refreshToken string) (st
 	if claims.Typ != "refresh" {
 		return "", fmt.Errorf("authsvc.ValidateRefreshToken(), claims.Typ != 'refresh': %w", err)
 	}
-	ctx, cancel := s.ctxWithFallback(ctx)
+	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
 	defer cancel()
 	user, err := s.userStore.FindByID(ctx, nil, claims.Sub)
 	if err != nil {
@@ -170,7 +170,7 @@ func (s *Svc) issueTokens(ctx context.Context, tx store.Tx, user entities.User) 
 	if err != nil {
 		return models.TokenPair{}, fmt.Errorf("authsvc.issueTokens: %w", err)
 	}
-	ctx, cancel := s.ctxWithFallback(ctx)
+	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
 	defer cancel()
 	if err := s.userStore.UpdateTokens(ctx, tx, user.ID, accessToken, refreshToken); err != nil {
 		return models.TokenPair{}, fmt.Errorf("authsvc.issueTokens: %w", err)
@@ -179,11 +179,4 @@ func (s *Svc) issueTokens(ctx context.Context, tx store.Tx, user entities.User) 
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}, nil
-}
-
-func (s *Svc) ctxWithFallback(ctx context.Context) (context.Context, context.CancelFunc) {
-	if ctx == nil {
-		return s.ctxFunc()
-	}
-	return ctx, func() {}
 }
