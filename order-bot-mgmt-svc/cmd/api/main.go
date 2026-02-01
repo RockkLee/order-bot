@@ -64,7 +64,7 @@ func newServices(db *pqsqldb.DB, cfg config.Config) *services.Services {
 		func() *botsvc.Svc {
 			botStore := sqldb.NewBotStore(db)
 			userBotStore := sqldb.NewUserBotStore(db)
-			return botsvc.NewSvc(botStore, userBotStore, db, ctxFunc)
+			return botsvc.NewSvc(db, ctxFunc, cfg, botStore, userBotStore)
 		},
 	)
 }

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"order-bot-mgmt-svc/internal/infra/httphdlrs"
 	"order-bot-mgmt-svc/internal/util/errutil"
+	"order-bot-mgmt-svc/internal/util/jwtutil"
 	"strings"
 )
 
@@ -51,17 +52,10 @@ func authMiddleware(s *Server) Middleware {
 				return
 			}
 
-			authHeader := r.Header.Get("Authorization")
-			if authHeader == "" {
-				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			accessToken, done := jwtutil.GetToken(w, r)
+			if done {
 				return
 			}
-			const bearerPrefix = "Bearer "
-			if !strings.HasPrefix(authHeader, bearerPrefix) {
-				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-				return
-			}
-			accessToken := strings.TrimSpace(strings.TrimPrefix(authHeader, bearerPrefix))
 			if accessToken == "" {
 				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 				return

@@ -49,6 +49,10 @@ func (s *Server) WithTx(ctx context.Context, fn func(ctx context.Context, tx sto
 	return s.db.WithTx(ctx, fn)
 }
 
+func (s *Server) GetWithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) (any, error)) (any, error) {
+	return s.db.GetWithTx(ctx, fn)
+}
+
 func (s *Server) AuthService() *authsvc.Svc {
 	return s.services.Auth.Get()
 }

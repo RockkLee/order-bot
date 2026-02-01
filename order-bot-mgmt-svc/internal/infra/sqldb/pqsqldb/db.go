@@ -29,6 +29,9 @@ type Service interface {
 
 	// WithTx runs the given function within a transaction.
 	WithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) error) error
+
+	// GetWithTx runs the given function within a transaction.
+	GetWithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) (any, error)) (any, error)
 }
 
 type DB struct {
@@ -145,4 +148,37 @@ func (s *DB) WithTx(ctx context.Context, fn func(ctx context.Context, tx store.T
 		return fmt.Errorf("pqsqldb.DB.WithTx: %w", err)
 	}
 	return nil
+}
+
+func (s *DB) GetWithTx(
+	ctx context.Context,
+	fn func(ctx context.Context, tx store.Tx) (any, error),
+) (any, error) {
+	if fn == nil {
+		return nil, fmt.Errorf("pqsqldb.DB.WithTx: fn is nil")
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("pqsqldb.DB.WithTx: BeginTx: %w", err)
+	}
+
+	committed := false
+	defer func() {
+		if !committed {
+			_ = tx.Rollback()
+		}
+	}()
+
+	out, err := fn(ctx, tx)
+	if err != nil {
+		return nil, fmt.Errorf("pqsqldb.DB.WithTx: fn: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("pqsqldb.DB.WithTx: Commit: %w", err)
+	}
+	committed = true
+
+	return out, nil
 }

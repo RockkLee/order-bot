@@ -14,6 +14,7 @@ type MenuItemRecord struct {
 	ID           string
 	MenuID       string
 	MenuItemName string
+	Price        float64
 }
 
 func MenuItemRecordFromModel(item entities.MenuItem) MenuItemRecord {
@@ -21,6 +22,7 @@ func MenuItemRecordFromModel(item entities.MenuItem) MenuItemRecord {
 		ID:           item.ID,
 		MenuID:       item.MenuID,
 		MenuItemName: item.MenuItemName,
+		Price:        item.Price,
 	}
 }
 
@@ -37,7 +39,7 @@ type MenuItemStore struct {
 }
 
 const (
-	insertMenuItemQuery     = `INSERT INTO menu_item (id, menu_id, menu_item_name) VALUES ($1, $2, $3);`
+	insertMenuItemQuery     = `INSERT INTO menu_item (id, menu_id, menu_item_name, price) VALUES ($1, $2, $3, $4);`
 	selectMenuItemsByMenuID = `SELECT id, menu_id, menu_item_name FROM menu_item WHERE menu_id = $1 ORDER BY id;`
 	deleteMenuItemsByMenuID = `DELETE FROM menu_item WHERE menu_id = $1;`
 )
@@ -95,7 +97,7 @@ func (s *MenuItemStore) CreateMenuItems(
 	}
 	for _, item := range items {
 		record := MenuItemRecordFromModel(item)
-		if _, err := execer.ExecContext(ctx, insertMenuItemQuery, record.ID, record.MenuID, record.MenuItemName); err != nil {
+		if _, err := execer.ExecContext(ctx, insertMenuItemQuery, record.ID, record.MenuID, record.MenuItemName, record.Price); err != nil {
 			return fmt.Errorf("sqldb.MenuItemStore.CreateMenuItems(), ExecContext: %w", err)
 		}
 	}

@@ -115,10 +115,10 @@ func TestServerDependencies(t *testing.T) {
 		},
 		func() *botsvc.Svc {
 			menuInitCalls++
-			return botsvc.NewSvc(nil, nil, nil, nil)
+			return botsvc.NewSvc(nil, nil, cfg, nil, nil)
 		},
 	)
-	server := NewServer(0, db, serviceContainer)
+	server := NewServer(0, nil, serviceContainer)
 
 	req := httptest.NewRequest(http.MethodPost, "/auth/signup", strings.NewReader(`{"email":"test@example.com","password":"secret"}`))
 	rec := httptest.NewRecorder()

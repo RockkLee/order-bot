@@ -10,6 +10,7 @@ import (
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/util"
+	"order-bot-mgmt-svc/internal/util/jwtutil"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -105,26 +106,26 @@ func (s *Svc) Logout(ctx context.Context, refreshToken string) error {
 
 func (s *Svc) ValidateAccessToken(_ context.Context, accessToken string) error {
 	if accessToken == "" {
-		return fmt.Errorf("authsvc.ValidateAccessToken(): accessToken is empty %w", ErrInvalidToken)
+		return fmt.Errorf("authsvc.ValidateAccessToken(): accessToken is empty %w", jwtutil.ErrInvalidToken)
 	}
-	claims, err := parseJWT(s.accessSecret, accessToken)
+	claims, err := jwtutil.ParseJWT(s.accessSecret, accessToken)
 	if err != nil {
 		return fmt.Errorf("authsvc.ValidateAccessToken(): %w", err)
 	}
 	if claims.Typ != "access" {
-		return fmt.Errorf("authsvc.ValidateAccessToken(), claims.Typ != 'access': %w", ErrInvalidToken)
+		return fmt.Errorf("authsvc.ValidateAccessToken(), claims.Typ != 'access': %w", jwtutil.ErrInvalidToken)
 	}
 	if claims.Exp > time.Now().UnixMilli() {
-		return fmt.Errorf("authsvc.ValidateAccessToken(), accessToken is expired: %w", ErrExpiredToken)
+		return fmt.Errorf("authsvc.ValidateAccessToken(), accessToken is expired: %w", jwtutil.ErrExpiredToken)
 	}
 	return nil
 }
 
 func (s *Svc) ValidateRefreshToken(ctx context.Context, refreshToken string) (string, error) {
 	if refreshToken == "" {
-		return "", fmt.Errorf("authsvc.ValidateRefreshToken(): %w", ErrInvalidToken)
+		return "", fmt.Errorf("authsvc.ValidateRefreshToken(): %w", jwtutil.ErrInvalidToken)
 	}
-	claims, err := parseJWT(s.refreshSecret, refreshToken)
+	claims, err := jwtutil.ParseJWT(s.refreshSecret, refreshToken)
 	if err != nil {
 		return "", fmt.Errorf("authsvc.ValidateRefreshToken(): %w", err)
 	}
@@ -141,7 +142,7 @@ func (s *Svc) ValidateRefreshToken(ctx context.Context, refreshToken string) (st
 		return "", fmt.Errorf("authsvc.ValidateRefreshToken: %w", err)
 	}
 	if user.RefreshToken != refreshToken {
-		return "", fmt.Errorf("authsvc.ValidateRefreshToken: %w", ErrInvalidToken)
+		return "", fmt.Errorf("authsvc.ValidateRefreshToken: %w", jwtutil.ErrInvalidToken)
 	}
 	return user.ID, nil
 }
@@ -162,11 +163,11 @@ func (s *Svc) issueTokens(ctx context.Context, tx store.Tx, user entities.User) 
 		Iat:   now.Unix(),
 		Typ:   "refresh",
 	}
-	accessToken, err := signJWT(s.accessSecret, accessClaims)
+	accessToken, err := jwtutil.SignJWT(s.accessSecret, accessClaims)
 	if err != nil {
 		return models.TokenPair{}, fmt.Errorf("authsvc.issueTokens: %w", err)
 	}
-	refreshToken, err := signJWT(s.refreshSecret, refreshClaims)
+	refreshToken, err := jwtutil.SignJWT(s.refreshSecret, refreshClaims)
 	if err != nil {
 		return models.TokenPair{}, fmt.Errorf("authsvc.issueTokens: %w", err)
 	}
