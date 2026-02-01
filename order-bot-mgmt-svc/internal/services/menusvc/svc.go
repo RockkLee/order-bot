@@ -86,9 +86,11 @@ func (s *Svc) UpdateMenu(ctx context.Context, botID string, itemNames []string) 
 		items []entities.MenuItem
 	)
 	err := s.db.WithTx(ctx, func(ctx context.Context, tx store.Tx) error {
-		var err error
-		menu, err = s.menuStore.FindByBotID(ctx, botID)
-		if err != nil {
+		menu, errMenu := s.menuStore.FindByBotID(ctx, botID)
+		if errMenu != nil {
+			return fmt.Errorf("menusvc.UpdateMenu: %w", errMenu)
+		}
+		if err := s.menuItemStore.DeleteMenuItems(ctx, tx, menu.ID); err != nil {
 			return fmt.Errorf("menusvc.UpdateMenu: %w", err)
 		}
 		items = buildMenuItems(menu.ID, itemNames)
