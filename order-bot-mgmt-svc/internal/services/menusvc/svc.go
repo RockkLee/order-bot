@@ -38,12 +38,12 @@ func (s *Svc) CreateMenu(ctx context.Context, botID string, itemNames []string) 
 		items []entities.MenuItem
 	)
 	err := s.db.WithTx(ctx, func(ctx context.Context, tx store.Tx) error {
-		_, err := s.menuStore.FindByBotID(ctx, botID)
+		_, errFinding := s.menuStore.FindByBotID(ctx, botID)
 		switch {
-		case err == nil:
+		case errFinding == nil:
 			return ErrInvalidMenu
-		case !errors.Is(err, sql.ErrNoRows):
-			return fmt.Errorf("menusvc.GetMenu: %w", err)
+		case !errors.Is(errFinding, sql.ErrNoRows):
+			return fmt.Errorf("menusvc.GetMenu: %w", errFinding)
 		}
 		menu = entities.Menu{
 			ID:    util.NewID(),

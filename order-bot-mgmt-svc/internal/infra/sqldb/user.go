@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"order-bot-mgmt-svc/internal/infra/sqldb/pqsqldb"
+	"order-bot-mgmt-svc/internal/infra/sqldb/sqldbexecutor"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
 
@@ -61,7 +62,7 @@ func NewUserStore(db *pqsqldb.DB) *UserStore {
 
 func (s *UserStore) Create(ctx context.Context, tx store.Tx, user entities.User) error {
 	record := UserRecordFromModel(user)
-	exec, err := executorForTx(s.db, tx)
+	exec, err := sqldbexecutor.Executor(s.db, tx)
 	if err != nil {
 		return fmt.Errorf("sqldb.UserStore.Create: %w", err)
 	}
@@ -78,7 +79,7 @@ func (s *UserStore) Create(ctx context.Context, tx store.Tx, user entities.User)
 
 func (s *UserStore) FindByEmail(ctx context.Context, tx store.Tx, email string) (entities.User, error) {
 	var record UserRecord
-	exec, err := executorForTx(s.db, tx)
+	exec, err := sqldbexecutor.Executor(s.db, tx)
 	if err != nil {
 		return entities.User{}, fmt.Errorf("sqldb.UserStore.FindByEmail: %w", err)
 	}
@@ -94,7 +95,7 @@ func (s *UserStore) FindByEmail(ctx context.Context, tx store.Tx, email string) 
 
 func (s *UserStore) FindByID(ctx context.Context, tx store.Tx, id string) (entities.User, error) {
 	var record UserRecord
-	exec, err := executorForTx(s.db, tx)
+	exec, err := sqldbexecutor.Executor(s.db, tx)
 	if err != nil {
 		return entities.User{}, fmt.Errorf("sqldb.UserStore.FindByBotID: %w", err)
 	}
@@ -109,7 +110,7 @@ func (s *UserStore) FindByID(ctx context.Context, tx store.Tx, id string) (entit
 }
 
 func (s *UserStore) UpdateTokens(ctx context.Context, tx store.Tx, id string, accessToken string, refreshToken string) error {
-	exec, err := executorForTx(s.db, tx)
+	exec, err := sqldbexecutor.Executor(s.db, tx)
 	if err != nil {
 		return fmt.Errorf("sqldb.UserStore.UpdateTokens: %w", err)
 	}

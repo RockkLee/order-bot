@@ -51,8 +51,8 @@ func signupHdlrFunc(s AuthServer) http.HandlerFunc {
 			if err != nil {
 				return err
 			}
-			if err := s.BotService().CreateBot(ctx, tx, req.BotName, userId); err != nil {
-				return fmt.Errorf("httphdlrs.CreateBot: %w", err)
+			if errBot := s.BotService().CreateBot(ctx, tx, req.BotName, userId); errBot != nil {
+				return fmt.Errorf("httphdlrs.CreateBot: %w", errBot)
 			}
 			return nil
 		})

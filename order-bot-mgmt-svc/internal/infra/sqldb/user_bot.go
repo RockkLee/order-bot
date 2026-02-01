@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"order-bot-mgmt-svc/internal/infra/sqldb/pqsqldb"
+	"order-bot-mgmt-svc/internal/infra/sqldb/sqldbexecutor"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
 )
@@ -49,7 +50,7 @@ func NewUserBotStore(db *pqsqldb.DB) *UserBotStore {
 
 func (s *UserBotStore) Create(ctx context.Context, tx store.Tx, userBot entities.UserBot) error {
 	record := UserBotRecordFromModel(userBot)
-	exec, err := executorForTx(s.db, tx)
+	exec, err := sqldbexecutor.Executor(s.db, tx)
 	if err != nil {
 		return fmt.Errorf("sqldb.UserBotStore.Create(): %w", err)
 	}
@@ -61,7 +62,7 @@ func (s *UserBotStore) Create(ctx context.Context, tx store.Tx, userBot entities
 }
 
 func (s *UserBotStore) FindByUserID(ctx context.Context, tx store.Tx, userID string) ([]entities.UserBot, error) {
-	exec, err := executorForTx(s.db, tx)
+	exec, err := sqldbexecutor.Executor(s.db, tx)
 	if err != nil {
 		return nil, fmt.Errorf("sqldb.UserBotStore.FindByUserID: %w", err)
 	}

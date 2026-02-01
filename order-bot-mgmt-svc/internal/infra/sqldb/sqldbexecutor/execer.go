@@ -1,4 +1,4 @@
-package sqldb
+package sqldbexecutor
 
 import (
 	"context"
@@ -7,19 +7,19 @@ import (
 	"order-bot-mgmt-svc/internal/store"
 )
 
-type sqlExecutor interface {
+type SqlExecutor interface {
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
 	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
 	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
 }
 
-func executorForTx(db *sql.DB, tx store.Tx) (sqlExecutor, error) {
+func Executor(db *sql.DB, tx store.Tx) (SqlExecutor, error) {
 	if tx == nil {
 		return db, nil
 	}
 	sqlTx, ok := tx.(*sql.Tx)
 	if !ok {
-		return nil, fmt.Errorf("sqldb.executorForTx: expected *sql.Tx, got %T", tx)
+		return nil, fmt.Errorf("sqldb.Executor: expected *sql.Tx, got %T", tx)
 	}
 	return sqlTx, nil
 }
