@@ -20,7 +20,7 @@ func FormatErrChain(err error) string {
 			err.Error(),
 		)
 		if fprintErr != nil {
-			slog.Error("errutil.FormatErrChain: ", fprintErr.Error())
+			slog.Error("errutil.FormatErrChain", "err", fprintErr)
 			return tmpstr
 		}
 		err = errors.Unwrap(err)
