@@ -62,7 +62,7 @@ func Load() Config {
 		Auth: Auth{
 			AccessSecret:    envOrDefault("JWT_ACCESS_SECRET", "dev-access-secret"),
 			RefreshSecret:   envOrDefault("JWT_REFRESH_SECRET", "dev-refresh-secret"),
-			AccessTokenTTL:  parseDurationEnv("JWT_ACCESS_TTL", 15*time.Minute),
+			AccessTokenTTL:  parseDurationEnv("JWT_ACCESS_TTL", 30*time.Minute),
 			RefreshTokenTTL: parseDurationEnv("JWT_REFRESH_TTL", 7*24*time.Hour),
 		},
 		Others: Others{

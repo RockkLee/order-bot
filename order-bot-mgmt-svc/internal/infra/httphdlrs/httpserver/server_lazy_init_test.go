@@ -10,6 +10,7 @@ import (
 	"order-bot-mgmt-svc/internal/config"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/services/authsvc"
+	"order-bot-mgmt-svc/internal/services/botsvc"
 	"order-bot-mgmt-svc/internal/services/menusvc"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/util"
@@ -65,7 +66,7 @@ func (f *fakeUserStore) FindByID(_ context.Context, id string) (entities.User, e
 			return user, nil
 		}
 	}
-	return entities.User{}, fmt.Errorf("fakeUserStore.FindByID: %w", store.ErrNotFound)
+	return entities.User{}, fmt.Errorf("fakeUserStore.FindByBotID: %w", store.ErrNotFound)
 }
 
 func (f *fakeUserStore) UpdateTokens(_ context.Context, id string, accessToken string, refreshToken string) error {
@@ -98,11 +99,15 @@ func TestServerDependencies(t *testing.T) {
 		func() *authsvc.Svc {
 			authInitCalls++
 			ctxFunc := util.NewCtxFunc(cfg.Others.QryCtxTimeout)
-			return authsvc.NewSvc(&fakeUserStore{users: make(map[string]entities.User)}, cfg, ctxFunc)
+			return authsvc.NewSvc(db, ctxFunc, cfg, &fakeUserStore{users: make(map[string]entities.User)})
 		},
 		func() *menusvc.Svc {
 			menuInitCalls++
-			return menusvc.NewSvc(nil, nil)
+			return menusvc.NewSvc(nil, nil, nil, nil)
+		},
+		func() *botsvc.Svc {
+			menuInitCalls++
+			return botsvc.NewSvc(nil, nil, nil, nil)
 		},
 	)
 	server := NewServer(0, db, serviceContainer)

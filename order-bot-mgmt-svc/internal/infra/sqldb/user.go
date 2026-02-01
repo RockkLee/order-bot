@@ -5,10 +5,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/jackc/pgx/v5/pgconn"
 	"order-bot-mgmt-svc/internal/infra/sqldb/pqsqldb"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
+
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type UserRecord struct {
@@ -88,9 +89,9 @@ func (s *UserStore) FindByID(ctx context.Context, id string) (entities.User, err
 	err := s.db.QueryRowContext(ctx, selectUserByID, id).Scan(&record.ID, &record.Email, &record.PasswordHash, &record.AccessToken, &record.RefreshToken)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return entities.User{}, fmt.Errorf("sqldb.UserStore.FindByID: %w", store.ErrNotFound)
+			return entities.User{}, fmt.Errorf("sqldb.UserStore.FindByBotID: %w", store.ErrNotFound)
 		}
-		return entities.User{}, fmt.Errorf("sqldb.UserStore.FindByID: %w", err)
+		return entities.User{}, fmt.Errorf("sqldb.UserStore.FindByBotID: %w", err)
 	}
 	return record.ToModel(), nil
 }

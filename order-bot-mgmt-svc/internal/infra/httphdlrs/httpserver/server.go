@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"order-bot-mgmt-svc/internal/infra/sqldb/pqsqldb"
 	"order-bot-mgmt-svc/internal/services/authsvc"
+	"order-bot-mgmt-svc/internal/services/botsvc"
 	"order-bot-mgmt-svc/internal/services/menusvc"
 	"time"
 
@@ -43,19 +44,13 @@ func (s *Server) dbService() pqsqldb.Service {
 }
 
 func (s *Server) AuthService() *authsvc.Svc {
-	if s.services == nil {
-		return nil
-	}
-	return s.services.Auth()
-}
-
-func (s *Server) menuService() *menusvc.Svc {
-	if s.services == nil {
-		return nil
-	}
-	return s.services.Menu()
+	return s.services.Auth.Get()
 }
 
 func (s *Server) MenuService() *menusvc.Svc {
-	return s.menuService()
+	return s.services.Menu.Get()
+}
+
+func (s *Server) BotService() *botsvc.Svc {
+	return s.services.Bot.Get()
 }

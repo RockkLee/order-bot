@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"order-bot-mgmt-svc/internal/config"
+	"order-bot-mgmt-svc/internal/infra/sqldb/pqsqldb"
 	"order-bot-mgmt-svc/internal/models"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
@@ -14,35 +15,37 @@ import (
 )
 
 type Svc struct {
+	db              *pqsqldb.DB
+	ctxFunc         util.CtxFunc
 	userStore       store.User
 	accessSecret    []byte
 	refreshSecret   []byte
 	accessTokenTTL  time.Duration
 	refreshTokenTTL time.Duration
-	ctxFunc         util.CtxFunc
 }
 
-func NewSvc(userStore store.User, cfg config.Config, ctxFunc util.CtxFunc) *Svc {
+func NewSvc(db *pqsqldb.DB, ctxFunc util.CtxFunc, cfg config.Config, userStore store.User) *Svc {
 	if userStore == nil || ctxFunc == nil {
-		panic("authSvc.NewSvc(), userSotre or ctxFunc is nil")
+		panic("authSvc.NewSvc(), userStore or ctxFunc is nil")
 	}
 	return &Svc{
+		db:              db,
+		ctxFunc:         ctxFunc,
 		userStore:       userStore,
 		accessSecret:    []byte(cfg.Auth.AccessSecret),
 		refreshSecret:   []byte(cfg.Auth.RefreshSecret),
 		accessTokenTTL:  cfg.Auth.AccessTokenTTL,
 		refreshTokenTTL: cfg.Auth.RefreshTokenTTL,
-		ctxFunc:         ctxFunc,
 	}
 }
 
-func (s *Svc) Signup(email, password string) (models.TokenPair, error) {
+func (s *Svc) Signup(email, password string) (tokenPair models.TokenPair, userId string, err error) {
 	if email == "" || password == "" {
-		return models.TokenPair{}, fmt.Errorf("authsvc.Signup: %w", ErrInvalidCredentials)
+		return models.TokenPair{}, "", fmt.Errorf("authsvc.Signup: %w", ErrInvalidCredentials)
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return models.TokenPair{}, fmt.Errorf("authsvc.Signup: %w", err)
+		return models.TokenPair{}, "", fmt.Errorf("authsvc.Signup: %w", err)
 	}
 	newUser := entities.User{
 		ID:           util.NewID(),
@@ -55,15 +58,15 @@ func (s *Svc) Signup(email, password string) (models.TokenPair, error) {
 	defer cancel()
 	if err := s.userStore.Create(ctx, newUser); err != nil {
 		if errors.Is(err, store.ErrUserExists) {
-			return models.TokenPair{}, fmt.Errorf("authsvc.Signup: %w", ErrUserExists)
+			return models.TokenPair{}, "", fmt.Errorf("authsvc.Signup: %w", ErrUserExists)
 		}
-		return models.TokenPair{}, fmt.Errorf("authsvc.Signup: %w", err)
+		return models.TokenPair{}, "", fmt.Errorf("authsvc.Signup: %w", err)
 	}
 	tokens, err := s.issueTokens(newUser)
 	if err != nil {
-		return models.TokenPair{}, fmt.Errorf("authsvc.Signup: %w", err)
+		return models.TokenPair{}, "", fmt.Errorf("authsvc.Signup: %w", err)
 	}
-	return tokens, nil
+	return tokens, newUser.ID, nil
 }
 
 func (s *Svc) Login(email, password string) (models.TokenPair, error) {

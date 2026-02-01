@@ -51,7 +51,7 @@ func (s *UserBotStore) Create(ctx context.Context, userBot entities.UserBot) err
 	record := UserBotRecordFromModel(userBot)
 	_, err := s.db.ExecContext(ctx, insertUserBotQuery, record.ID, record.UserID, record.BotID)
 	if err != nil {
-		return fmt.Errorf("sqldb.UserBotStore.Create: %w", err)
+		return fmt.Errorf("sqldb.UserBotStore.Create(), ExecContext: %w", err)
 	}
 	return nil
 }

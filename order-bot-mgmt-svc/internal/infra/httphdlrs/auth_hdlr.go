@@ -1,8 +1,11 @@
 package httphdlrs
 
 import (
+	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"order-bot-mgmt-svc/internal/services/botsvc"
 	"order-bot-mgmt-svc/internal/util/errutil"
 	"order-bot-mgmt-svc/internal/util/validatorutil"
 
@@ -11,6 +14,7 @@ import (
 
 type AuthServer interface {
 	AuthService() *authsvc.Svc
+	BotService() *botsvc.Svc
 }
 
 const AuthPrefix = "/auth"
@@ -33,17 +37,23 @@ func signupHdlrFunc(s AuthServer) http.HandlerFunc {
 			WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody)
 			return
 		}
-		tokens, err := s.AuthService().Signup(req.Email, req.Password)
+		tokens, userId, err := s.AuthService().Signup(req.Email, req.Password)
 		if err != nil {
 			slog.Error(errutil.FormatErrChain(err))
-			switch err {
-			case authsvc.ErrUserExists:
+			switch {
+			case errors.Is(err, authsvc.ErrUserExists):
 				http.Error(w, authsvc.ErrUserExists.Error(), http.StatusConflict)
-			case authsvc.ErrInvalidCredentials:
+			case errors.Is(err, authsvc.ErrInvalidCredentials):
 				http.Error(w, authsvc.ErrInvalidCredentials.Error(), http.StatusBadRequest)
 			default:
 				http.Error(w, "failed to create user", http.StatusInternalServerError)
 			}
+			return
+		}
+		if errBot := s.BotService().CreateBot(req.BotName, userId); errBot != nil {
+			slog.Error(errutil.FormatErrChain(
+				fmt.Errorf("httphdlrs.CreateBot: %w", err)))
+			http.Error(w, "failed to create bot", http.StatusInternalServerError)
 			return
 		}
 		writeJSON(w, http.StatusCreated, tokens)

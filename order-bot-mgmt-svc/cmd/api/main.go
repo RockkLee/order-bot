@@ -12,6 +12,7 @@ import (
 	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/infra/sqldb/pqsqldb"
 	"order-bot-mgmt-svc/internal/services/authsvc"
+	"order-bot-mgmt-svc/internal/services/botsvc"
 	"order-bot-mgmt-svc/internal/services/menusvc"
 	"order-bot-mgmt-svc/internal/util"
 	"order-bot-mgmt-svc/internal/util/errutil"
@@ -53,12 +54,17 @@ func newServices(db *pqsqldb.DB, cfg config.Config) *services.Services {
 	ctxFunc := util.NewCtxFunc(cfg.Others.QryCtxTimeout)
 	return services.NewServices(
 		func() *authsvc.Svc {
-			return authsvc.NewSvc(sqldb.NewUserStore(db), cfg, ctxFunc)
+			return authsvc.NewSvc(db, ctxFunc, cfg, sqldb.NewUserStore(db))
 		},
 		func() *menusvc.Svc {
 			menuStore := sqldb.NewMenuStore(db)
 			menuItemStore := sqldb.NewMenuItemStore(db)
-			return menusvc.NewSvc(menuStore, menuItemStore, db)
+			return menusvc.NewSvc(db, ctxFunc, menuStore, menuItemStore)
+		},
+		func() *botsvc.Svc {
+			botStore := sqldb.NewBotStore(db)
+			userBotStore := sqldb.NewUserBotStore(db)
+			return botsvc.NewSvc(botStore, userBotStore, db, ctxFunc)
 		},
 	)
 }
