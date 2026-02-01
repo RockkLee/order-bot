@@ -35,7 +35,7 @@ type MenuStore struct {
 
 const (
 	insertMenuQuery        = `INSERT INTO menu (id, bot_id) VALUES ($1, $2);`
-	selectMenuByBotIDQuery = `SELECT id, bot_id FROM menu WHERE id = $1;`
+	selectMenuByBotIDQuery = `SELECT id, bot_id FROM menu WHERE bot_id = $1;`
 	updateMenuQuery        = `UPDATE menu SET bot_id = $2 WHERE id = $1;`
 	deleteMenuQuery        = `DELETE FROM menu WHERE id = $1;`
 )

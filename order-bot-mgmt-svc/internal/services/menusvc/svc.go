@@ -30,7 +30,7 @@ func NewSvc(db *pqsqldb.DB, ctxFunc util.CtxFunc, menuStore store.Menu, menuItem
 	}
 }
 
-func (s *Svc) CreateMenu(ctx context.Context, botID string, itemNames []string) (entities.Menu, []entities.MenuItem, error) {
+func (s *Svc) CreateMenu(ctx context.Context, botID string, menuItems []entities.MenuItem) (entities.Menu, []entities.MenuItem, error) {
 	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
 	defer cancel()
 	var (
@@ -41,7 +41,7 @@ func (s *Svc) CreateMenu(ctx context.Context, botID string, itemNames []string) 
 		_, errFinding := s.menuStore.FindByBotID(ctx, botID)
 		switch {
 		case errFinding == nil:
-			return ErrInvalidMenu
+			return fmt.Errorf("menusvc.GetMenu(), duplicated bot ID: %w", ErrInvalidMenu)
 		case !errors.Is(errFinding, sql.ErrNoRows):
 			return fmt.Errorf("menusvc.GetMenu: %w", errFinding)
 		}
@@ -49,10 +49,12 @@ func (s *Svc) CreateMenu(ctx context.Context, botID string, itemNames []string) 
 			ID:    util.NewID(),
 			BotID: botID,
 		}
+		for idx, _ := range items {
+			items[idx].MenuID = menu.ID
+		}
 		if err := s.menuStore.CreateMenu(ctx, tx, menu); err != nil {
 			return fmt.Errorf("menusvc.CreateMenu: %w", err)
 		}
-		items = buildMenuItems(menu.ID, itemNames)
 		if err := s.menuItemStore.CreateMenuItems(ctx, tx, items); err != nil {
 			return fmt.Errorf("menusvc.CreateMenu: %w", err)
 		}
@@ -78,22 +80,21 @@ func (s *Svc) GetMenu(ctx context.Context, botId string) (entities.Menu, []entit
 	return menu, items, nil
 }
 
-func (s *Svc) UpdateMenu(ctx context.Context, botID string, itemNames []string) (entities.Menu, []entities.MenuItem, error) {
+func (s *Svc) UpdateMenu(ctx context.Context, botID string, items []entities.MenuItem) (entities.Menu, []entities.MenuItem, error) {
 	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
 	defer cancel()
-	var (
-		menu  entities.Menu
-		items []entities.MenuItem
-	)
+	var menu entities.Menu
 	err := s.db.WithTx(ctx, func(ctx context.Context, tx store.Tx) error {
 		menu, errMenu := s.menuStore.FindByBotID(ctx, botID)
+		for idx, _ := range items {
+			items[idx].MenuID = menu.ID
+		}
 		if errMenu != nil {
 			return fmt.Errorf("menusvc.UpdateMenu: %w", errMenu)
 		}
 		if err := s.menuItemStore.DeleteMenuItems(ctx, tx, menu.ID); err != nil {
 			return fmt.Errorf("menusvc.UpdateMenu: %w", err)
 		}
-		items = buildMenuItems(menu.ID, itemNames)
 		if err := s.menuItemStore.CreateMenuItems(ctx, tx, items); err != nil {
 			return fmt.Errorf("menusvc.UpdateMenu: %w", err)
 		}
@@ -103,19 +104,4 @@ func (s *Svc) UpdateMenu(ctx context.Context, botID string, itemNames []string) 
 		return entities.Menu{}, nil, err
 	}
 	return menu, items, nil
-}
-
-func buildMenuItems(menuID string, names []string) []entities.MenuItem {
-	items := make([]entities.MenuItem, 0, len(names))
-	for _, name := range names {
-		if name == "" {
-			continue
-		}
-		items = append(items, entities.MenuItem{
-			ID:           util.NewID(),
-			MenuID:       menuID,
-			MenuItemName: name,
-		})
-	}
-	return items
 }

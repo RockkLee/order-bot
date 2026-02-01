@@ -35,7 +35,7 @@ func createMenuHdlrFunc(s MenuServer) http.HandlerFunc {
 			WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody)
 			return
 		}
-		menu, items, err := service.CreateMenu(r.Context(), req.BotID, extractItemNames(req.Items))
+		menu, items, err := service.CreateMenu(r.Context(), req.BotID, modelFromMenReq(req))
 		if err != nil {
 			slog.Error(errutil.FormatErrChain(err))
 			writeMenuError(w, err)
@@ -70,7 +70,7 @@ func updateMenuHdlrFunc(s MenuServer) http.HandlerFunc {
 			WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody)
 			return
 		}
-		menu, items, err := service.UpdateMenu(r.Context(), req.BotID, extractItemNames(req.Items))
+		menu, items, err := service.UpdateMenu(r.Context(), req.BotID, modelFromMenReq(req))
 		if err != nil {
 			slog.Error(errutil.FormatErrChain(err))
 			writeMenuError(w, err)
@@ -78,14 +78,6 @@ func updateMenuHdlrFunc(s MenuServer) http.HandlerFunc {
 		}
 		writeJSON(w, http.StatusOK, menuResFromModel(menu, items))
 	}
-}
-
-func extractItemNames(items []menuItemReq) []string {
-	names := make([]string, 0, len(items))
-	for _, item := range items {
-		names = append(names, item.Name)
-	}
-	return names
 }
 
 func writeMenuError(w http.ResponseWriter, err error) {
