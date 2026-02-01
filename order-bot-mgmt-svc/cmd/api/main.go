@@ -10,6 +10,7 @@ import (
 	"order-bot-mgmt-svc/internal/config"
 	"order-bot-mgmt-svc/internal/infra/httphdlrs/httpserver"
 	"order-bot-mgmt-svc/internal/infra/sqldb"
+	"order-bot-mgmt-svc/internal/infra/sqldb/orderbotmgmtsqldb"
 	"order-bot-mgmt-svc/internal/infra/sqldb/pqsqldb"
 	"order-bot-mgmt-svc/internal/services/authsvc"
 	"order-bot-mgmt-svc/internal/services/botsvc"
@@ -50,7 +51,7 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 	done <- true
 }
 
-func newServices(db *pqsqldb.DB, cfg config.Config) *services.Services {
+func newServices(db *pqsqldb.DB, orderBotDb *pqsqldb.DB, cfg config.Config) *services.Services {
 	ctxFunc := util.NewCtxFunc(cfg.Others.QryCtxTimeout)
 	return services.NewServices(
 		func() *authsvc.Svc {
@@ -59,7 +60,8 @@ func newServices(db *pqsqldb.DB, cfg config.Config) *services.Services {
 		func() *menusvc.Svc {
 			menuStore := sqldb.NewMenuStore(db)
 			menuItemStore := sqldb.NewMenuItemStore(db)
-			return menusvc.NewSvc(db, ctxFunc, menuStore, menuItemStore)
+			publishedMenuStore := orderbotmgmtsqldb.NewPublishedMenuStore(orderBotDb)
+			return menusvc.NewSvc(db, orderBotDb, ctxFunc, menuStore, menuItemStore, publishedMenuStore)
 		},
 		func() *botsvc.Svc {
 			botStore := sqldb.NewBotStore(db)
@@ -92,7 +94,7 @@ func main() {
 			log.Printf("failed to close order-bot database: \n%v", errutil.FormatErrChain(err))
 		}
 	}()
-	serviceContainer := newServices(db, cfg)
+	serviceContainer := newServices(db, orderBotDb, cfg)
 
 	server := httpserver.NewServer(
 		port,

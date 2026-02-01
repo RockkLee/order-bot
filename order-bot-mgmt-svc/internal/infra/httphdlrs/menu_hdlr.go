@@ -21,6 +21,7 @@ func MenuHdlr(s MenuServer) http.Handler {
 	mux.HandleFunc("POST /", createMenuHdlrFunc(s))
 	mux.HandleFunc("GET /{botId}", getMenuHdlrFunc(s))
 	mux.HandleFunc("PUT /", updateMenuHdlrFunc(s))
+	mux.HandleFunc("POST /{botId}/publish", publishMenuHdlrFunc(s))
 	return mux
 }
 
@@ -71,6 +72,20 @@ func updateMenuHdlrFunc(s MenuServer) http.HandlerFunc {
 			return
 		}
 		menu, items, err := service.UpdateMenu(r.Context(), req.BotID, modelFromMenReq(req))
+		if err != nil {
+			slog.Error(errutil.FormatErrChain(err))
+			writeMenuError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, menuResFromModel(menu, items))
+	}
+}
+
+func publishMenuHdlrFunc(s MenuServer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		service := s.MenuService()
+		botId := r.PathValue("botId")
+		menu, items, err := service.PublishMenu(r.Context(), botId)
 		if err != nil {
 			slog.Error(errutil.FormatErrChain(err))
 			writeMenuError(w, err)

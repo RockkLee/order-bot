@@ -12,7 +12,6 @@ import (
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/services/authsvc"
 	"order-bot-mgmt-svc/internal/services/botsvc"
-	"order-bot-mgmt-svc/internal/services/menusvc"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/util"
 	"strings"
@@ -111,7 +110,7 @@ func TestServerDependencies(t *testing.T) {
 		},
 		func() *menusvc.Svc {
 			menuInitCalls++
-			return menusvc.NewSvc(nil, nil, nil, nil)
+			return nil
 		},
 		func() *botsvc.Svc {
 			menuInitCalls++
