@@ -1,8 +1,8 @@
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
-from app import repositories
-from app.models import Cart
-from app.schemas import CartSummary, CartItemOut
+from src import repositories
+from src.entities import Cart
+from src.schemas import CartSummary, CartItemOut
 
 
 def build_cart_summary(cart: Cart) -> CartSummary:

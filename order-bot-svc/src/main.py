@@ -3,10 +3,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import settings
-from app.db import engine, SessionLocal, Base
-from app.seed import seed_menu
-from app.api.routes import router
+from src.config import settings
+from src.db import engine, SessionLocal, Base
+from src.seed import seed_menu
+from src.api.routes import router
 
 
 def create_app() -> FastAPI:

@@ -1,6 +1,6 @@
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models import MenuItem
+from src.entities import MenuItem
 
 
 async def seed_menu(db: AsyncSession) -> None:

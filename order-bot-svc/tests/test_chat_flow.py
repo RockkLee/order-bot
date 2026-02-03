@@ -4,9 +4,9 @@ from starlette.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.api.routes import router
-from app.db import Base, get_db_session
-from app.models import MenuItem
+from src.api.routes import router
+from src.db import Base, get_db_session
+from src.entities import MenuItem
 
 
 class OrderBotServiceTests(unittest.TestCase):

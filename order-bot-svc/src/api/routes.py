@@ -1,12 +1,12 @@
 import uuid
 from fastapi import APIRouter, Depends, Header, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.db import get_db_session
-from app import repositories
-from app.schemas import ChatRequest, ChatResponse, IntentResult, MenuItemOut
-from app.services.intent import IntentParser
-from app.services.cart_service import build_cart_summary, ensure_cart, lock_cart, touch_cart
-from app.services.response_builder import build_reply
+from src.db import get_db_session
+from src import repositories
+from src.schemas import ChatRequest, ChatResponse, IntentResult, MenuItemOut
+from src.services.intent import IntentParser
+from src.services.cart_service import build_cart_summary, ensure_cart, lock_cart, touch_cart
+from src.services.response_builder import build_reply
 
 router = APIRouter()
 intent_parser = IntentParser()

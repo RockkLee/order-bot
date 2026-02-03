@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models import MenuItem, Cart, CartItem, Order, OrderItem
+from src.entities import MenuItem, Cart, CartItem, Order, OrderItem
 
 
 async def get_menu_by_query(db: AsyncSession, query: str) -> list[MenuItem]:
