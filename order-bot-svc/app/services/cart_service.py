@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from app import repositories
 from app.models import Cart
 from app.schemas import CartSummary, CartItemOut
@@ -25,17 +25,17 @@ def build_cart_summary(cart: Cart) -> CartSummary:
     )
 
 
-def ensure_cart(db: Session, session_id: str) -> Cart:
-    cart = repositories.get_cart_by_session(db, session_id)
+async def ensure_cart(db: AsyncSession, session_id: str) -> Cart:
+    cart = await repositories.get_cart_by_session(db, session_id)
     if not cart:
-        cart = repositories.create_cart(db, session_id)
+        cart = await repositories.create_cart(db, session_id)
     return cart
 
 
-def lock_cart(db: Session, session_id: str) -> Cart:
-    cart = repositories.get_cart_by_session(db, session_id, for_update=True)
+async def lock_cart(db: AsyncSession, session_id: str) -> Cart:
+    cart = await repositories.get_cart_by_session(db, session_id, for_update=True)
     if not cart:
-        cart = repositories.create_cart(db, session_id)
+        cart = await repositories.create_cart(db, session_id)
     return cart
 
 

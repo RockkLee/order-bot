@@ -1,10 +1,11 @@
-from sqlalchemy.orm import Session
+from sqlalchemy import select, func
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import MenuItem
 
 
-def seed_menu(db: Session) -> None:
-    existing = db.query(MenuItem).count()
-    if existing:
+async def seed_menu(db: AsyncSession) -> None:
+    result = await db.execute(select(func.count(MenuItem.id)))
+    if result.scalar_one():
         return
 
     sample_items = [
