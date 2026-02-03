@@ -1,5 +1,5 @@
 import re
-from app.schemas import IntentResult, IntentItem
+from src.schemas import IntentResult, IntentItem
 
 
 SKU_PATTERN = re.compile(r"sku[-_ ]?([\\w-]+)", re.IGNORECASE)

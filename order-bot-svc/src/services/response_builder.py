@@ -1,4 +1,4 @@
-from app.schemas import CartSummary, IntentResult
+from src.schemas import CartSummary, IntentResult
 
 
 def build_reply(intent: IntentResult, cart: CartSummary) -> str:
