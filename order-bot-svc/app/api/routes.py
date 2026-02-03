@@ -1,9 +1,10 @@
 import uuid
-from fastapi import APIRouter, Depends, Header, Response, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
+from starlette.responses import Response
 from sqlalchemy.orm import Session
 from app.db import get_db_session
 from app import repositories
-from app.schemas import ChatRequest, ChatResponse, CartSummary, IntentResult, MenuItemOut
+from app.schemas import ChatRequest, ChatResponse, IntentResult, MenuItemOut
 from app.services.intent import IntentParser
 from app.services.cart_service import build_cart_summary, ensure_cart, lock_cart, touch_cart
 from app.services.response_builder import build_reply
