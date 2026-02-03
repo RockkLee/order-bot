@@ -28,7 +28,7 @@ async def chat(
         cart = await ensure_cart(db, session_id)
 
     cart_summary = build_cart_summary(cart)
-    intent = intent_parser.parse(payload.message, has_cart_items=bool(cart.items))
+    intent = await intent_parser.parse(payload.message, has_cart_items=bool(cart.items))
 
     if not intent.valid:
         return ChatResponse(

@@ -2,6 +2,9 @@ anyio==4.12.1
 fastapi==0.115.6
 httpx==0.27.2
 idna==3.11
+langchain-core
+langchain-mistralai
+mcp
 psycopg==3.2.3
 pydantic==2.9.2
 sqlalchemy==2.0.36
