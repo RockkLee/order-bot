@@ -1,5 +1,7 @@
 import json
+import os
 import sys
+from pathlib import Path
 from typing import Any
 
 from mcp.client.session import ClientSession
@@ -10,9 +12,16 @@ from src.schemas import IntentResult
 
 class MCPIntentClient:
     def __init__(self) -> None:
+        project_root_path = (
+            # Get the absolute path of the current module's file
+            # __file__ is a built-in variable that holds the path to the current script
+            Path(__file__).resolve()
+            .parents[2]  # Get the project root path which is two levels up from the current file path
+        )
         self._server_params = StdioServerParameters(
             command=sys.executable,
             args=["-m", "src.services.intent_mcp_server"],
+            cwd=project_root_path,
         )
 
     async def infer_intent(self, message: str, has_cart_items: bool) -> IntentResult:

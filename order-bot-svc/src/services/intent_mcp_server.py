@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 
 from langchain_core.output_parsers import PydanticOutputParser
@@ -44,6 +45,7 @@ mcp = FastMCP(MCP_SERVER_NAME)
 
 @mcp.tool()
 async def infer_intent(message: str, has_cart_items: bool) -> dict:
+    logging.info("start inferring...")
     parser = PydanticOutputParser(pydantic_object=IntentResult)
     prompt = _build_prompt()
     llm = _build_model()
