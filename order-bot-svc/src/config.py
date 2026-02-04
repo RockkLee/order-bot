@@ -1,7 +1,13 @@
+import logging
 import os
 from typing import Any
 
+from dotenv import load_dotenv
 from pydantic import BaseModel, Field
+
+
+load_dotenv()
+logger = logging.getLogger(__name__)
 
 
 class AppSettings(BaseModel):
@@ -23,6 +29,14 @@ class AppSettings(BaseModel):
     seed_menu: bool = Field(
         default_factory=lambda: os.getenv("SEED_MENU", "true").lower() == "true"
     )
+    mistral_api_key: str = Field(default_factory=lambda: os.getenv("MISTRAL_API_KEY", ""))
+    mistral_model: str = Field(
+        default_factory=lambda: os.getenv("MISTRAL_MODEL", "mistral-large-latest")
+    )
 
 
 settings = AppSettings()
+logger.info(
+    "Loaded configuration from environment: %s",
+    settings.model_dump(exclude={"mistral_api_key"}),
+)

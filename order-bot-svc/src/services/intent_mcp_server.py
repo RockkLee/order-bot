@@ -1,12 +1,12 @@
 import json
 import logging
-import os
 
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_mistralai import ChatMistralAI
 from mcp.server.fastmcp import FastMCP
 
+from src.config import settings
 from src.schemas import IntentResult
 
 
@@ -35,7 +35,8 @@ def _build_prompt() -> ChatPromptTemplate:
 
 def _build_model() -> ChatMistralAI:
     return ChatMistralAI(
-        model=os.environ.get("MISTRAL_MODEL", "mistral-large-latest"),
+        model=settings.mistral_model,
+        api_key=settings.mistral_api_key,
         temperature=0,
     )
 
