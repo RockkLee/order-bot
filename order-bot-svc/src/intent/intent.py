@@ -21,7 +21,7 @@ class MCPIntentClient:
                 "order_bot_intent": {
                     "transport": "stdio",
                     "command": "python",
-                    "args": ["-m", "src.services.intent_mcp_server"],
+                    "args": ["-m", "src.intent.mcp_server"],
                     "cwd": project_root_path,
                 }
             }

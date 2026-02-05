@@ -1,12 +1,14 @@
 import uuid
-from fastapi import APIRouter, Depends, Header, HTTPException, Response
+
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Response, Header, Depends, HTTPException
 
 from src import repositories
 from src.db import get_db_session
-from src.schemas import ChatRequest, ChatResponse, IntentResult, MenuItemOut
+from src.schemas import ChatRequest, ChatResponse, IntentResult
+from src.services import menu_service
 from src.services.cart_service import build_cart_summary, ensure_cart, lock_cart, touch_cart
-from src.services.intent import IntentParser
+from src.intent.intent import IntentParser
 from src.services.response_builder import build_reply
 
 router = APIRouter()
@@ -54,24 +56,7 @@ async def chat(
 async def _handle_search_menu(
     *, db: AsyncSession, session_id: str, intent: IntentResult, cart
 ) -> ChatResponse:
-    results = await repositories.get_menu_by_query(db, intent.query or "")
-    menu_out = [
-        MenuItemOut(
-            sku=item.sku,
-            name=item.name,
-            description=item.description,
-            price_cents=item.price_cents,
-        )
-        for item in results
-    ]
-    cart_summary = build_cart_summary(cart)
-    return ChatResponse(
-        session_id=session_id,
-        reply=build_reply(intent, cart_summary),
-        intent=intent,
-        cart=cart_summary,
-        menu_results=menu_out,
-    )
+    return await menu_service.search_menu(db, session_id, intent, cart)
 
 
 async def _handle_cart_mutation(
@@ -83,10 +68,7 @@ async def _handle_cart_mutation(
             raise HTTPException(status_code=400, detail="Cart is closed")
 
         for item in intent.items:
-            menu_item = await repositories.get_menu_item_by_sku(db, item.sku)
-            if not menu_item or not menu_item.is_available:
-                raise HTTPException(status_code=404, detail=f"SKU not found: {item.sku}")
-
+            menu_item = await repositories.get_menu_item_by_menu_item_id(db, item.sku)
             if intent.intent_type == "remove_item":
                 await repositories.remove_cart_item(db, cart, item.sku)
                 continue
@@ -97,7 +79,7 @@ async def _handle_cart_mutation(
             await repositories.upsert_cart_item(
                 db,
                 cart,
-                sku=menu_item.sku,
+                menu_item_id=menu_item.sku,
                 name=menu_item.name,
                 quantity=item.quantity,
                 unit_price_cents=menu_item.price_cents,

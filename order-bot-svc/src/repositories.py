@@ -4,18 +4,18 @@ from src.entities import MenuItem, Cart, CartItem, Order, OrderItem
 
 
 async def get_menu_by_query(db: AsyncSession, query: str) -> list[MenuItem]:
-    stmt = select(MenuItem).where(MenuItem.is_available.is_(True))
+    stmt = select(MenuItem)
     if query:
         like_query = f"%{query.lower()}%"
         stmt = stmt.where(
-            (MenuItem.name.ilike(like_query)) | (MenuItem.description.ilike(like_query))
+            (MenuItem.name.ilike(like_query))
         )
     result = await db.scalars(stmt)
     return list(result.all())
 
 
-async def get_menu_item_by_sku(db: AsyncSession, sku: str) -> MenuItem | None:
-    stmt = select(MenuItem).where(MenuItem.sku == sku)
+async def get_menu_item_by_menu_item_id(db: AsyncSession, menu_item_id: str) -> MenuItem | None:
+    stmt = select(MenuItem).where(MenuItem.id == menu_item_id)
     result = await db.scalars(stmt)
     return result.first()
 
@@ -40,12 +40,12 @@ async def create_cart(db: AsyncSession, session_id: str) -> Cart:
 async def upsert_cart_item(
     db: AsyncSession,
     cart: Cart,
-    sku: str,
+    menu_item_id: str,
     name: str,
     quantity: int,
     unit_price_cents: int,
 ) -> CartItem:
-    stmt = select(CartItem).where(CartItem.cart_id == cart.id, CartItem.sku == sku)
+    stmt = select(CartItem).where(CartItem.cart_id == cart.id, CartItem.menu_item_id == menu_item_id)
     result = await db.scalars(stmt)
     existing = result.first()
     line_total_cents = quantity * unit_price_cents
@@ -57,7 +57,7 @@ async def upsert_cart_item(
 
     item = CartItem(
         cart_id=cart.id,
-        sku=sku,
+        menu_item_id=menu_item_id,
         name=name,
         quantity=quantity,
         unit_price_cents=unit_price_cents,
@@ -67,8 +67,8 @@ async def upsert_cart_item(
     return item
 
 
-async def remove_cart_item(db: AsyncSession, cart: Cart, sku: str) -> bool:
-    stmt = select(CartItem).where(CartItem.cart_id == cart.id, CartItem.sku == sku)
+async def remove_cart_item(db: AsyncSession, cart: Cart, menu_item_id: str) -> bool:
+    stmt = select(CartItem).where(CartItem.cart_id == cart.id, CartItem.menu_item_id == menu_item_id)
     result = await db.scalars(stmt)
     existing = result.first()
     if not existing:
@@ -90,7 +90,7 @@ async def insert_order_items(
     for item in cart_items:
         order_item = OrderItem(
             order_id=order.id,
-            sku=item.sku,
+            menu_item_id=item.menu_item_id,
             name=item.name,
             quantity=item.quantity,
             unit_price_cents=item.unit_price_cents,

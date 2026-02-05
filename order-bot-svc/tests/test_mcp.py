@@ -1,6 +1,6 @@
 import asyncio
 
-from src.services.intent import MCPIntentClient
+from src.intent.intent import MCPIntentClient
 
 if __name__ == "__main__":
     async def main():

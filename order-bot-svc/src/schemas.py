@@ -7,10 +7,8 @@ class ChatRequest(BaseModel):
 
 
 class MenuItemOut(BaseModel):
-    sku: str
     name: str
-    description: str | None
-    price_cents: int
+    price: float
 
 
 class CartItemOut(BaseModel):
