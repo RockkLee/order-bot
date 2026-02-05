@@ -1,58 +1,45 @@
-import json
-import logging
-
-from langchain_core.output_parsers import PydanticOutputParser
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_mistralai import ChatMistralAI
 from mcp.server.fastmcp import FastMCP
-
-from src.config import settings
-from src.schemas import IntentResult
 
 
 MCP_SERVER_NAME = "order-bot-intent"
-
-
-def _build_prompt() -> ChatPromptTemplate:
-    parser = PydanticOutputParser(pydantic_object=IntentResult)
-    format_instructions = parser.get_format_instructions()
-    return ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                "You are an intent classifier for an order-bot. "
-                "Return only the IntentResult JSON schema and follow it strictly. "
-                "Valid intent_type values: search_menu, add_item, update_item, remove_item, "
-                "show_cart, checkout, unknown.",
-            ),
-            (
-                "human",
-                "Message: {message}\nHas cart items: {has_cart_items}\n{format_instructions}",
-            ),
-        ]
-    ).partial(format_instructions=format_instructions)
-
-
-def _build_model() -> ChatMistralAI:
-    return ChatMistralAI(
-        model=settings.mistral_model,
-        api_key=settings.mistral_api_key,
-        temperature=0,
-    )
 
 
 mcp = FastMCP(MCP_SERVER_NAME)
 
 
 @mcp.tool()
-async def infer_intent(message: str, has_cart_items: bool) -> dict:
-    logging.info("start inferring...")
-    parser = PydanticOutputParser(pydantic_object=IntentResult)
-    prompt = _build_prompt()
-    llm = _build_model()
-    chain = prompt | llm | parser
-    result = await chain.ainvoke({"message": message, "has_cart_items": has_cart_items})
-    return json.loads(result.model_dump_json())
+def search_menu(query: str) -> dict:
+    return {"intent_type": "search_menu", "query": query}
+
+
+@mcp.tool()
+def add_item(items: list[dict]) -> dict:
+    return {"intent_type": "add_item", "items": items}
+
+
+@mcp.tool()
+def update_item(items: list[dict]) -> dict:
+    return {"intent_type": "update_item", "items": items}
+
+
+@mcp.tool()
+def remove_item(items: list[dict]) -> dict:
+    return {"intent_type": "remove_item", "items": items}
+
+
+@mcp.tool()
+def show_cart() -> dict:
+    return {"intent_type": "show_cart"}
+
+
+@mcp.tool()
+def checkout(confirmed: bool = False) -> dict:
+    return {"intent_type": "checkout", "confirmed": confirmed}
+
+
+@mcp.tool()
+def unknown(reason: str = "unknown") -> dict:
+    return {"intent_type": "unknown", "reason": reason}
 
 
 def main() -> None:
