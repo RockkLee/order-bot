@@ -4,12 +4,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.db import get_db_session
 from src import repositories
 from src.schemas import ChatRequest, ChatResponse, IntentResult, MenuItemOut
-from src.services.intent import IntentParser
+from src.services.intent import IntentParser, LLMIntentClient
 from src.services.cart_service import build_cart_summary, ensure_cart, lock_cart, touch_cart
 from src.services.response_builder import build_reply
 
 router = APIRouter()
 intent_parser = IntentParser()
+llm_intent_client = LLMIntentClient()
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -28,7 +29,12 @@ async def chat(
         cart = await ensure_cart(db, session_id)
 
     cart_summary = build_cart_summary(cart)
-    intent = await intent_parser.parse(payload.message, has_cart_items=bool(cart.items))
+    message = payload.message.strip()
+    if not message:
+        intent = IntentResult(valid=False, intent_type="unknown", reason="empty")
+    else:
+        llm_response = await llm_intent_client.infer_intent(message, has_cart_items=bool(cart.items))
+        intent = await intent_parser.parse(llm_response, has_cart_items=bool(cart.items))
 
     if not intent.valid:
         return ChatResponse(

@@ -1,13 +1,53 @@
 import json
-import os
 import sys
 from pathlib import Path
 from typing import Any
 
+from langchain_core.output_parsers import PydanticOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_mistralai import ChatMistralAI
 from mcp.client.session import ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client
 
+from src.config import settings
 from src.schemas import IntentResult
+
+
+def _build_prompt() -> ChatPromptTemplate:
+    parser = PydanticOutputParser(pydantic_object=IntentResult)
+    format_instructions = parser.get_format_instructions()
+    return ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                "You are an intent classifier for an order-bot. "
+                "Return only the IntentResult JSON schema and follow it strictly. "
+                "Valid intent_type values: search_menu, add_item, update_item, remove_item, "
+                "show_cart, checkout, unknown.",
+            ),
+            (
+                "human",
+                "Message: {message}\nHas cart items: {has_cart_items}\n{format_instructions}",
+            ),
+        ]
+    ).partial(format_instructions=format_instructions)
+
+
+def _build_model() -> ChatMistralAI:
+    return ChatMistralAI(
+        model=settings.mistral_model,
+        api_key=settings.mistral_api_key,
+        temperature=0,
+    )
+
+
+class LLMIntentClient:
+    async def infer_intent(self, message: str, has_cart_items: bool) -> str:
+        prompt = _build_prompt()
+        llm = _build_model()
+        chain = prompt | llm
+        result = await chain.ainvoke({"message": message, "has_cart_items": has_cart_items})
+        return result.content if isinstance(result.content, str) else str(result.content)
 
 
 class MCPIntentClient:
@@ -24,13 +64,13 @@ class MCPIntentClient:
             cwd=project_root_path,
         )
 
-    async def infer_intent(self, message: str, has_cart_items: bool) -> IntentResult:
+    async def infer_intent(self, llm_response: str, has_cart_items: bool) -> IntentResult:
         async with stdio_client(self._server_params) as (read, write):
             async with ClientSession(read, write) as session:
                 await session.initialize()
                 result = await session.call_tool(
                     "infer_intent",
-                    {"message": message, "has_cart_items": has_cart_items},
+                    {"llm_response": llm_response, "has_cart_items": has_cart_items},
                 )
         payload = self._parse_result_payload(result.content)
         return IntentResult.model_validate(payload)
@@ -53,15 +93,15 @@ class IntentParser:
     def __init__(self) -> None:
         self._client = MCPIntentClient()
 
-    async def parse(self, message: str, has_cart_items: bool) -> IntentResult:
-        text = message.strip()
+    async def parse(self, llm_response: str, has_cart_items: bool) -> IntentResult:
+        text = llm_response.strip()
         if not text:
-            return IntentResult(valid=False, intent_type="unknown", reason="empty")
+            return IntentResult(valid=False, intent_type="unknown", reason="empty_llm_response")
         try:
             return await self._client.infer_intent(text, has_cart_items)
         except Exception as exc:
             return IntentResult(
                 valid=False,
                 intent_type="unknown",
-                reason=f"mcp_error:{exc.__class__.__name__}",
+                reason=f"intent_parse_error:{exc.__class__.__name__}",
             )
