@@ -1,45 +1,6 @@
-# ER-Diagram
+# ER-Diagram: order-bot-svc
 ```mermaid
 erDiagram
-  %% =========================
-  %% order-bot-mgmt-svc
-  %% =========================
-  USER {
-    string id PK
-    string email
-    string password_hash
-    string access_token
-    string refresh_token
-  }
-
-  USER_BOT {
-    string id PK
-    string user_id FK
-    string bot_id FK
-  }
-
-  BOT {
-    string id PK
-    string bot_name
-  }
-
-  MENU {
-    string id PK
-    string bot_id FK
-  }
-
-  MENU_ITEM {
-    string id PK
-    string menu_id FK
-    string menu_item_name
-    float  price
-  }
-
-  USER ||--o{ USER_BOT : has
-  BOT  ||--o{ USER_BOT : shared_with
-  BOT  ||--|| MENU : owns
-  MENU ||--|{ MENU_ITEM : contains
-
   %% =========================
   %% order-bot-svc
   %% =========================
@@ -87,8 +48,6 @@ erDiagram
   CART  ||--o{ "ORDER"   : produces
   "ORDER" ||--|{ ORDER_ITEM : has
 
-  %% NOTE: In your Python models, cart_id/order_id reference "carts.id"/"orders.id".
-  %% Also, menu_item_id in CartItem/OrderItem is stored as a string (no FK declared),
-  %% so it's modeled as an attribute, not a relationship here.
+
 
 ```
