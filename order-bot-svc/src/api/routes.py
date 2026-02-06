@@ -1,8 +1,7 @@
 import uuid
-from importlib.metadata import always_iterable
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import APIRouter, Response, Header, Depends, HTTPException
+from fastapi import APIRouter, Response, Header, Depends
 
 from src import repositories
 from src.db import get_db_session
