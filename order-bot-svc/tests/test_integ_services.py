@@ -90,7 +90,7 @@ class CartServiceTests(AsyncServiceTestCase):
         )
         cart.items = [item_one, item_two]
 
-        summary = cart_service.build_cart_summary(cart)
+        summary = await cart_service.build_cart_summary(cart)
 
         self.assertEqual(summary.total_price_scaled, 1800)
         self.assertEqual(summary.total_price, 18.0)
@@ -151,15 +151,16 @@ class CartServiceTests(AsyncServiceTestCase):
 class MenuServiceTests(AsyncServiceTestCase):
     async def test_search_menu_returns_results(self):
         async with self.SessionLocal() as session:
-            await self.create_menu_item(session, item_id="latte-1", name="Latte", menu_id="latte")
-            await self.create_menu_item(session, item_id="mocha-1", name="Mocha", menu_id="mocha")
+            await self.create_menu_item(session, item_id="latte-1", name="Latte", menu_id="menu_id_1", price=4.5)
+            await self.create_menu_item(session, item_id="mocha-1", name="Mocha", menu_id="menu_id_2", price=5.5)
             cart = await self.create_cart(session, "session-3")
 
             intent = IntentResult(valid=True, intent_type="search_menu", query="Latte")
-            response = await menu_service.search_menu(session, "session-3", intent, cart)
+            response = await menu_service.search_menu(session, "menu_id_1", intent, cart)
 
         self.assertEqual(len(response.menu_results), 1)
         self.assertEqual(response.menu_results[0].name, "Latte")
+        self.assertEqual(response.menu_results[0].price, 4.5)
 
 
 class OrderServiceTests(AsyncServiceTestCase):
@@ -187,7 +188,7 @@ class OrderServiceTests(AsyncServiceTestCase):
             menu_item = await self.create_menu_item(session, item_id="sku-5", menu_id="latte-5")
             cart = await self.create_cart(session, "session-5")
             await self.add_cart_item(session, cart, menu_item, quantity=2)
-            _ = cart.items
+            _ = await cart.awaitable_attrs.items
             intent = IntentResult(valid=True, intent_type="checkout", confirmed=True)
 
             response = await order_service.checkout(session, "session-5", intent, cart)

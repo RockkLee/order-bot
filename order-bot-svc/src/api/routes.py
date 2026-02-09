@@ -31,8 +31,8 @@ async def chat(
     else:
         cart = await cart_service.ensure_cart(db, session_id)
 
-    cart_summary = cart_service.build_cart_summary(cart)
-    intent = await intent_parser.parse(req.message, has_cart_items=bool(cart.items))
+    cart_summary = await cart_service.build_cart_summary(cart)
+    intent = await intent_parser.parse(req.message, has_cart_items=bool(cart_summary.items))
 
     if not intent.valid:
         return ChatResponse(
@@ -69,7 +69,7 @@ async def _handle_cart_mutation(
 async def _handle_show_cart(
     *, db: AsyncSession, bot_id: str, menu_id: str, intent: IntentResult, cart
 ) -> ChatResponse:
-    cart_summary = cart_service.build_cart_summary(cart)
+    cart_summary = await cart_service.build_cart_summary(cart)
     return ChatResponse(
         session_id=cart.session_id,
         reply=build_reply(intent, cart_summary),

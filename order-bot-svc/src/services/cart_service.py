@@ -9,7 +9,8 @@ from src.services import response_builder
 from src.utils import money_util
 
 
-def build_cart_summary(cart: Cart) -> CartSummary:
+async def build_cart_summary(cart: Cart) -> CartSummary:
+    items_src = await cart.awaitable_attrs.items
     items = [
         CartItemOut(
             menu_item_id=item.menu_item_id,
@@ -20,7 +21,7 @@ def build_cart_summary(cart: Cart) -> CartSummary:
             unit_price=money_util.to_float(item.unit_price_scaled),
             total_price=money_util.to_float(item.total_price_scaled)
         )
-        for item in cart.items
+        for item in items_src
     ]
     scaled_total = sum(item.total_price_scaled for item in items)
     total = sum(item.total_price for item in items)
@@ -77,7 +78,7 @@ async def mutate_cart(db: AsyncSession, session_id: str, intent: IntentResult) -
 
         touch_cart(cart)
 
-    cart_summary = build_cart_summary(cart)
+    cart_summary = await build_cart_summary(cart)
     return ChatResponse(
         session_id=session_id,
         reply=response_builder.build_reply(intent, cart_summary),

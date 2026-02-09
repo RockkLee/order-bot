@@ -24,7 +24,7 @@ class Cart(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid_str)
     session_id: Mapped[str] = mapped_column(String(36), unique=True, index=True)
     status: Mapped[str] = mapped_column(String(20), default="OPEN")
-    total_scaled: Mapped[int] = mapped_column(Integer)
+    total_scaled: Mapped[int] = mapped_column(Integer, default=0)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(UTC))
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(UTC))

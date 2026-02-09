@@ -9,7 +9,7 @@ from src.services import cart_service
 
 
 async def checkout(db: AsyncSession, session_id: str, intent: IntentResult, cart: Cart) -> ChatResponse:
-    cart_summary = cart_service.build_cart_summary(cart)
+    cart_summary = await cart_service.build_cart_summary(cart)
     if not intent.confirmed:
         reply = "Please confirm checkout by replying with 'confirm' or 'yes'."
         return ChatResponse(
@@ -23,18 +23,19 @@ async def checkout(db: AsyncSession, session_id: str, intent: IntentResult, cart
         cart = await cart_service.lock_cart(db, session_id)
         if cart.status != CartStatus.OPEN:
             raise HTTPException(status_code=400, detail="Cart is closed")
-        if not cart.items:
+        items = await cart.awaitable_attrs.items
+        if not items:
             raise HTTPException(status_code=400, detail="Cart is empty")
 
-        total_cents = sum(item.line_total_cents for item in cart.items)
+        total_cents = sum(item.line_total_cents for item in items)
         order = await repositories.insert_order(db, cart, total_cents)
-        await repositories.insert_order_items(db, order, cart.items)
+        await repositories.insert_order_items(db, order, items)
 
         cart.status = CartStatus.CLOSED
         cart_service.touch_cart(cart)
         cart.closed_at = cart.updated_at
 
-    cart_summary = cart_service.build_cart_summary(cart)
+    cart_summary = await cart_service.build_cart_summary(cart)
     return ChatResponse(
         session_id=session_id,
         reply=f"Order placed! Your order id is {order.id}.",

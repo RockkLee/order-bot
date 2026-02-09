@@ -16,7 +16,7 @@ async def search_menu(
         )
         for item in results
     ]
-    cart_summary = cart_service.build_cart_summary(cart)
+    cart_summary = await cart_service.build_cart_summary(cart)
     return ChatResponse(
         session_id=cart.session_id,
         reply=response_builder.build_reply(intent, cart_summary),
