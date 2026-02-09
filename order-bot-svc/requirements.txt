@@ -1,5 +1,7 @@
+aiosqlite==0.22.1
 annotated-types==0.7.0
 anyio==4.12.1
+asyncpg==0.31.0
 attrs==25.4.0
 certifi==2026.1.4
 cffi==2.0.0
@@ -9,6 +11,7 @@ cryptography==46.0.4
 fastapi==0.115.6
 filelock==3.20.3
 fsspec==2026.1.0
+greenlet==3.3.1
 h11==0.16.0
 hf-xet==1.2.0
 httpcore==1.0.9

@@ -22,8 +22,8 @@ def create_app() -> FastAPI:
 
     app_root_path = settings.root_path
     app = FastAPI(
-        title="Justka Q&A Bot",
-        description="Justka Q&A Bot",
+        title="Order Bot",
+        description="Order Bot",
         root_path=app_root_path,
         lifespan=lifespan,
     )

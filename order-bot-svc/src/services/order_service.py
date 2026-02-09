@@ -3,6 +3,7 @@ from fastapi import HTTPException
 
 from src import repositories
 from src.entities import Cart
+from src.enums import CartStatus
 from src.schemas import IntentResult, ChatResponse
 from src.services import cart_service
 
@@ -20,7 +21,7 @@ async def checkout(db: AsyncSession, session_id: str, intent: IntentResult, cart
 
     async with db.begin():
         cart = await cart_service.lock_cart(db, session_id)
-        if cart.status != "OPEN":
+        if cart.status != CartStatus.OPEN:
             raise HTTPException(status_code=400, detail="Cart is closed")
         if not cart.items:
             raise HTTPException(status_code=400, detail="Cart is empty")
@@ -29,7 +30,7 @@ async def checkout(db: AsyncSession, session_id: str, intent: IntentResult, cart
         order = await repositories.insert_order(db, cart, total_cents)
         await repositories.insert_order_items(db, order, cart.items)
 
-        cart.status = "CLOSED"
+        cart.status = CartStatus.CLOSED
         cart_service.touch_cart(cart)
         cart.closed_at = cart.updated_at
 

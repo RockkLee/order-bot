@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, UTC
 from sqlalchemy import String, Integer ,Double, Boolean, ForeignKey, DateTime, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.db import Base
@@ -24,9 +24,10 @@ class Cart(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid_str)
     session_id: Mapped[str] = mapped_column(String(36), unique=True, index=True)
     status: Mapped[str] = mapped_column(String(20), default="OPEN")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    total_scaled: Mapped[int] = mapped_column(Integer)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(UTC))
 
     items: Mapped[list["CartItem"]] = relationship(
         "CartItem",
@@ -42,14 +43,14 @@ class CartItem(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid_str)
-    cart_id: Mapped[str] = mapped_column(String(36), ForeignKey("carts.id"))
+    cart_id: Mapped[str] = mapped_column(String(36), ForeignKey("cart.id"))
     menu_item_id: Mapped[str] = mapped_column(String(64))
     name: Mapped[str] = mapped_column(String(200))
     quantity: Mapped[int] = mapped_column(Integer)
-    unit_price_cents: Mapped[int] = mapped_column(Integer)
-    line_total_cents: Mapped[int] = mapped_column(Integer)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    unit_price_scaled: Mapped[int] = mapped_column(Integer)
+    total_price_scaled: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(UTC))
 
     cart: Mapped[Cart] = relationship("Cart", back_populates="items")
 
@@ -58,10 +59,10 @@ class Order(Base):
     __tablename__ = "orders"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid_str)
-    cart_id: Mapped[str] = mapped_column(String(36), ForeignKey("carts.id"))
+    cart_id: Mapped[str] = mapped_column(String(36), ForeignKey("cart.id"))
     session_id: Mapped[str] = mapped_column(String(36), index=True)
-    total_cents: Mapped[int] = mapped_column(Integer)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    total_scaled: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(UTC))
 
     order_items: Mapped[list["OrderItem"]] = relationship(
         "OrderItem",
@@ -78,7 +79,7 @@ class OrderItem(Base):
     menu_item_id: Mapped[str] = mapped_column(String(64))
     name: Mapped[str] = mapped_column(String(200))
     quantity: Mapped[int] = mapped_column(Integer)
-    unit_price_cents: Mapped[int] = mapped_column(Integer)
-    line_total_cents: Mapped[int] = mapped_column(Integer)
+    unit_price_scaled: Mapped[int] = mapped_column(Integer)
+    total_price_scaled: Mapped[int] = mapped_column(Integer)
 
     order: Mapped[Order] = relationship("Order", back_populates="order_items")

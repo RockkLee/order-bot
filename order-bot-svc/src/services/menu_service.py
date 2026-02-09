@@ -6,9 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def search_menu(
-    db: AsyncSession, session_id: str, intent: IntentResult, cart
+    db: AsyncSession, menu_id: str, intent: IntentResult, cart
 ) -> ChatResponse:
-    results = await repositories.get_menu_by_query(db, intent.query or "")
+    results = await repositories.get_menu_by_query(db, menu_id)
     menu_out = [
         MenuItemOut(
             name=item.name,
@@ -18,7 +18,7 @@ async def search_menu(
     ]
     cart_summary = cart_service.build_cart_summary(cart)
     return ChatResponse(
-        session_id=session_id,
+        session_id=cart.session_id,
         reply=response_builder.build_reply(intent, cart_summary),
         intent=intent,
         cart=cart_summary,

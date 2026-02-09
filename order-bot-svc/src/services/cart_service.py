@@ -2,28 +2,34 @@ from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from src import repositories
 from src.entities import Cart
+from src.enums import CartStatus
 from src.schemas import CartSummary, CartItemOut, IntentResult, ChatResponse
 from fastapi import HTTPException
 from src.services import response_builder
+from src.utils import money_util
 
 
 def build_cart_summary(cart: Cart) -> CartSummary:
     items = [
         CartItemOut(
-            sku=item.sku,
+            menu_item_id=item.menu_item_id,
             name=item.name,
             quantity=item.quantity,
-            unit_price_cents=item.unit_price_cents,
-            line_total_cents=item.line_total_cents,
+            unit_price_scaled=item.unit_price_scaled,
+            total_price_scaled=item.total_price_scaled,
+            unit_price=money_util.to_float(item.unit_price_scaled),
+            total_price=money_util.to_float(item.total_price_scaled)
         )
         for item in cart.items
     ]
-    total_cents = sum(item.line_total_cents for item in cart.items)
+    scaled_total = sum(item.total_price_scaled for item in items)
+    total = sum(item.total_price for item in items)
     return CartSummary(
         session_id=cart.session_id,
         status=cart.status,
         items=items,
-        total_cents=total_cents,
+        total_price_scaled=scaled_total,
+        total_price=total,
     )
 
 
@@ -44,10 +50,11 @@ async def lock_cart(db: AsyncSession, session_id: str) -> Cart:
 def touch_cart(cart: Cart) -> None:
     cart.updated_at = datetime.utcnow()
 
-async def mutate_cart(db: AsyncSession, session_id: str, intent: IntentResult)  -> ChatResponse:
+
+async def mutate_cart(db: AsyncSession, session_id: str, intent: IntentResult) -> ChatResponse:
     async with db.begin():
         cart = await lock_cart(db, session_id)
-        if cart.status != "OPEN":
+        if cart.status != CartStatus.OPEN:
             raise HTTPException(status_code=400, detail="Cart is closed")
 
         for item in intent.items:

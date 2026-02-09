@@ -3,6 +3,8 @@ from pydantic import BaseModel, Field
 
 
 class ChatRequest(BaseModel):
+    menu_id: str = Field(..., alias="menuId")
+    bot_id: str = Field(..., alias="botId")
     message: str = Field(..., min_length=1)
 
 
@@ -12,18 +14,21 @@ class MenuItemOut(BaseModel):
 
 
 class CartItemOut(BaseModel):
-    sku: str
+    menu_item_id: str
     name: str
     quantity: int
-    unit_price_cents: int
-    line_total_cents: int
+    unit_price_scaled: int
+    total_price_scaled: int
+    unit_price: float
+    total_price: float
 
 
 class CartSummary(BaseModel):
     session_id: str
     status: str
     items: list[CartItemOut] = Field(default_factory=list)
-    total_cents: int = 0
+    total_price_scaled: int
+    total_price: float = 0
 
 
 class IntentItem(BaseModel):

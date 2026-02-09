@@ -18,8 +18,8 @@ intent_parser = IntentParser()
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat(
-    payload: ChatRequest,
-    response: Response,
+    req: ChatRequest,
+    res: Response,
     session_id: str | None = Header(default=None, alias="Session-Id"),
     db: AsyncSession = Depends(get_db_session),
 ):
@@ -27,12 +27,12 @@ async def chat(
         session_id = str(uuid.uuid4())
         cart = await cart_service.ensure_cart(db, session_id)
         await db.commit()
-        response.headers["Session-Id"] = session_id
+        res.headers["Session-Id"] = session_id
     else:
         cart = await cart_service.ensure_cart(db, session_id)
 
     cart_summary = cart_service.build_cart_summary(cart)
-    intent = await intent_parser.parse(payload.message, has_cart_items=bool(cart.items))
+    intent = await intent_parser.parse(req.message, has_cart_items=bool(cart.items))
 
     if not intent.valid:
         return ChatResponse(
@@ -51,27 +51,27 @@ async def chat(
             cart=cart_summary,
         )
 
-    return await handler(db=db, session_id=session_id, intent=intent, cart=cart)
+    return await handler(db=db, bot_id=req.bot_id, menu_id=req.menu_id, intent=intent, cart=cart)
 
 
 async def _handle_search_menu(
-    *, db: AsyncSession, session_id: str, intent: IntentResult, cart: Cart
+    *, db: AsyncSession, bot_id: str, menu_id: str, intent: IntentResult, cart: Cart
 ) -> ChatResponse:
-    return await menu_service.search_menu(db, session_id, intent, cart)
+    return await menu_service.search_menu(db, menu_id, intent, cart)
 
 
 async def _handle_cart_mutation(
-    *, db: AsyncSession, session_id: str, intent: IntentResult, cart: Cart
+    *, db: AsyncSession, bot_id: str, menu_id: str, intent: IntentResult, cart: Cart
 ) -> ChatResponse:
-    return await cart_service.mutate_cart(db, session_id, intent)
+    return await cart_service.mutate_cart(db, cart.session_id, intent)
 
 
 async def _handle_show_cart(
-    *, db: AsyncSession, session_id: str, intent: IntentResult, cart
+    *, db: AsyncSession, bot_id: str, menu_id: str, intent: IntentResult, cart
 ) -> ChatResponse:
     cart_summary = cart_service.build_cart_summary(cart)
     return ChatResponse(
-        session_id=session_id,
+        session_id=cart.session_id,
         reply=build_reply(intent, cart_summary),
         intent=intent,
         cart=cart_summary,
@@ -79,9 +79,9 @@ async def _handle_show_cart(
 
 
 async def _handle_checkout(
-    *, db: AsyncSession, session_id: str, intent: IntentResult, cart: Cart
+    *, db: AsyncSession, bot_id: str, menu_id: str, intent: IntentResult, cart: Cart
 ) -> ChatResponse:
-    return await order_service.checkout(db, session_id, intent, cart)
+    return await order_service.checkout(db, cart.session_id, intent, cart)
 
 
 _INTENT_HANDLERS = {

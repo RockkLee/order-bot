@@ -3,13 +3,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.entities import MenuItem, Cart, CartItem, Order, OrderItem
 
 
-async def get_menu_by_query(db: AsyncSession, query: str) -> list[MenuItem]:
-    stmt = select(MenuItem)
-    if query:
-        like_query = f"%{query.lower()}%"
-        stmt = stmt.where(
-            (MenuItem.name.ilike(like_query))
-        )
+async def get_menu_by_query(db: AsyncSession, menu_id: str) -> list[MenuItem]:
+    stmt = select(MenuItem).where(
+        MenuItem.menu_id == menu_id
+    )
     result = await db.scalars(stmt)
     return list(result.all())
 
