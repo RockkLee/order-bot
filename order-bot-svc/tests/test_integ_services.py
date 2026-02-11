@@ -141,15 +141,15 @@ class MenuServiceTests(AsyncServiceTestCase):
 
 class OrderServiceTests(AsyncServiceTestCase):
     async def test_checkout_requires_confirmation(self):
-        cart = Cart(session_id="session-4")
+        cart = Cart(session_id="session-4", status=CartStatus.OPEN)
         cart.items = [
             CartItem(
                 cart_id="cart-4",
                 menu_item_id="sku-4",
                 name="Latte",
                 quantity=1,
-                unit_price_cents=450,
-                line_total_cents=450,
+                unit_price_scaled=450,
+                total_price_scaled=450,
             )
         ]
         intent = IntentResult(valid=True, intent_type="checkout", confirmed=False)
@@ -161,11 +161,13 @@ class OrderServiceTests(AsyncServiceTestCase):
 
     async def test_checkout_places_order(self):
         async with self.SessionLocal() as session:
-            menu_item = await self.create_menu_item(session, item_id="sku-5", menu_id="latte-5")
-            cart = await self.create_cart(session, "session-5")
-            await self.add_cart_item(session, cart, menu_item, quantity=2)
-            _ = await cart.awaitable_attrs.items
-            intent = IntentResult(valid=True, intent_type="checkout", confirmed=True)
+            async with session.begin():
+                menu_item = await self.create_menu_item(
+                    session, item_id="latte-5", name="Latte", menu_id="menu_id_5", price=4.5)
+                cart = await self.create_cart(session, "session-5")
+                await self.add_cart_item(session, cart, menu_item, quantity=2)
+                _ = await cart.awaitable_attrs.items
+                intent = IntentResult(valid=True, intent_type="checkout", confirmed=True)
 
             response = await order_service.checkout(session, "session-5", intent, cart)
 

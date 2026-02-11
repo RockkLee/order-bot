@@ -1,6 +1,8 @@
 from typing import Literal
 from pydantic import BaseModel, Field
 
+from src.enums import CartStatus
+
 
 class ChatRequest(BaseModel):
     menu_id: str = Field(..., alias="menuId")
@@ -25,7 +27,7 @@ class CartItemOut(BaseModel):
 
 class CartSummary(BaseModel):
     session_id: str
-    status: str
+    status: CartStatus
     items: list[CartItemOut] = Field(default_factory=list)
     total_price_scaled: int
     total_price: float = 0

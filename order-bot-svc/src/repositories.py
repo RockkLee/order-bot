@@ -44,8 +44,8 @@ async def upsert_cart_item(
     await db.flush()
 
 
-async def insert_order(db: AsyncSession, cart: Cart, total_cents: int) -> Order:
-    order = Order(cart_id=cart.id, session_id=cart.session_id, total_cents=total_cents)
+async def insert_order(db: AsyncSession, cart: Cart, total_scaled: int) -> Order:
+    order = Order(cart_id=cart.id, session_id=cart.session_id, total_scaled=total_scaled)
     db.add(order)
     await db.flush()
     return order
@@ -60,7 +60,7 @@ async def insert_order_items(
             menu_item_id=item.menu_item_id,
             name=item.name,
             quantity=item.quantity,
-            unit_price_cents=item.unit_price_cents,
-            line_total_cents=item.line_total_cents,
+            unit_price_scaled=item.unit_price_scaled,
+            total_price_scaled=item.total_price_scaled,
         )
         db.add(order_item)
