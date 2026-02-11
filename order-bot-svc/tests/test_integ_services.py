@@ -115,7 +115,7 @@ class CartServiceTests(AsyncServiceTestCase):
                     session, item_id="item_id-1", menu_id="menu_id-1", name="menu_item_name", price=3.5)
                 intent = IntentResult(
                     valid=True,
-                    intent_type="mutate_item",
+                    intent_type="mutate_cart_items",
                     items=[IntentItem(menu_item_id=menu_item.id, quantity=2)],
                 )
             response = await cart_service.mutate_cart(session, "session-1", intent)

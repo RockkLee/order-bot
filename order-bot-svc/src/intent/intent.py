@@ -1,9 +1,9 @@
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
-from langchain.agents import create_agent
-from langchain_core.messages import ToolMessage
+from httpx import HTTPStatusError
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_mcp_adapters.client import MultiServerMCPClient
@@ -39,7 +39,7 @@ class IntentParser:
             api_key=settings.mistral_api_key,
             temperature=0,
         )
-        self._agent = None
+        self._tools_by_name: dict[str, Any] | None = None
 
     async def parse(self, message: str, has_cart_items: bool) -> IntentResult:
         text = message.strip()
@@ -47,27 +47,26 @@ class IntentParser:
             return IntentResult(valid=False, intent_type="unknown", reason="empty")
 
         try:
-            if self._agent is None:
+            if self._tools_by_name is None:
                 tools = await self._client.get_tools()
-                self._agent = create_agent(
-                    model=self._llm,
-                    tools=tools,
-                    system_prompt=self._system_prompt(),
-                )
+                self._tools_by_name = {tool.name: tool for tool in tools}
 
-            response = await self._agent.ainvoke(
-                {
-                    "messages": [
-                        {
-                            "role": "user",
-                            "content": self._build_user_prompt(text, has_cart_items),
-                        }
-                    ]
-                }
+            model_result = await self._classify_intent(text, has_cart_items)
+            tool_result = await self._call_tool_for_intent(model_result)
+            if tool_result is not None:
+                return tool_result
+            return model_result
+        except HTTPStatusError as exc:
+            response = exc.response
+            logging.error("mcp_error:%s:%s", response.status_code, response.text)
+            logging.exception("mcp http error")
+            return IntentResult(
+                valid=False,
+                intent_type="unknown",
+                reason=f"mcp_error:{response.status_code}:{response.text}",
             )
-
-            return self._parse_agent_response(response)
         except Exception as exc:
+            logging.exception("mcp error")
             fallback = self._fallback_parse(text)
             if fallback is not None:
                 return fallback
@@ -81,7 +80,6 @@ class IntentParser:
         parser = PydanticOutputParser(pydantic_object=IntentResult)
         return (
             "You are an intent classifier for an order-bot. "
-            "You must call exactly one MCP tool that best represents the user request. "
             "Then return only valid JSON that follows this schema:\n"
             f"{parser.get_format_instructions()}"
         )
@@ -90,11 +88,60 @@ class IntentParser:
         prompt = ChatPromptTemplate.from_template(
             "Message: {message}\nHas cart items: {has_cart_items}\n"
             "Steps:\n"
-            "1. Select and call exactly one tool from: search_menu, add_item, update_item, remove_item, show_cart, checkout, unknown.\n"
-            "2. Use tool args derived from the message.\n"
+            "1. Select exactly one intent type from: search_menu, mutate_cart_items, show_cart, checkout, unknown.\n"
+            "2. Use intent args derived from the message.\n"
             "3. Return the final response as IntentResult JSON only."
         )
         return prompt.format(message=message, has_cart_items=has_cart_items)
+
+    async def _classify_intent(self, message: str, has_cart_items: bool) -> IntentResult:
+        parser = PydanticOutputParser(pydantic_object=IntentResult)
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", "{system}"),
+                ("user", "{user}"),
+            ]
+        )
+        chain = prompt | self._llm | parser
+        return await chain.ainvoke(
+            {
+                "system": self._system_prompt(),
+                "user": self._build_user_prompt(message, has_cart_items),
+            }
+        )
+
+    async def _call_tool_for_intent(self, result: IntentResult) -> IntentResult | None:
+        if self._tools_by_name is None:
+            return None
+
+        tool = self._tools_by_name.get(result.intent_type)
+        if tool is None:
+            return None
+
+        args = self._tool_args_for_intent(result)
+        tool_response = await tool.ainvoke(args)
+        payload = self._parse_text_payload(tool_response) or {}
+        if result.query and "query" not in payload:
+            payload["query"] = result.query
+        if result.reason and "reason" not in payload:
+            payload["reason"] = result.reason
+        if result.items and "items" not in payload:
+            payload["items"] = [item.model_dump() for item in result.items]
+        if "confirmed" not in payload:
+            payload["confirmed"] = result.confirmed
+        if "valid" not in payload:
+            payload["valid"] = payload.get("intent_type") != "unknown"
+
+        return IntentResult.model_validate(payload)
+
+    def _tool_args_for_intent(self, result: IntentResult) -> dict[str, Any]:
+        if result.intent_type == "mutate_cart_items":
+            return {"items": [item.model_dump() for item in result.items]}
+        if result.intent_type == "checkout":
+            return {"confirmed": result.confirmed}
+        if result.intent_type == "unknown":
+            return {"reason": result.reason or "unknown"}
+        return {}
 
 
     def _fallback_parse(self, text: str) -> IntentResult | None:
@@ -121,27 +168,6 @@ class IntentParser:
                     items=[{"sku": sku, "quantity": quantity}],
                 )
         return None
-
-    def _parse_agent_response(self, response: dict[str, Any]) -> IntentResult:
-        messages = response.get("messages", [])
-        tool_payload: dict[str, Any] | None = None
-        final_payload: dict[str, Any] | None = None
-
-        for msg in messages:
-            if isinstance(msg, ToolMessage):
-                tool_payload = self._parse_text_payload(getattr(msg, "content", ""))
-
-            content = getattr(msg, "content", None)
-            if isinstance(content, str):
-                parsed = self._parse_text_payload(content)
-                if parsed:
-                    final_payload = parsed
-
-        payload = final_payload or tool_payload or {}
-        if "valid" not in payload:
-            payload["valid"] = payload.get("intent_type") != "unknown"
-
-        return IntentResult.model_validate(payload)
 
     def _parse_text_payload(self, payload: Any) -> dict[str, Any] | None:
         if isinstance(payload, dict):

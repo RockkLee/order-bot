@@ -1,4 +1,9 @@
+import json
+
 from mcp.server.fastmcp import FastMCP
+from pydantic import BaseModel
+
+from src.schemas import IntentItem
 
 
 MCP_SERVER_NAME = "order-bot-intent"
@@ -7,29 +12,43 @@ MCP_SERVER_NAME = "order-bot-intent"
 mcp = FastMCP(MCP_SERVER_NAME)
 
 
-@mcp.tool()
-def search_menu(query: str) -> dict:
-    return {"intent_type": "search_menu", "query": query}
+def _json_payload(payload: dict) -> str:
+    def _default(value: object) -> object:
+        if isinstance(value, BaseModel):
+            return value.model_dump()
+        raise TypeError(f"Unsupported type: {type(value)!r}")
+
+    return json.dumps(payload, default=_default)
 
 
 @mcp.tool()
-def mutate_item(items: list[dict]) -> dict:
-    return {"intent_type": "add_item", "items": items}
+def search_menu() -> str:
+    """Search menu"""
+    return _json_payload({"intent_type": "search_menu"})
 
 
 @mcp.tool()
-def show_cart() -> dict:
-    return {"intent_type": "show_cart"}
+def mutate_cart_items(items: list[IntentItem]) -> str:
+    """Update menu items in the cart by menu item id and quantity."""
+    return _json_payload({"intent_type": "mutate_cart_items", "items": items})
 
 
 @mcp.tool()
-def checkout(confirmed: bool = False) -> dict:
-    return {"intent_type": "checkout", "confirmed": confirmed}
+def show_cart() -> str:
+    """Show the current cart contents."""
+    return _json_payload({"intent_type": "show_cart"})
 
 
 @mcp.tool()
-def unknown(reason: str = "unknown") -> dict:
-    return {"intent_type": "unknown", "reason": reason}
+def checkout(confirmed: bool = False) -> str:
+    """Checkout the cart; set confirmed once the user explicitly agrees."""
+    return _json_payload({"intent_type": "checkout", "confirmed": confirmed})
+
+
+@mcp.tool()
+def unknown(reason: str = "unknown") -> str:
+    """If you can't choose any other MCP tool, choose this one"""
+    return _json_payload({"intent_type": "unknown", "reason": reason})
 
 
 def main() -> None:

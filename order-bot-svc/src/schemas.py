@@ -42,7 +42,7 @@ class IntentResult(BaseModel):
     valid: bool
     intent_type: Literal[
         "search_menu",
-        "mutate_item",
+        "mutate_cart_items",
         "show_cart",
         "checkout",
         "unknown",

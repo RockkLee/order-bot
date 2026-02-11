@@ -3,7 +3,7 @@ import os
 from typing import Any
 
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 load_dotenv()
@@ -15,21 +15,13 @@ class AppSettings(BaseModel):
     api_prefix: str = "/api"
     host: str = os.environ["HOST"]
     port: int = os.environ["PORT"]
-    root_path: str = Field(default_factory=lambda: os.environ["ROOT_PATH"])
-    is_production: bool = Field(
-        default_factory=lambda: os.environ["IS_PRODUCTION"].lower() == "true"
-    )
+    root_path: str = os.environ["ROOT_PATH"]
+    is_production: bool = os.environ["IS_PRODUCTION"].lower() == "true"
     logger_settings: dict[str, Any] | None = None
-    database_url: str = Field(
-        default_factory=lambda: os.environ["DATABASE_URL"]
-    )
-    seed_menu: bool = Field(
-        default_factory=lambda: os.environ["SEED_MENU"].lower() == "true"
-    )
-    mistral_api_key: str = Field(default_factory=lambda: os.environ["MISTRAL_API_KEY"])
-    mistral_model: str = Field(
-        default_factory=lambda: os.environ["MISTRAL_MODEL"]
-    )
+    database_url: str = os.environ["DATABASE_URL"]
+    seed_menu: bool = os.environ["SEED_MENU"].lower() == "true"
+    mistral_api_key: str = os.environ["MISTRAL_API_KEY"]
+    mistral_model: str = os.environ["MISTRAL_MODEL"]
 
 
 settings = AppSettings()
