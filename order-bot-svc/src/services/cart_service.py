@@ -1,7 +1,7 @@
-from datetime import datetime
+import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from src import repositories
-from src.entities import Cart
+from src.entities import Cart, MenuItem, CartItem
 from src.enums import CartStatus
 from src.schemas import CartSummary, CartItemOut, IntentResult, ChatResponse
 from fastapi import HTTPException
@@ -34,7 +34,7 @@ async def build_cart_summary(cart: Cart) -> CartSummary:
     )
 
 
-async def ensure_cart(db: AsyncSession, session_id: str) -> Cart:
+async def get_cart(db: AsyncSession, session_id: str) -> Cart:
     cart = await repositories.get_cart_by_session(db, session_id)
     if not cart:
         cart = await repositories.create_cart(db, session_id)
@@ -48,35 +48,31 @@ async def lock_cart(db: AsyncSession, session_id: str) -> Cart:
     return cart
 
 
-def touch_cart(cart: Cart) -> None:
-    cart.updated_at = datetime.utcnow()
-
-
 async def mutate_cart(db: AsyncSession, session_id: str, intent: IntentResult) -> ChatResponse:
     async with db.begin():
         cart = await lock_cart(db, session_id)
         if cart.status != CartStatus.OPEN:
             raise HTTPException(status_code=400, detail="Cart is closed")
 
+        cart_items: list[CartItem] = []
+        menu_item_ids: list[str] = list(map(lambda intent_item: intent_item.menu_item_id, intent.items))
+        menu_items = await repositories.get_menu_item_by_menu_item_ids(db, menu_item_ids)
+        menu_items_dic: dict[str, MenuItem] = {mi.id: mi for mi in menu_items}
         for item in intent.items:
-            menu_item = await repositories.get_menu_item_by_menu_item_id(db, item.sku)
-            if intent.intent_type == "remove_item":
-                await repositories.remove_cart_item(db, cart, item.sku)
-                continue
-
             if item.quantity <= 0:
                 raise HTTPException(status_code=400, detail="Quantity must be positive")
-
-            await repositories.upsert_cart_item(
-                db,
-                cart,
-                menu_item_id=menu_item.id,
-                name=menu_item.name,
+            cart_item = CartItem(
+                id=str(uuid.uuid4()),
+                cart_id=str(uuid.uuid4()),
+                menu_item_id=menu_items_dic[item.menu_item_id].id,
+                name=menu_items_dic[item.menu_item_id].name,
                 quantity=item.quantity,
-                unit_price_cents=menu_item.price,
+                unit_price_scaled=money_util.to_scaled_val(menu_items_dic[item.menu_item_id].price),
+                total_price_scaled=money_util.to_scaled_val(menu_items_dic[item.menu_item_id].price),
             )
+            cart_items.append(cart_item)
 
-        touch_cart(cart)
+        await repositories.upsert_cart_item(db, cart, cart_items)
 
     cart_summary = await build_cart_summary(cart)
     return ChatResponse(

@@ -32,7 +32,7 @@ class CartSummary(BaseModel):
 
 
 class IntentItem(BaseModel):
-    sku: str
+    menu_item_id: str
     quantity: int
 
 
@@ -40,9 +40,7 @@ class IntentResult(BaseModel):
     valid: bool
     intent_type: Literal[
         "search_menu",
-        "add_item",
-        "update_item",
-        "remove_item",
+        "mutate_item",
         "show_cart",
         "checkout",
         "unknown",

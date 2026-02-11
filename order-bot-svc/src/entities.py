@@ -26,8 +26,6 @@ class Cart(Base):
     status: Mapped[str] = mapped_column(String(20), default="OPEN")
     total_scaled: Mapped[int] = mapped_column(Integer, default=0)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(UTC))
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(UTC))
 
     items: Mapped[list["CartItem"]] = relationship(
         "CartItem",
@@ -49,8 +47,6 @@ class CartItem(Base):
     quantity: Mapped[int] = mapped_column(Integer)
     unit_price_scaled: Mapped[int] = mapped_column(Integer)
     total_price_scaled: Mapped[int] = mapped_column(Integer)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(UTC))
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(UTC))
 
     cart: Mapped[Cart] = relationship("Cart", back_populates="items")
 
@@ -62,7 +58,6 @@ class Order(Base):
     cart_id: Mapped[str] = mapped_column(String(36), ForeignKey("cart.id"))
     session_id: Mapped[str] = mapped_column(String(36), index=True)
     total_scaled: Mapped[int] = mapped_column(Integer)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(UTC))
 
     order_items: Mapped[list["OrderItem"]] = relationship(
         "OrderItem",

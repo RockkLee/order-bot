@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.entities import MenuItem, Cart, CartItem, Order, OrderItem
 
@@ -11,10 +11,10 @@ async def get_menu_by_query(db: AsyncSession, menu_id: str) -> list[MenuItem]:
     return list(result.all())
 
 
-async def get_menu_item_by_menu_item_id(db: AsyncSession, menu_item_id: str) -> MenuItem | None:
-    stmt = select(MenuItem).where(MenuItem.id == menu_item_id)
+async def get_menu_item_by_menu_item_ids(db: AsyncSession, menu_item_ids: list[str]) -> list[MenuItem]:
+    stmt = select(MenuItem).where(MenuItem.id.in_(menu_item_ids))
     result = await db.scalars(stmt)
-    return result.first()
+    return list(result.all())
 
 
 async def get_cart_by_session(
@@ -37,41 +37,11 @@ async def create_cart(db: AsyncSession, session_id: str) -> Cart:
 async def upsert_cart_item(
     db: AsyncSession,
     cart: Cart,
-    menu_item_id: str,
-    name: str,
-    quantity: int,
-    unit_price_cents: int,
-) -> CartItem:
-    stmt = select(CartItem).where(CartItem.cart_id == cart.id, CartItem.menu_item_id == menu_item_id)
-    result = await db.scalars(stmt)
-    existing = result.first()
-    line_total_cents = quantity * unit_price_cents
-    if existing:
-        existing.quantity = quantity
-        existing.unit_price_cents = unit_price_cents
-        existing.line_total_cents = line_total_cents
-        return existing
-
-    item = CartItem(
-        cart_id=cart.id,
-        menu_item_id=menu_item_id,
-        name=name,
-        quantity=quantity,
-        unit_price_cents=unit_price_cents,
-        line_total_cents=line_total_cents,
-    )
-    db.add(item)
-    return item
-
-
-async def remove_cart_item(db: AsyncSession, cart: Cart, menu_item_id: str) -> bool:
-    stmt = select(CartItem).where(CartItem.cart_id == cart.id, CartItem.menu_item_id == menu_item_id)
-    result = await db.scalars(stmt)
-    existing = result.first()
-    if not existing:
-        return False
-    await db.delete(existing)
-    return True
+    cart_items: list[CartItem]
+):
+    delete(CartItem).where(CartItem.cart_id == cart.id)
+    db.add_all(cart_items)
+    await db.commit()
 
 
 async def insert_order(db: AsyncSession, cart: Cart, total_cents: int) -> Order:

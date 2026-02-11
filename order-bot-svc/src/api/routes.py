@@ -25,11 +25,11 @@ async def chat(
 ):
     if not session_id:
         session_id = str(uuid.uuid4())
-        cart = await cart_service.ensure_cart(db, session_id)
+        cart = await cart_service.get_cart(db, session_id)
         await db.commit()
         res.headers["Session-Id"] = session_id
     else:
-        cart = await cart_service.ensure_cart(db, session_id)
+        cart = await cart_service.get_cart(db, session_id)
 
     cart_summary = await cart_service.build_cart_summary(cart)
     intent = await intent_parser.parse(req.message, has_cart_items=bool(cart_summary.items))

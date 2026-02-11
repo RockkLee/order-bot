@@ -64,13 +64,11 @@ class AsyncServiceTestCase(unittest.IsolatedAsyncioTestCase):
 class CartServiceTests(AsyncServiceTestCase):
     async def test_build_cart_summary_aggregates_items(self):
         cart = Cart(
-            id = "e4d61b28-3dfa-4823-be10-6d53d56ea4d0",
-            session_id= "56c96d21-439d-4601-835b-df9127ac2e35",
+            id="e4d61b28-3dfa-4823-be10-6d53d56ea4d0",
+            session_id="56c96d21-439d-4601-835b-df9127ac2e35",
             status=CartStatus.OPEN.value,
             total_scaled=1800,
             closed_at=None,
-            created_at=datetime.now(),
-            updated_at=datetime.now(),
         )
         item_one = CartItem(
             cart_id="9f7480df-4b4d-4882-8e6e-6f517eee7f82",
@@ -97,17 +95,9 @@ class CartServiceTests(AsyncServiceTestCase):
         self.assertEqual(summary.items[0].menu_item_id, "6a569db8-74ef-4ba5-85aa-16102cc30f69")
         self.assertEqual(summary.items[1].menu_item_id, "cf73287b-6d5d-4839-80cf-94a8e5ff6a7e")
 
-    async def test_touch_cart_updates_timestamp(self):
-        cart = Cart(session_id="session-1")
-        cart.updated_at = datetime.utcnow() - timedelta(minutes=5)
-
-        cart_service.touch_cart(cart)
-
-        self.assertGreater(cast(datetime, cart.updated_at), datetime.now(UTC) - timedelta(minutes=1))
-
     async def test_ensure_cart_creates_when_missing(self):
         async with self.SessionLocal() as session:
-            cart = await cart_service.ensure_cart(session, "session-1")
+            cart = await cart_service.get_cart(session, "session-1")
 
         self.assertEqual(cart.session_id, "session-1")
 
@@ -120,27 +110,29 @@ class CartServiceTests(AsyncServiceTestCase):
 
     async def test_mutate_cart_adds_item(self):
         async with self.SessionLocal() as session:
-            menu_item = await self.create_menu_item(session, item_id="sku-1")
+            menu_item = await self.create_menu_item(
+                session, item_id="item_id-1", menu_id="menu_id-1", name="menu_item_name", price=3.5)
             intent = IntentResult(
                 valid=True,
-                intent_type="add_item",
-                items=[IntentItem(sku=menu_item.id, quantity=2)],
+                intent_type="mutate_item",
+                items=[IntentItem(menu_item_id=menu_item.id, quantity=2)],
             )
 
             response = await cart_service.mutate_cart(session, "session-1", intent)
 
         self.assertEqual(response.cart.items[0].sku, "sku-1")
-        self.assertEqual(response.cart.items[0].line_total_cents, 900)
+        self.assertEqual(response.cart.items[0].line_total_cents, 700)
 
     async def test_mutate_cart_removes_item(self):
         async with self.SessionLocal() as session:
-            menu_item = await self.create_menu_item(session, item_id="sku-2")
+            menu_item = await self.create_menu_item(
+                session, item_id="item_id-1", menu_id="menu_id-1", name="menu_item_name", price=3.5)
             cart = await self.create_cart(session, "session-2")
             await self.add_cart_item(session, cart, menu_item, quantity=1)
             intent = IntentResult(
                 valid=True,
-                intent_type="remove_item",
-                items=[IntentItem(sku=menu_item.id, quantity=1)],
+                intent_type="mutate_item",
+                items=[IntentItem(menu_item_id=menu_item.id, quantity=1)],
             )
 
             response = await cart_service.mutate_cart(session, "session-2", intent)

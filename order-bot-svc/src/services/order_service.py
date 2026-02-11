@@ -31,8 +31,7 @@ async def checkout(db: AsyncSession, session_id: str, intent: IntentResult, cart
         order = await repositories.insert_order(db, cart, total_cents)
         await repositories.insert_order_items(db, order, items)
 
-        cart.status = CartStatus.CLOSED
-        cart_service.touch_cart(cart)
+        cart.status = CartStatus.CLOSED.name
         cart.closed_at = cart.updated_at
 
     cart_summary = await cart_service.build_cart_summary(cart)
