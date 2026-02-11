@@ -1,8 +1,10 @@
 import uuid
 from datetime import datetime, UTC
-from sqlalchemy import String, Integer ,Double, Boolean, ForeignKey, DateTime, UniqueConstraint
+
+from sqlalchemy import String, Integer ,Double, Enum, ForeignKey, DateTime, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.db import Base
+from src.enums import CartStatus
 
 
 def _uuid_str() -> str:
@@ -23,7 +25,11 @@ class Cart(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid_str)
     session_id: Mapped[str] = mapped_column(String(36), unique=True, index=True)
-    status: Mapped[str] = mapped_column(String(20), default="OPEN")
+    status: Mapped[CartStatus] = mapped_column(
+        Enum(CartStatus, name="cart_status", native_enum=False),
+        default=CartStatus.OPEN,
+        nullable=False,
+    )
     total_scaled: Mapped[int] = mapped_column(Integer, default=0)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 

@@ -39,9 +39,9 @@ async def upsert_cart_item(
     cart: Cart,
     cart_items: list[CartItem]
 ):
-    delete(CartItem).where(CartItem.cart_id == cart.id)
+    await db.execute(delete(CartItem).where(CartItem.cart_id == cart.id))
     db.add_all(cart_items)
-    await db.commit()
+    await db.flush()
 
 
 async def insert_order(db: AsyncSession, cart: Cart, total_cents: int) -> Order:

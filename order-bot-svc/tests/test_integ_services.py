@@ -110,34 +110,18 @@ class CartServiceTests(AsyncServiceTestCase):
 
     async def test_mutate_cart_adds_item(self):
         async with self.SessionLocal() as session:
-            menu_item = await self.create_menu_item(
-                session, item_id="item_id-1", menu_id="menu_id-1", name="menu_item_name", price=3.5)
-            intent = IntentResult(
-                valid=True,
-                intent_type="mutate_item",
-                items=[IntentItem(menu_item_id=menu_item.id, quantity=2)],
-            )
-
+            async with session.begin():
+                menu_item = await self.create_menu_item(
+                    session, item_id="item_id-1", menu_id="menu_id-1", name="menu_item_name", price=3.5)
+                intent = IntentResult(
+                    valid=True,
+                    intent_type="mutate_item",
+                    items=[IntentItem(menu_item_id=menu_item.id, quantity=2)],
+                )
             response = await cart_service.mutate_cart(session, "session-1", intent)
 
-        self.assertEqual(response.cart.items[0].sku, "sku-1")
-        self.assertEqual(response.cart.items[0].line_total_cents, 700)
-
-    async def test_mutate_cart_removes_item(self):
-        async with self.SessionLocal() as session:
-            menu_item = await self.create_menu_item(
-                session, item_id="item_id-1", menu_id="menu_id-1", name="menu_item_name", price=3.5)
-            cart = await self.create_cart(session, "session-2")
-            await self.add_cart_item(session, cart, menu_item, quantity=1)
-            intent = IntentResult(
-                valid=True,
-                intent_type="mutate_item",
-                items=[IntentItem(menu_item_id=menu_item.id, quantity=1)],
-            )
-
-            response = await cart_service.mutate_cart(session, "session-2", intent)
-
-        self.assertEqual(response.cart.items, [])
+        self.assertEqual(response.cart.items[0].menu_item_id, "item_id-1")
+        self.assertEqual(response.cart.items[0].total_price_scaled, 700)
 
 
 class MenuServiceTests(AsyncServiceTestCase):

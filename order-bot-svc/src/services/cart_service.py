@@ -61,14 +61,15 @@ async def mutate_cart(db: AsyncSession, session_id: str, intent: IntentResult) -
         for item in intent.items:
             if item.quantity <= 0:
                 raise HTTPException(status_code=400, detail="Quantity must be positive")
+            unit_price_scaled = money_util.to_scaled_val(menu_items_dic[item.menu_item_id].price)
             cart_item = CartItem(
                 id=str(uuid.uuid4()),
-                cart_id=str(uuid.uuid4()),
+                cart_id=cart.id,
                 menu_item_id=menu_items_dic[item.menu_item_id].id,
                 name=menu_items_dic[item.menu_item_id].name,
                 quantity=item.quantity,
-                unit_price_scaled=money_util.to_scaled_val(menu_items_dic[item.menu_item_id].price),
-                total_price_scaled=money_util.to_scaled_val(menu_items_dic[item.menu_item_id].price),
+                unit_price_scaled=unit_price_scaled,
+                total_price_scaled=item.quantity * unit_price_scaled,
             )
             cart_items.append(cart_item)
 
