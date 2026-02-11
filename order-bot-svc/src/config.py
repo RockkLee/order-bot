@@ -13,25 +13,22 @@ logger = logging.getLogger(__name__)
 class AppSettings(BaseModel):
     app_name: str = "Order Bot"
     api_prefix: str = "/api"
-    host: str = "127.0.0.1"
-    port: int = 8000
-    root_path: str = Field(default_factory=lambda: os.getenv("ROOT_PATH", ""))
+    host: str = os.environ["HOST"]
+    port: int = os.environ["PORT"]
+    root_path: str = Field(default_factory=lambda: os.environ["ROOT_PATH"])
     is_production: bool = Field(
-        default_factory=lambda: os.getenv("IS_PRODUCTION", "false").lower() == "true"
+        default_factory=lambda: os.environ["IS_PRODUCTION"].lower() == "true"
     )
     logger_settings: dict[str, Any] | None = None
     database_url: str = Field(
-        default_factory=lambda: os.getenv(
-            "DATABASE_URL",
-            "postgresql+asyncpg://postgres:postgres@localhost:5432/order_bot",
-        )
+        default_factory=lambda: os.environ["DATABASE_URL"]
     )
     seed_menu: bool = Field(
-        default_factory=lambda: os.getenv("SEED_MENU", "true").lower() == "true"
+        default_factory=lambda: os.environ["SEED_MENU"].lower() == "true"
     )
-    mistral_api_key: str = Field(default_factory=lambda: os.getenv("MISTRAL_API_KEY", ""))
+    mistral_api_key: str = Field(default_factory=lambda: os.environ["MISTRAL_API_KEY"])
     mistral_model: str = Field(
-        default_factory=lambda: os.getenv("MISTRAL_MODEL", "mistral-large-latest")
+        default_factory=lambda: os.environ["MISTRAL_MODEL"]
     )
 
 
