@@ -13,18 +13,8 @@ def search_menu(query: str) -> dict:
 
 
 @mcp.tool()
-def add_item(items: list[dict]) -> dict:
+def mutate_item(items: list[dict]) -> dict:
     return {"intent_type": "add_item", "items": items}
-
-
-@mcp.tool()
-def update_item(items: list[dict]) -> dict:
-    return {"intent_type": "update_item", "items": items}
-
-
-@mcp.tool()
-def remove_item(items: list[dict]) -> dict:
-    return {"intent_type": "remove_item", "items": items}
 
 
 @mcp.tool()
