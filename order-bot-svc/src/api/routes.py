@@ -31,8 +31,9 @@ async def chat(
     else:
         cart = await cart_service.get_cart(db, session_id)
 
+    menu_item_intents = await menu_service.search_menu_for_intent(db, req.menu_id)
     cart_summary = await cart_service.build_cart_summary(cart)
-    intent = await intent_parser.parse(req.message, has_cart_items=bool(cart_summary.items))
+    intent = await intent_parser.parse(req.message, bool(cart_summary.items), menu_item_intents)
 
     if not intent.valid:
         return ChatResponse(

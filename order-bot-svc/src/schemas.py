@@ -10,6 +10,12 @@ class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1)
 
 
+class MenuItemIntent(BaseModel):
+    menu_item_id: str
+    name: str
+    price: float
+
+
 class MenuItemOut(BaseModel):
     name: str
     price: float

@@ -13,6 +13,7 @@ mcp = FastMCP(MCP_SERVER_NAME)
 
 
 def _json_payload(payload: dict) -> str:
+    # Add this because the field in the json payload could be a pydantic object (e.g., items: list[IntentItem])
     def _default(value: object) -> object:
         if isinstance(value, BaseModel):
             return value.model_dump()
