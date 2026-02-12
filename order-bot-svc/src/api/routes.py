@@ -88,9 +88,7 @@ async def _handle_checkout(
 
 _INTENT_HANDLERS = {
     "search_menu": _handle_search_menu,
-    "add_item": _handle_cart_mutation,
-    "update_item": _handle_cart_mutation,
-    "remove_item": _handle_cart_mutation,
+    "mutate_cart_items": _handle_cart_mutation,
     "show_cart": _handle_show_cart,
     "checkout": _handle_checkout,
 }
