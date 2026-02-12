@@ -1,4 +1,4 @@
-package httphdlrs
+package httphdlrsold
 
 import (
 	"order-bot-mgmt-svc/internal/models/entities"
@@ -11,7 +11,7 @@ type menuReq struct {
 }
 
 type menuRes struct {
-	BotID string        `json:"bot_id""`
+	BotID string        `json:"bot_id"`
 	Items []menuItemRes `json:"items"`
 }
 

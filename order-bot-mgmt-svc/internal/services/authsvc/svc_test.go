@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"order-bot-mgmt-svc/internal/config"
-	"order-bot-mgmt-svc/internal/infra/sqldb/pqsqldb"
+	"order-bot-mgmt-svc/internal/infra/sqldbold/pqsqldb"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/util"

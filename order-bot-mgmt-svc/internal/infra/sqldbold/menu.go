@@ -1,11 +1,11 @@
-package sqldb
+package sqldbold
 
 import (
 	"context"
 	"database/sql"
 	"fmt"
-	"order-bot-mgmt-svc/internal/infra/sqldb/pqsqldb"
-	"order-bot-mgmt-svc/internal/infra/sqldb/sqldbexecutor"
+	"order-bot-mgmt-svc/internal/infra/sqldbold/pqsqldb"
+	"order-bot-mgmt-svc/internal/infra/sqldbold/sqldbexecutor"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
 )

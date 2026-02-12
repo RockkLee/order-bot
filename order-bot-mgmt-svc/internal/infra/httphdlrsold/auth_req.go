@@ -1,4 +1,4 @@
-package httphdlrs
+package httphdlrsold
 
 type signupRequest struct {
 	Email    string `json:"email" validate:"required"`

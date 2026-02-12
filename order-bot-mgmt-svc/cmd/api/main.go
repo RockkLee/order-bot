@@ -8,10 +8,10 @@ import (
 	"log/slog"
 	"net/http"
 	"order-bot-mgmt-svc/internal/config"
-	"order-bot-mgmt-svc/internal/infra/httphdlrs/httpserver"
-	"order-bot-mgmt-svc/internal/infra/sqldb"
-	"order-bot-mgmt-svc/internal/infra/sqldb/orderbotmgmtsqldb"
-	"order-bot-mgmt-svc/internal/infra/sqldb/pqsqldb"
+	"order-bot-mgmt-svc/internal/infra/httphdlrsold/httpserver"
+	"order-bot-mgmt-svc/internal/infra/sqldbold"
+	"order-bot-mgmt-svc/internal/infra/sqldbold/orderbotmgmtsqldb"
+	"order-bot-mgmt-svc/internal/infra/sqldbold/pqsqldb"
 	"order-bot-mgmt-svc/internal/services/authsvc"
 	"order-bot-mgmt-svc/internal/services/botsvc"
 	"order-bot-mgmt-svc/internal/services/menusvc"
@@ -55,17 +55,17 @@ func newServices(db *pqsqldb.DB, orderBotDb *pqsqldb.DB, cfg config.Config) *ser
 	ctxFunc := util.NewCtxFunc(cfg.Others.QryCtxTimeout)
 	return services.NewServices(
 		func() *authsvc.Svc {
-			return authsvc.NewSvc(db, ctxFunc, cfg, sqldb.NewUserStore(db))
+			return authsvc.NewSvc(db, ctxFunc, cfg, sqldbold.NewUserStore(db))
 		},
 		func() *menusvc.Svc {
-			menuStore := sqldb.NewMenuStore(db)
-			menuItemStore := sqldb.NewMenuItemStore(db)
+			menuStore := sqldbold.NewMenuStore(db)
+			menuItemStore := sqldbold.NewMenuItemStore(db)
 			publishedMenuStore := orderbotmgmtsqldb.NewPublishedMenuStore(orderBotDb)
 			return menusvc.NewSvc(db, orderBotDb, ctxFunc, menuStore, menuItemStore, publishedMenuStore)
 		},
 		func() *botsvc.Svc {
-			botStore := sqldb.NewBotStore(db)
-			userBotStore := sqldb.NewUserBotStore(db)
+			botStore := sqldbold.NewBotStore(db)
+			userBotStore := sqldbold.NewUserBotStore(db)
 			return botsvc.NewSvc(db, ctxFunc, cfg, botStore, userBotStore)
 		},
 	)
