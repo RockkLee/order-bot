@@ -31,17 +31,17 @@ class CartItemOut(BaseModel):
     total_price: float
 
 
+class CartItemIntent(BaseModel):
+    menu_item_id: str
+    quantity: int
+
+
 class CartSummary(BaseModel):
     session_id: str
     status: CartStatus
     items: list[CartItemOut] = Field(default_factory=list)
     total_price_scaled: int
     total_price: float = 0
-
-
-class IntentItem(BaseModel):
-    menu_item_id: str
-    quantity: int
 
 
 class IntentResult(BaseModel):
@@ -53,8 +53,7 @@ class IntentResult(BaseModel):
         "checkout",
         "unknown",
     ]
-    items: list[IntentItem] = Field(default_factory=list)
-    query: str | None = None
+    items: list[CartItemIntent] = Field(default_factory=list)
     confirmed: bool = False
     reason: str | None = None
 

@@ -8,7 +8,7 @@ from sqlalchemy.pool import StaticPool
 from src.db import Base
 from src.entities import Cart, CartItem, MenuItem
 from src.enums import CartStatus
-from src.schemas import IntentItem, IntentResult
+from src.schemas import CartItemIntent, IntentResult
 from src.services import cart_service, menu_service, order_service
 from src.utils import money_util
 
@@ -116,7 +116,7 @@ class CartServiceTests(AsyncServiceTestCase):
                 intent = IntentResult(
                     valid=True,
                     intent_type="mutate_cart_items",
-                    items=[IntentItem(menu_item_id=menu_item.id, quantity=2)],
+                    items=[CartItemIntent(menu_item_id=menu_item.id, quantity=2)],
                 )
             response = await cart_service.mutate_cart(session, "session-1", intent)
 
@@ -131,7 +131,7 @@ class MenuServiceTests(AsyncServiceTestCase):
             await self.create_menu_item(session, item_id="mocha-1", name="Mocha", menu_id="menu_id_2", price=5.5)
             cart = await self.create_cart(session, "session-3")
 
-            intent = IntentResult(valid=True, intent_type="search_menu", query="Latte")
+            intent = IntentResult(valid=True, intent_type="search_menu")
             response = await menu_service.search_menu(session, "menu_id_1", intent, cart)
 
         self.assertEqual(len(response.menu_results), 1)

@@ -11,7 +11,7 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_mistralai import ChatMistralAI
 
 from src.config import settings
-from src.schemas import IntentResult, MenuItemIntent
+from src.schemas import IntentResult, MenuItemIntent, CartItemIntent
 
 
 class MCPIntentClient:
@@ -42,7 +42,9 @@ class IntentParser:
         )
         self._agent = None
 
-    async def parse(self, message: str, has_cart_items: bool, menu_item_intents: list[MenuItemIntent]) -> IntentResult:
+    async def parse(
+        self, message: str, menu_item_intents: list[MenuItemIntent], has_cart_items: bool, cart_item_intents: list[CartItemIntent]
+    ) -> IntentResult:
         text = message.strip()
         if not text:
             return IntentResult(valid=False, intent_type="unknown", reason="empty")
@@ -52,7 +54,6 @@ class IntentParser:
                 tools = await self._client.get_tools()
                 for tool in tools:
                     # Ensure tool output is a plain string for the Mistral tool message schema.
-                    # This keeps the tool result in the LLM context without sending chunked content.
                     tool.response_format = "content"
                 self._agent = create_agent(
                     model=self._llm,
@@ -65,7 +66,7 @@ class IntentParser:
                     "messages": [
                         {
                             "role": "user",
-                            "content": self._build_user_prompt(text, has_cart_items, menu_item_intents),
+                            "content": self._build_user_prompt(text, menu_item_intents, has_cart_items, cart_item_intents),
                         }
                     ]
                 }
@@ -74,9 +75,6 @@ class IntentParser:
             return self._parse_agent_response(response)
         except Exception as exc:
             logging.exception("mcp error")
-            fallback = self._fallback_parse(text)
-            if fallback is not None:
-                return fallback
             return IntentResult(
                 valid=False,
                 intent_type="unknown",
@@ -92,44 +90,22 @@ class IntentParser:
             f"{parser.get_format_instructions()}"
         )
 
-    def _build_user_prompt(self, message: str, has_cart_items: bool, menu_item_intents: list[MenuItemIntent]) -> str:
+    def _build_user_prompt(
+        self, message: str, menu_item_intents: list[MenuItemIntent], has_cart_items: bool, cart_item_intents: list[CartItemIntent]
+    ) -> str:
         menu_payload = json.dumps([m.model_dump() for m in menu_item_intents], ensure_ascii=False)
+        cart_payload = json.dumps([m.model_dump() for m in cart_item_intents], ensure_ascii=False)
         prompt = ChatPromptTemplate.from_template(
             "Message: {message}\n"
             "Has cart items: {has_cart_items}\n"
+            "Cart: {cart}\n"
             "Menu: {menu}\n"
             "Steps:\n"
             "1. Select exactly one intent type from: search_menu, mutate_cart_items, show_cart, checkout, unknown.\n"
             "2. Use intent args derived from the message.\n"
             "3. Return the final response as IntentResult JSON only."
         )
-        return prompt.format(message=message, has_cart_items=has_cart_items, menu=menu_payload)
-
-
-    def _fallback_parse(self, text: str) -> IntentResult | None:
-        lowered = text.lower()
-        if "show cart" in lowered:
-            return IntentResult(valid=True, intent_type="show_cart")
-        if lowered.startswith("checkout"):
-            return IntentResult(valid=True, intent_type="checkout", confirmed=False)
-        if lowered in {"confirm", "yes"}:
-            return IntentResult(valid=True, intent_type="checkout", confirmed=True)
-        if "add" in lowered and "sku" in lowered:
-            parts = lowered.split()
-            quantity = 1
-            sku = None
-            for idx, token in enumerate(parts):
-                if token.isdigit():
-                    quantity = int(token)
-                if token == "sku" and idx + 1 < len(parts):
-                    sku = parts[idx + 1]
-            if sku:
-                return IntentResult(
-                    valid=True,
-                    intent_type="add_item",
-                    items=[{"sku": sku, "quantity": quantity}],
-                )
-        return None
+        return prompt.format(message=message, has_cart_items=has_cart_items, menu=menu_payload, cart=cart_payload)
 
     def _parse_agent_response(self, response: dict[str, Any]) -> IntentResult:
         if isinstance(response, str):

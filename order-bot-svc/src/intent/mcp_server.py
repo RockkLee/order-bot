@@ -3,7 +3,7 @@ import json
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel
 
-from src.schemas import IntentItem
+from src.schemas import CartItemIntent
 
 
 MCP_SERVER_NAME = "order-bot-intent"
@@ -29,8 +29,8 @@ def search_menu() -> str:
 
 
 @mcp.tool()
-def mutate_cart_items(items: list[IntentItem]) -> str:
-    """Update menu items in the cart by menu item id and quantity."""
+def mutate_cart_items(items: list[CartItemIntent]) -> str:
+    """Update menu items in the cart by menu item id and quantity and return the whole cart items including the ones in the cart"""
     return _json_payload({"intent_type": "mutate_cart_items", "items": items})
 
 

@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src import repositories
 from src.entities import Cart, MenuItem, CartItem
 from src.enums import CartStatus
-from src.schemas import CartSummary, CartItemOut, IntentResult, ChatResponse
+from src.schemas import CartSummary, CartItemOut, IntentResult, ChatResponse, CartItemIntent
 from fastapi import HTTPException
 from src.services import response_builder
 from src.utils import money_util
@@ -32,6 +32,17 @@ async def build_cart_summary(cart: Cart) -> CartSummary:
         total_price_scaled=scaled_total,
         total_price=total,
     )
+
+
+async def build_cart_item_intents(cart: Cart) -> list[CartItemIntent]:
+    items_src = await cart.awaitable_attrs.items
+    return [
+        CartItemIntent(
+            menu_item_id=item.menu_item_id,
+            quantity=item.quantity,
+        )
+        for item in items_src
+    ]
 
 
 async def get_cart(db: AsyncSession, session_id: str) -> Cart:
