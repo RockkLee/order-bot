@@ -120,13 +120,14 @@ func (s *DB) GetWithTx(ctx context.Context, fn func(ctx context.Context, tx stor
 	return out, nil
 }
 
-func gormTx(tx store.Tx) (*gorm.DB, error) {
+// Allow services and handle can open a transaction with infra separation
+func resolveDB(base *gorm.DB, tx store.Tx) (*gorm.DB, error) {
 	if tx == nil {
-		return nil, nil
+		return base, nil
 	}
 	gtx, ok := tx.(*gorm.DB)
 	if !ok {
-		return nil, fmt.Errorf("sqldb.gormTx: expected *gorm.DB, got %T", tx)
+		return nil, fmt.Errorf("sqldb.resolveDB: expected *gorm.DB, got %T", tx)
 	}
 	return gtx, nil
 }

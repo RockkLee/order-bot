@@ -36,19 +36,8 @@ func NewUserStore(db *DB) *UserStore {
 	return &UserStore{db: db.Gorm()}
 }
 
-func (s *UserStore) activeDB(tx store.Tx) (*gorm.DB, error) {
-	gtx, err := gormTx(tx)
-	if err != nil {
-		return nil, err
-	}
-	if gtx != nil {
-		return gtx, nil
-	}
-	return s.db, nil
-}
-
 func (s *UserStore) Create(ctx context.Context, tx store.Tx, user entities.User) error {
-	db, err := s.activeDB(tx)
+	db, err := resolveDB(s.db, tx)
 	if err != nil {
 		return fmt.Errorf("sqldb.UserStore.Create: %w", err)
 	}
@@ -62,7 +51,7 @@ func (s *UserStore) Create(ctx context.Context, tx store.Tx, user entities.User)
 	return nil
 }
 func (s *UserStore) FindByEmail(ctx context.Context, tx store.Tx, email string) (entities.User, error) {
-	db, err := s.activeDB(tx)
+	db, err := resolveDB(s.db, tx)
 	if err != nil {
 		return entities.User{}, fmt.Errorf("sqldb.UserStore.FindByEmail: %w", err)
 	}
@@ -76,7 +65,7 @@ func (s *UserStore) FindByEmail(ctx context.Context, tx store.Tx, email string) 
 	return record.ToModel(), nil
 }
 func (s *UserStore) FindByID(ctx context.Context, tx store.Tx, id string) (entities.User, error) {
-	db, err := s.activeDB(tx)
+	db, err := resolveDB(s.db, tx)
 	if err != nil {
 		return entities.User{}, fmt.Errorf("sqldb.UserStore.FindByID: %w", err)
 	}
@@ -90,7 +79,7 @@ func (s *UserStore) FindByID(ctx context.Context, tx store.Tx, id string) (entit
 	return record.ToModel(), nil
 }
 func (s *UserStore) UpdateTokens(ctx context.Context, tx store.Tx, id, accessToken, refreshToken string) error {
-	db, err := s.activeDB(tx)
+	db, err := resolveDB(s.db, tx)
 	if err != nil {
 		return fmt.Errorf("sqldb.UserStore.UpdateTokens: %w", err)
 	}
