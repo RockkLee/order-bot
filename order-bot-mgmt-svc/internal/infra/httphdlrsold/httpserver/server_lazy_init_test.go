@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"order-bot-mgmt-svc/internal/config"
-	"order-bot-mgmt-svc/internal/infra/sqldbold/pqsqldb"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/services/authsvc"
 	"order-bot-mgmt-svc/internal/services/botsvc"
@@ -107,7 +106,7 @@ func TestServerDependencies(t *testing.T) {
 		func() *authsvc.Svc {
 			authInitCalls++
 			ctxFunc := util.NewCtxFunc(cfg.Others.QryCtxTimeout)
-			return authsvc.NewSvc(&pqsqldb.DB{}, ctxFunc, cfg, &fakeUserStore{users: make(map[string]entities.User)})
+			return authsvc.NewSvc(nil, ctxFunc, cfg, &fakeUserStore{users: make(map[string]entities.User)})
 		},
 		func() *menusvc.Svc {
 			menuInitCalls++

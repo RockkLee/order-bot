@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"order-bot-mgmt-svc/internal/infra/sqldb"
-	"order-bot-mgmt-svc/internal/infra/sqldbold/orderbotmgmtsqldb"
+	"order-bot-mgmt-svc/internal/infra/sqldb/orderbotmgmtsqldb"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/util"
