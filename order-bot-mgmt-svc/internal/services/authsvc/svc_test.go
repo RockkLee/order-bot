@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"order-bot-mgmt-svc/internal/config"
-	"order-bot-mgmt-svc/internal/infra/sqldbold/pqsqldb"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/util"
@@ -65,7 +64,7 @@ func TestSvcSignupAndLogin(t *testing.T) {
 	}
 	userStore := &fakeUserStore{users: make(map[string]entities.User)}
 	ctxFunc := util.NewCtxFunc(cfg.Others.QryCtxTimeout)
-	svc := NewSvc(&pqsqldb.DB{}, ctxFunc, cfg, userStore)
+	svc := NewSvc(nil, ctxFunc, cfg, userStore)
 
 	ctx := context.Background()
 	tokenPair, userID, err := svc.Signup(ctx, nil, "test@example.com", "secret")
