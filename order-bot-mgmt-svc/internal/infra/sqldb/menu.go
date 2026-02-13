@@ -46,7 +46,8 @@ func (s *MenuStore) CreateMenu(ctx context.Context, tx store.Tx, menu entities.M
 	if err != nil {
 		return fmt.Errorf("sqldb.MenuStore.CreateMenu: %w", err)
 	}
-	if err := db.WithContext(ctx).Create(&MenuRecordFromModel(menu)).Error; err != nil {
+	record := MenuRecordFromModel(menu)
+	if err := db.WithContext(ctx).Create(&record).Error; err != nil {
 		return fmt.Errorf("sqldb.MenuStore.CreateMenu: %w", err)
 	}
 	return nil

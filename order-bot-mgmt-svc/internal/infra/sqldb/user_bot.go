@@ -38,7 +38,8 @@ func (s *UserBotStore) Create(ctx context.Context, tx store.Tx, userBot entities
 	if err != nil {
 		return fmt.Errorf("sqldb.UserBotStore.Create: %w", err)
 	}
-	if err := db.WithContext(ctx).Create(&UserBotRecordFromModel(userBot)).Error; err != nil {
+	record := UserBotRecordFromModel(userBot)
+	if err := db.WithContext(ctx).Create(&record).Error; err != nil {
 		return fmt.Errorf("sqldb.UserBotStore.Create: %w", err)
 	}
 	return nil
