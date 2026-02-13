@@ -48,6 +48,13 @@ func (f *fakeRepository) WithTx(ctx context.Context, fn func(ctx context.Context
 	return fn(ctx, nil)
 }
 
+func (f *fakeRepository) GetWithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) (any, error)) (any, error) {
+	if fn == nil {
+		return nil, fmt.Errorf("fakeRepository.GetWithTx: fn is nil")
+	}
+	return fn(ctx, nil)
+}
+
 type fakeUserStore struct {
 	users map[string]entities.User
 }
