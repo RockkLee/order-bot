@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"order-bot-mgmt-svc/internal/config"
-	"order-bot-mgmt-svc/internal/infra/sqldbold/pqsqldb"
+	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/models"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
@@ -17,7 +17,7 @@ import (
 )
 
 type Svc struct {
-	db              *pqsqldb.DB
+	db              *sqldb.DB
 	ctxFunc         util.CtxFunc
 	userStore       store.User
 	accessSecret    []byte
@@ -26,7 +26,7 @@ type Svc struct {
 	refreshTokenTTL time.Duration
 }
 
-func NewSvc(db *pqsqldb.DB, ctxFunc util.CtxFunc, cfg config.Config, userStore store.User) *Svc {
+func NewSvc(db *sqldb.DB, ctxFunc util.CtxFunc, cfg config.Config, userStore store.User) *Svc {
 	if userStore == nil || ctxFunc == nil {
 		panic("authSvc.NewSvc(), userStore or ctxFunc is nil")
 	}

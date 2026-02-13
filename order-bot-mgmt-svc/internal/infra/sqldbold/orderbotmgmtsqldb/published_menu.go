@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"order-bot-mgmt-svc/internal/infra/sqldbold/pqsqldb"
+	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/infra/sqldbold/sqldbexecutor"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
@@ -21,7 +21,7 @@ const (
 	insertPublishedMenuItemQuery  = `INSERT INTO published_menu_item (id, menu_id, menu_item_name, price) VALUES ($1, $2, $3, $4);`
 )
 
-func NewPublishedMenuStore(db *pqsqldb.DB) *PublishedMenuStore {
+func NewPublishedMenuStore(db *sqldb.DB) *PublishedMenuStore {
 	if db == nil {
 		panic("orderbotmgmtsqldb.NewPublishedMenuStore(), the db ptr is nil")
 	}

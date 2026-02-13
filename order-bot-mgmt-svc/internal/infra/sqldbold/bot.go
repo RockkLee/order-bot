@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"order-bot-mgmt-svc/internal/infra/sqldbold/pqsqldb"
+	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/infra/sqldbold/sqldbexecutor"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
@@ -39,7 +39,7 @@ const (
 	selectBotByID  = `SELECT id, bot_name FROM bot WHERE id = $1;`
 )
 
-func NewBotStore(db *pqsqldb.DB) *BotStore {
+func NewBotStore(db *sqldb.DB) *BotStore {
 	if db == nil {
 		panic("sqldb.NewBotStore(), the db ptr is nil")
 	}

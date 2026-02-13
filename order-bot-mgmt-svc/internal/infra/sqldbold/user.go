@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"order-bot-mgmt-svc/internal/infra/sqldbold/pqsqldb"
+	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/infra/sqldbold/sqldbexecutor"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
@@ -53,7 +53,7 @@ const (
 	uniqueViolationCode = "23505"
 )
 
-func NewUserStore(db *pqsqldb.DB) *UserStore {
+func NewUserStore(db *sqldb.DB) *UserStore {
 	if db == nil {
 		panic("sqldb.NewUserStore(), the db ptr is nil")
 	}

@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"order-bot-mgmt-svc/internal/infra/sqldbold/pqsqldb"
+	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/infra/sqldbold/sqldbexecutor"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
@@ -45,7 +45,7 @@ const (
 	deleteMenuItemsByMenuID = `DELETE FROM menu_item WHERE menu_id = $1;`
 )
 
-func NewMenuItemStore(db *pqsqldb.DB) *MenuItemStore {
+func NewMenuItemStore(db *sqldb.DB) *MenuItemStore {
 	if db == nil {
 		panic("sqldb.NewMenuItem(), the db ptr is nil")
 	}

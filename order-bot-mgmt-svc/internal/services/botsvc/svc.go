@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"order-bot-mgmt-svc/internal/config"
-	"order-bot-mgmt-svc/internal/infra/sqldbold/pqsqldb"
+	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/util"
@@ -12,14 +12,14 @@ import (
 )
 
 type Svc struct {
-	db           *pqsqldb.DB
+	db           *sqldb.DB
 	ctxFunc      util.CtxFunc
 	botStore     store.Bot
 	userBotStore store.UserBot
 	accessSecret []byte
 }
 
-func NewSvc(db *pqsqldb.DB, ctxFunc util.CtxFunc, cfg config.Config, botStore store.Bot, userBotStore store.UserBot) *Svc {
+func NewSvc(db *sqldb.DB, ctxFunc util.CtxFunc, cfg config.Config, botStore store.Bot, userBotStore store.UserBot) *Svc {
 	if botStore == nil || db == nil {
 		panic("botsvc.NewSvc(), botStore, menuItemStore or db is nil")
 	}

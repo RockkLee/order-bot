@@ -8,10 +8,9 @@ import (
 	"log/slog"
 	"net/http"
 	"order-bot-mgmt-svc/internal/config"
-	"order-bot-mgmt-svc/internal/infra/httphdlrsold/httpserver"
-	"order-bot-mgmt-svc/internal/infra/sqldbold"
-	"order-bot-mgmt-svc/internal/infra/sqldbold/orderbotmgmtsqldb"
-	"order-bot-mgmt-svc/internal/infra/sqldbold/pqsqldb"
+	"order-bot-mgmt-svc/internal/infra/httphdlr/httpserver"
+	"order-bot-mgmt-svc/internal/infra/sqldb"
+	"order-bot-mgmt-svc/internal/infra/sqldb/orderbotmgmtsqldb"
 	"order-bot-mgmt-svc/internal/services/authsvc"
 	"order-bot-mgmt-svc/internal/services/botsvc"
 	"order-bot-mgmt-svc/internal/services/menusvc"
@@ -51,21 +50,21 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 	done <- true
 }
 
-func newServices(db *pqsqldb.DB, orderBotDb *pqsqldb.DB, cfg config.Config) *services.Services {
+func newServices(db *sqldb.DB, orderBotDb *sqldb.DB, cfg config.Config) *services.Services {
 	ctxFunc := util.NewCtxFunc(cfg.Others.QryCtxTimeout)
 	return services.NewServices(
 		func() *authsvc.Svc {
-			return authsvc.NewSvc(db, ctxFunc, cfg, sqldbold.NewUserStore(db))
+			return authsvc.NewSvc(db, ctxFunc, cfg, sqldb.NewUserStore(db))
 		},
 		func() *menusvc.Svc {
-			menuStore := sqldbold.NewMenuStore(db)
-			menuItemStore := sqldbold.NewMenuItemStore(db)
+			menuStore := sqldb.NewMenuStore(db)
+			menuItemStore := sqldb.NewMenuItemStore(db)
 			publishedMenuStore := orderbotmgmtsqldb.NewPublishedMenuStore(orderBotDb)
 			return menusvc.NewSvc(db, orderBotDb, ctxFunc, menuStore, menuItemStore, publishedMenuStore)
 		},
 		func() *botsvc.Svc {
-			botStore := sqldbold.NewBotStore(db)
-			userBotStore := sqldbold.NewUserBotStore(db)
+			botStore := sqldb.NewBotStore(db)
+			userBotStore := sqldb.NewUserBotStore(db)
 			return botsvc.NewSvc(db, ctxFunc, cfg, botStore, userBotStore)
 		},
 	)
@@ -78,11 +77,11 @@ func main() {
 
 	cfg := config.Load()
 	port := cfg.App.Port
-	db, err := pqsqldb.New(cfg.Db)
+	db, err := sqldb.New(cfg.Db)
 	if err != nil {
 		log.Fatalf("failed to connect to database: \n%v", errutil.FormatErrChain(err))
 	}
-	orderBotDb, orderBotDbErr := pqsqldb.New(cfg.OrderBotDb)
+	orderBotDb, orderBotDbErr := sqldb.New(cfg.OrderBotDb)
 	if orderBotDbErr != nil {
 		log.Fatalf("failed to connect to order-bot database: \n%v", orderBotDbErr)
 	}

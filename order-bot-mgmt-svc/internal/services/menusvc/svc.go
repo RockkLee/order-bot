@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/infra/sqldbold/orderbotmgmtsqldb"
-	"order-bot-mgmt-svc/internal/infra/sqldbold/pqsqldb"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/util"
@@ -16,14 +16,14 @@ type Svc struct {
 	menuStore          store.Menu
 	menuItemStore      store.MenuItem
 	publishedMenuStore *orderbotmgmtsqldb.PublishedMenuStore
-	db                 *pqsqldb.DB
-	orderBotDb         *pqsqldb.DB
+	db                 *sqldb.DB
+	orderBotDb         *sqldb.DB
 	ctxFunc            util.CtxFunc
 }
 
 func NewSvc(
-	db *pqsqldb.DB,
-	orderBotDb *pqsqldb.DB,
+	db *sqldb.DB,
+	orderBotDb *sqldb.DB,
 	ctxFunc util.CtxFunc,
 	menuStore store.Menu,
 	menuItemStore store.MenuItem,
