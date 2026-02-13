@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"order-bot-mgmt-svc/internal/config"
+	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/services/authsvc"
 	"order-bot-mgmt-svc/internal/services/botsvc"
@@ -49,6 +50,26 @@ func (f *fakeRepository) WithTx(ctx context.Context, fn func(ctx context.Context
 
 type fakeUserStore struct {
 	users map[string]entities.User
+}
+
+type fakeBotStore struct{}
+
+func (f *fakeBotStore) Create(_ context.Context, _ store.Tx, _ entities.Bot) error {
+	return nil
+}
+
+func (f *fakeBotStore) FindByID(_ context.Context, _ store.Tx, _ string) (entities.Bot, error) {
+	return entities.Bot{}, nil
+}
+
+type fakeUserBotStore struct{}
+
+func (f *fakeUserBotStore) Create(_ context.Context, _ store.Tx, _ entities.UserBot) error {
+	return nil
+}
+
+func (f *fakeUserBotStore) FindByUserID(_ context.Context, _ store.Tx, _ string) ([]entities.UserBot, error) {
+	return nil, nil
 }
 
 func (f *fakeUserStore) Create(_ context.Context, _ store.Tx, user entities.User) error {
@@ -102,6 +123,7 @@ func TestServerDependencies(t *testing.T) {
 	}
 	authInitCalls := 0
 	menuInitCalls := 0
+	botInitCalls := 0
 	serviceContainer := services.NewServices(
 		func() *authsvc.Svc {
 			authInitCalls++
@@ -113,13 +135,13 @@ func TestServerDependencies(t *testing.T) {
 			return nil
 		},
 		func() *botsvc.Svc {
-			menuInitCalls++
-			return botsvc.NewSvc(nil, nil, cfg, nil, nil)
+			botInitCalls++
+			return botsvc.NewSvc(&sqldb.DB{}, nil, cfg, &fakeBotStore{}, &fakeUserBotStore{})
 		},
 	)
-	server := NewServer(0, nil, serviceContainer)
+	server := NewServer(0, db, serviceContainer)
 
-	req := httptest.NewRequest(http.MethodPost, "/auth/signup", strings.NewReader(`{"email":"test@example.com","password":"secret"}`))
+	req := httptest.NewRequest(http.MethodPost, "/auth/signup", strings.NewReader(`{"email":"test@example.com","password":"secret","bot_name":"test-bot"}`))
 	rec := httptest.NewRecorder()
 	server.Handler.ServeHTTP(rec, req)
 
@@ -131,6 +153,9 @@ func TestServerDependencies(t *testing.T) {
 	}
 	if authInitCalls != 1 {
 		t.Fatalf("expected auth init to be called once, got %d", authInitCalls)
+	}
+	if botInitCalls != 1 {
+		t.Fatalf("expected bot init to be called once for signup handler, got %d", botInitCalls)
 	}
 	if menuInitCalls != 0 {
 		t.Fatalf("expected menu init to be unused for auth handler, got %d", menuInitCalls)
