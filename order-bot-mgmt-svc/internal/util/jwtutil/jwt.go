@@ -10,6 +10,8 @@ import (
 	"order-bot-mgmt-svc/internal/models"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type jwtHeader struct {
@@ -71,6 +73,7 @@ func hmacSHA256(message string, secret []byte) []byte {
 	mac.Write([]byte(message))
 	return mac.Sum(nil)
 }
+
 func GetToken(w http.ResponseWriter, r *http.Request) (string, bool) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
@@ -84,4 +87,17 @@ func GetToken(w http.ResponseWriter, r *http.Request) (string, bool) {
 	}
 	accessToken := strings.TrimSpace(strings.TrimPrefix(authHeader, bearerPrefix))
 	return accessToken, false
+}
+
+func GetTokenGin(c *gin.Context) (string, bool) {
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
+		return "", false
+	}
+	const bearerPrefix = "Bearer "
+	if !strings.HasPrefix(authHeader, bearerPrefix) {
+		return "", false
+	}
+	accessToken := strings.TrimSpace(strings.TrimPrefix(authHeader, bearerPrefix))
+	return accessToken, accessToken != ""
 }

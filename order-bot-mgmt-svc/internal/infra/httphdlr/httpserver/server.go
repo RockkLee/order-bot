@@ -2,15 +2,12 @@ package httpserver
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/services"
 	"order-bot-mgmt-svc/internal/services/authsvc"
 	"order-bot-mgmt-svc/internal/services/botsvc"
 	"order-bot-mgmt-svc/internal/services/menusvc"
 	"order-bot-mgmt-svc/internal/store"
-	"time"
 )
 
 type Server struct {
@@ -20,15 +17,8 @@ type Server struct {
 	services *services.Services
 }
 
-func NewServer(port int, db sqldb.Service, services *services.Services) *http.Server {
-	srv := &Server{port: port, db: db, services: services}
-	return &http.Server{
-		Addr:         fmt.Sprintf(":%d", srv.port),
-		Handler:      srv.RegisterRoutes(),
-		IdleTimeout:  time.Minute,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 30 * time.Second,
-	}
+func NewServer(port int, db sqldb.Service, services *services.Services) *Server {
+	return &Server{port: port, db: db, services: services}
 }
 
 func (s *Server) dbService() sqldb.Service { return s.db }

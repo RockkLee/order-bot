@@ -2,7 +2,6 @@ package menusvc
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"order-bot-mgmt-svc/internal/infra/sqldb"
@@ -54,7 +53,7 @@ func (s *Svc) CreateMenu(ctx context.Context, botID string, menuItems []entities
 		switch {
 		case errFinding == nil:
 			return fmt.Errorf("menusvc.GetMenu(), duplicated bot ID: %w", ErrInvalidMenu)
-		case !errors.Is(errFinding, sql.ErrNoRows):
+		case !errors.Is(errFinding, store.ErrMenuNotFound):
 			return fmt.Errorf("menusvc.GetMenu: %w", errFinding)
 		}
 		menu = entities.Menu{

@@ -3,7 +3,6 @@ package httpserver
 import (
 	"log/slog"
 	"net/http"
-	"order-bot-mgmt-svc/internal/infra/httphdlr"
 	"order-bot-mgmt-svc/internal/util/errutil"
 	"strings"
 
@@ -27,11 +26,6 @@ func corsMiddleware() gin.HandlerFunc {
 
 func authMiddleware(s *Server) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if strings.HasPrefix(c.Request.URL.Path, httphdlr.AuthPrefix+"/") || c.Request.URL.Path == httphdlr.AuthPrefix || c.Request.URL.Path == "/health" || c.Request.URL.Path == "/" {
-			c.Next()
-			return
-		}
-
 		accessToken, ok := bearerToken(c.GetHeader("Authorization"))
 		if !ok {
 			c.AbortWithStatus(http.StatusUnauthorized)

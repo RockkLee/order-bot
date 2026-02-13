@@ -31,9 +31,9 @@ func NewMenuStore(db *DB) *MenuStore {
 	return &MenuStore{db: db.Gorm()}
 }
 
-func (s *MenuStore) FindByBotID(ctx context.Context, menuID string) (entities.Menu, error) {
+func (s *MenuStore) FindByBotID(ctx context.Context, botID string) (entities.Menu, error) {
 	var record MenuRecord
-	if err := s.db.WithContext(ctx).Where("bot_id = ?", menuID).First(&record).Error; err != nil {
+	if err := s.db.WithContext(ctx).Where("bot_id = ?", botID).First(&record).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return entities.Menu{}, fmt.Errorf("sqldb.MenuStore.FindByBotID: %w", store.ErrMenuNotFound)
 		}

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"log/slog"
@@ -100,20 +99,22 @@ func main() {
 		db,
 		serviceContainer,
 	)
+	addr := fmt.Sprintf("%s:%d", cfg.App.Address, cfg.App.Port)
+	httpserver.Run(server, cfg.App.GinMode, addr)
 
-	// Create a done channel to signal when the shutdown is complete
-	done := make(chan bool, 1)
+	// // Create a done channel to signal when the shutdown is complete
+	// done := make(chan bool, 1)
 
-	// Run graceful shutdown in a separate goroutine
-	go gracefulShutdown(server, done)
+	// // Run graceful shutdown in a separate goroutine
+	// go gracefulShutdown(server, done)
 
-	slog.Info("running http.ListAndServer...")
-	err = server.ListenAndServe()
-	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		panic(fmt.Sprintf("http server error: %s", err))
-	}
+	// slog.Info("running http.ListAndServer...")
+	// err = server.ListenAndServe()
+	// if err != nil && !errors.Is(err, http.ErrServerClosed) {
+	// 	panic(fmt.Sprintf("http server error: %s", err))
+	// }
 
-	// Wait for the graceful shutdown to complete
-	<-done
-	log.Println("Graceful shutdown complete.")
+	// // Wait for the graceful shutdown to complete
+	// <-done
+	// log.Println("Graceful shutdown complete.")
 }

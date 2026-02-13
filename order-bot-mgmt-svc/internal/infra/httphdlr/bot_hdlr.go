@@ -7,7 +7,7 @@ import (
 	"order-bot-mgmt-svc/internal/services/botsvc"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/util/errutil"
-	"strings"
+	"order-bot-mgmt-svc/internal/util/jwtutil"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,7 +25,7 @@ func RegisterBotRoutes(r gin.IRoutes, s BotServer) {
 
 func getBotHdlrFunc(s BotServer) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		token, ok := tokenFromRequest(c)
+		token, ok := jwtutil.GetTokenGin(c)
 		if !ok {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": http.StatusText(http.StatusUnauthorized)})
 			return
@@ -46,17 +46,4 @@ func getBotHdlrFunc(s BotServer) gin.HandlerFunc {
 		}
 		c.JSON(http.StatusOK, botID)
 	}
-}
-
-func tokenFromRequest(c *gin.Context) (string, bool) {
-	authHeader := c.GetHeader("Authorization")
-	if authHeader == "" {
-		return "", false
-	}
-	const bearerPrefix = "Bearer "
-	if !strings.HasPrefix(authHeader, bearerPrefix) {
-		return "", false
-	}
-	accessToken := strings.TrimSpace(strings.TrimPrefix(authHeader, bearerPrefix))
-	return accessToken, accessToken != ""
 }

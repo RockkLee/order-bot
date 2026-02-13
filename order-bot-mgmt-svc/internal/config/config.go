@@ -7,7 +7,9 @@ import (
 )
 
 type App struct {
-	Port int
+	Address string
+	Port    int
+	GinMode string
 }
 
 type Db struct {
@@ -41,7 +43,9 @@ type Config struct {
 func Load() Config {
 	return Config{
 		App: App{
-			Port: parseIntEnv("PORT", 0),
+			Address: os.Getenv("ADDRESS"),
+			Port:    parseIntEnv("PORT"),
+			GinMode: os.Getenv("GIN_MODE"),
 		},
 		Db: Db{
 			Database: os.Getenv("BLUEPRINT_DB_DATABASE"),
@@ -91,14 +95,11 @@ func parseDurationEnv(key string, fallback time.Duration) time.Duration {
 	return parsed
 }
 
-func parseIntEnv(key string, fallback int) int {
+func parseIntEnv(key string) int {
 	value := os.Getenv(key)
-	if value == "" {
-		return fallback
-	}
 	parsed, err := strconv.Atoi(value)
 	if err != nil {
-		return fallback
+		panic(err.Error())
 	}
 	return parsed
 }
