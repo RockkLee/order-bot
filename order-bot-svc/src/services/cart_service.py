@@ -60,31 +60,33 @@ async def lock_cart(db: AsyncSession, session_id: str) -> Cart:
 
 
 async def mutate_cart(db: AsyncSession, session_id: str, intent: IntentResult) -> ChatResponse:
-    async with db.begin():
-        cart = await lock_cart(db, session_id)
-        if cart.status != CartStatus.OPEN:
-            raise HTTPException(status_code=400, detail="Cart is closed")
+    # A tx will automatically start once the db session is created in SQLAlchemy 2.0,
+    # so we don't have to manually create a tx
+    # async with db.begin():
+    cart = await lock_cart(db, session_id)
+    if cart.status != CartStatus.OPEN:
+        raise HTTPException(status_code=400, detail="Cart is closed")
 
-        cart_items: list[CartItem] = []
-        menu_item_ids: list[str] = list(map(lambda intent_item: intent_item.menu_item_id, intent.items))
-        menu_items = await repositories.get_menu_item_by_menu_item_ids(db, menu_item_ids)
-        menu_items_dic: dict[str, MenuItem] = {mi.id: mi for mi in menu_items}
-        for item in intent.items:
-            if item.quantity <= 0:
-                raise HTTPException(status_code=400, detail="Quantity must be positive")
-            unit_price_scaled = money_util.to_scaled_val(menu_items_dic[item.menu_item_id].price)
-            cart_item = CartItem(
-                id=str(uuid.uuid4()),
-                cart_id=cart.id,
-                menu_item_id=menu_items_dic[item.menu_item_id].id,
-                name=menu_items_dic[item.menu_item_id].name,
-                quantity=item.quantity,
-                unit_price_scaled=unit_price_scaled,
-                total_price_scaled=item.quantity * unit_price_scaled,
-            )
-            cart_items.append(cart_item)
-
-        await repositories.upsert_cart_item(db, cart, cart_items)
+    cart_items: list[CartItem] = []
+    menu_item_ids: list[str] = list(map(lambda intent_item: intent_item.menu_item_id, intent.items))
+    menu_items = await repositories.get_menu_item_by_menu_item_ids(db, menu_item_ids)
+    menu_items_dic: dict[str, MenuItem] = {mi.id: mi for mi in menu_items}
+    for item in intent.items:
+        if item.quantity <= 0:
+            raise HTTPException(status_code=400, detail="Quantity must be positive")
+        unit_price_scaled = money_util.to_scaled_val(menu_items_dic[item.menu_item_id].price)
+        cart_item = CartItem(
+            id=str(uuid.uuid4()),
+            cart_id=cart.id,
+            menu_item_id=menu_items_dic[item.menu_item_id].id,
+            name=menu_items_dic[item.menu_item_id].name,
+            quantity=item.quantity,
+            unit_price_scaled=unit_price_scaled,
+            total_price_scaled=item.quantity * unit_price_scaled,
+        )
+        cart_items.append(cart_item)
+    await repositories.upsert_cart_item(db, cart, cart_items)
+    await db.commit()
 
     cart_summary = await build_cart_summary(cart)
     return ChatResponse(

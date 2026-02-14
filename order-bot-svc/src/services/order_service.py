@@ -19,26 +19,29 @@ async def checkout(db: AsyncSession, session_id: str, intent: IntentResult, cart
             cart=cart_summary,
         )
 
-    async with db.begin():
-        cart = await cart_service.lock_cart(db, session_id)
-        if cart.status != CartStatus.OPEN:
-            raise HTTPException(status_code=400, detail="Cart is closed")
-        items: list[CartItem] = await cart.awaitable_attrs.items
-        if not items:
-            raise HTTPException(status_code=400, detail="Cart is empty")
+    # A tx will automatically start once the db session is created in SQLAlchemy 2.0,
+    # so we don't have to manually create a tx
+    # async with db.begin():
+    cart = await cart_service.lock_cart(db, session_id)
+    if cart.status != CartStatus.OPEN:
+        raise HTTPException(status_code=400, detail="Cart is closed")
+    items: list[CartItem] = await cart.awaitable_attrs.items
+    if not items:
+        raise HTTPException(status_code=400, detail="Cart is empty")
 
-        total_scaled = sum(item.total_price_scaled for item in items)
-        order = await repositories.insert_order(db, cart, total_scaled)
-        await repositories.insert_order_items(db, order, items)
+    total_scaled = sum(item.total_price_scaled for item in items)
+    order = await repositories.insert_order(db, cart, total_scaled)
+    await repositories.insert_order_items(db, order, items)
+    order_id = order.id
 
-        cart.status = CartStatus.CLOSED
-        await db.commit()
+    cart.status = CartStatus.CLOSED
+    await db.commit()
 
     cart_summary = await cart_service.build_cart_summary(cart)
     return ChatResponse(
         session_id=session_id,
-        reply=f"Order placed! Your order id is {order.id}.",
+        reply=f"Order placed! Your order id is {order_id}.",
         intent=intent,
         cart=cart_summary,
-        order_id=order.id,
+        order_id=order_id,
     )
