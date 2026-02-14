@@ -43,25 +43,25 @@ type Config struct {
 func Load() Config {
 	return Config{
 		App: App{
-			Address: os.Getenv("ADDRESS"),
-			Port:    parseIntEnv("PORT"),
-			GinMode: os.Getenv("GIN_MODE"),
+			Address: getEnv("ADDRESS"),
+			Port:    getIntEnv("PORT"),
+			GinMode: getEnv("GIN_MODE"),
 		},
 		Db: Db{
-			Database: os.Getenv("BLUEPRINT_DB_DATABASE"),
-			Password: os.Getenv("BLUEPRINT_DB_PASSWORD"),
-			Username: os.Getenv("BLUEPRINT_DB_USERNAME"),
-			Port:     os.Getenv("BLUEPRINT_DB_PORT"),
-			Host:     os.Getenv("BLUEPRINT_DB_HOST"),
-			Schema:   os.Getenv("BLUEPRINT_DB_SCHEMA"),
+			Database: getEnv("BLUEPRINT_DB_DATABASE"),
+			Password: getEnv("BLUEPRINT_DB_PASSWORD"),
+			Username: getEnv("BLUEPRINT_DB_USERNAME"),
+			Port:     getEnv("BLUEPRINT_DB_PORT"),
+			Host:     getEnv("BLUEPRINT_DB_HOST"),
+			Schema:   getEnv("BLUEPRINT_DB_SCHEMA"),
 		},
 		OrderBotDb: Db{
-			Database: os.Getenv("BLUEPRINT_DB_DATABASE"),
-			Password: os.Getenv("BLUEPRINT_DB_PASSWORD"),
-			Username: os.Getenv("BLUEPRINT_DB_USERNAME"),
-			Port:     os.Getenv("BLUEPRINT_DB_PORT"),
-			Host:     os.Getenv("BLUEPRINT_DB_HOST"),
-			Schema:   os.Getenv("BLUEPRINT_DB_ORDER_BOT_SCHEMA"),
+			Database: getEnv("BLUEPRINT_DB_DATABASE"),
+			Password: getEnv("BLUEPRINT_DB_PASSWORD"),
+			Username: getEnv("BLUEPRINT_DB_USERNAME"),
+			Port:     getEnv("BLUEPRINT_DB_PORT"),
+			Host:     getEnv("BLUEPRINT_DB_HOST"),
+			Schema:   getEnv("BLUEPRINT_DB_ORDER_BOT_SCHEMA"),
 		},
 		Auth: Auth{
 			AccessSecret:    envOrDefault("JWT_ACCESS_SECRET", "dev-access-secret"),
@@ -95,7 +95,15 @@ func parseDurationEnv(key string, fallback time.Duration) time.Duration {
 	return parsed
 }
 
-func parseIntEnv(key string) int {
+func getEnv(key string) string {
+	val := os.Getenv(key)
+	if val == "" {
+		panic("config.getEnv(), env not found")
+	}
+	return val
+}
+
+func getIntEnv(key string) int {
 	value := os.Getenv(key)
 	parsed, err := strconv.Atoi(value)
 	if err != nil {
