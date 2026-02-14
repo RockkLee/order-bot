@@ -5,7 +5,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.config import settings
 from src.db import engine, SessionLocal, Base
-from src.seed import seed_menu
 from src.api.routes import router
 
 
@@ -14,10 +13,6 @@ def create_app() -> FastAPI:
     async def lifespan(_: FastAPI):
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-        if settings.seed_menu:
-            async with SessionLocal() as session:
-                await seed_menu(session)
-                await session.commit()
         yield
 
     app_root_path = settings.root_path
