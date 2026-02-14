@@ -12,7 +12,7 @@ def _uuid_str() -> str:
 
 
 class MenuItem(Base):
-    __tablename__ = "menu_item"
+    __tablename__ = "published_menu_item"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid_str)
     menu_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)
