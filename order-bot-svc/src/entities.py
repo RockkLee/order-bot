@@ -36,7 +36,6 @@ class Cart(Base):
     items: Mapped[list["CartItem"]] = relationship(
         "CartItem",
         back_populates="cart",
-        cascade="all, delete-orphan",
     )
 
 
@@ -68,7 +67,6 @@ class Order(Base):
     order_items: Mapped[list["OrderItem"]] = relationship(
         "OrderItem",
         back_populates="order",
-        cascade="all, delete-orphan",
     )
 
 
