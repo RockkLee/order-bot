@@ -15,7 +15,11 @@ class Base(AsyncAttrs, DeclarativeBase):
     pass
 
 
-engine = create_async_engine(settings.database_url, pool_pre_ping=True)
+engine = create_async_engine(
+    settings.database_url,
+    connect_args={"server_settings": {"search_path": settings.database_schema}},
+    pool_pre_ping=True
+)
 SessionLocal = async_sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 

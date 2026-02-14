@@ -19,6 +19,7 @@ class AppSettings(BaseModel):
     is_production: bool = os.environ["IS_PRODUCTION"].lower() == "true"
     logger_settings: dict[str, Any] | None = None
     database_url: str = os.environ["DATABASE_URL"]
+    database_schema: str = os.environ["DATABASE_SCHEMA"]
     seed_menu: bool = os.environ["SEED_MENU"].lower() == "true"
     mistral_api_key: str = os.environ["MISTRAL_API_KEY"]
     mistral_model: str = os.environ["MISTRAL_MODEL"]
