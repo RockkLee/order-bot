@@ -40,14 +40,14 @@ func (s *PublishedMenuStore) ReplaceMenuItems(ctx context.Context, tx store.Tx, 
 	if err != nil {
 		return fmt.Errorf("orderbotmgmtsqldb.PublishedMenuStore.ReplaceMenuItems: %w", err)
 	}
+	if err := db.WithContext(ctx).Where("menu_id = ?", menu.ID).Delete(&PublishedMenuItemRecord{}).Error; err != nil {
+		return fmt.Errorf("orderbotmgmtsqldb.PublishedMenuStore.ReplaceMenuItems(), delete menu_item: %w", err)
+	}
 	if err := db.WithContext(ctx).Where("bot_id = ?", menu.BotID).Delete(&PublishedMenuRecord{}).Error; err != nil {
 		return fmt.Errorf("orderbotmgmtsqldb.PublishedMenuStore.ReplaceMenuItems(), delete menu: %w", err)
 	}
 	if err := db.WithContext(ctx).Create(&PublishedMenuRecord{ID: menu.ID, BotID: menu.BotID}).Error; err != nil {
 		return fmt.Errorf("orderbotmgmtsqldb.PublishedMenuStore.ReplaceMenuItems(), insert menu: %w", err)
-	}
-	if err := db.WithContext(ctx).Where("menu_id = ?", menu.ID).Delete(&PublishedMenuItemRecord{}).Error; err != nil {
-		return fmt.Errorf("orderbotmgmtsqldb.PublishedMenuStore.ReplaceMenuItems(), delete menu_item: %w", err)
 	}
 	records := make([]PublishedMenuItemRecord, 0, len(items))
 	for _, item := range items {
