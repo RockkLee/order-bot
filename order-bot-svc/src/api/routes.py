@@ -12,16 +12,17 @@ from src.services import cart_service
 from src.intent.intent import IntentParser
 from src.services.response_builder import build_reply
 
+API_PREFIX = "/chat"
 router = APIRouter()
 intent_parser = IntentParser()
 
 
-@router.post("/chat", response_model=ChatResponse)
+@router.post("", response_model=ChatResponse)
 async def chat(
-    req: ChatRequest,
-    res: Response,
-    session_id: str | None = Header(default=None, alias="Session-Id"),
-    db: AsyncSession = Depends(get_db_session),
+        req: ChatRequest,
+        res: Response,
+        session_id: str | None = Header(default=None, alias="Session-Id"),
+        db: AsyncSession = Depends(get_db_session),
 ):
     if not session_id:
         session_id = str(uuid.uuid4())
@@ -57,19 +58,19 @@ async def chat(
 
 
 async def _handle_search_menu(
-    *, db: AsyncSession, bot_id: str, menu_id: str, intent: IntentResult, cart: Cart
+        *, db: AsyncSession, bot_id: str, menu_id: str, intent: IntentResult, cart: Cart
 ) -> ChatResponse:
     return await menu_service.search_menu(db, menu_id, intent, cart)
 
 
 async def _handle_cart_mutation(
-    *, db: AsyncSession, bot_id: str, menu_id: str, intent: IntentResult, cart: Cart
+        *, db: AsyncSession, bot_id: str, menu_id: str, intent: IntentResult, cart: Cart
 ) -> ChatResponse:
     return await cart_service.mutate_cart(db, cart.session_id, intent)
 
 
 async def _handle_show_cart(
-    *, db: AsyncSession, bot_id: str, menu_id: str, intent: IntentResult, cart
+        *, db: AsyncSession, bot_id: str, menu_id: str, intent: IntentResult, cart
 ) -> ChatResponse:
     cart_summary = await cart_service.build_cart_summary(cart)
     return ChatResponse(
@@ -81,7 +82,7 @@ async def _handle_show_cart(
 
 
 async def _handle_checkout(
-    *, db: AsyncSession, bot_id: str, menu_id: str, intent: IntentResult, cart: Cart
+        *, db: AsyncSession, bot_id: str, menu_id: str, intent: IntentResult, cart: Cart
 ) -> ChatResponse:
     return await order_service.checkout(db, cart.session_id, intent, cart)
 

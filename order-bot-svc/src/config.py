@@ -12,12 +12,10 @@ logger = logging.getLogger(__name__)
 
 class AppSettings(BaseModel):
     app_name: str = "Order Bot"
-    api_prefix: str = "/api"
     host: str = os.environ["HOST"]
-    port: int = os.environ["PORT"]
+    port: int = int(os.environ["PORT"])
     root_path: str = os.environ["ROOT_PATH"]
     is_production: bool = os.environ["IS_PRODUCTION"].lower() == "true"
-    logger_settings: dict[str, Any] | None = None
     database_url: str = os.environ["DATABASE_URL"]
     database_schema: str = os.environ["DATABASE_SCHEMA"]
     seed_menu: bool = os.environ["SEED_MENU"].lower() == "true"

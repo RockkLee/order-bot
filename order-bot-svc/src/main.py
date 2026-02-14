@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.config import settings
 from src.db import engine, SessionLocal, Base
-from src.api.routes import router
+from src.api import routes
 
 
 def create_app() -> FastAPI:
@@ -37,7 +37,7 @@ def create_app() -> FastAPI:
         expose_headers=["*"],
     )
 
-    app.include_router(router, prefix=settings.api_prefix)
+    app.include_router(routes.router, prefix=routes.API_PREFIX)
     return app
 
 
@@ -50,6 +50,5 @@ if __name__ == "__main__":
         app,
         host=settings.host,
         port=settings.port,
-        log_config=settings.logger_settings,
         workers=1,
     )
