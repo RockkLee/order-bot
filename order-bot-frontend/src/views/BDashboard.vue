@@ -2,9 +2,15 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { fetchMenuItems, submitMenuItems, type MenuItemPayload } from '../utils/menuApi'
+import { fetchApi } from '../utils/menuApi'
 
 type Panel = 'menu' | 'events'
+
+type MenuItemPayload = {
+  name: string
+  price: number
+  status: string
+}
 
 type EditableMenuItem = {
   id: number
@@ -38,7 +44,12 @@ const loadMenu = async () => {
   submitMessage.value = ''
 
   try {
-    const fetchedMenuItems = await fetchMenuItems()
+    const response = await fetchApi<undefined>('/menu-items', {
+      method: 'GET',
+      errMsg: 'Failed to fetch menu items',
+    })
+
+    const fetchedMenuItems = (await response.json()) as MenuItemPayload[]
     menuItems.value = fetchedMenuItems.length
       ? fetchedMenuItems.map(toEditableItem)
       : defaultMenuItems.map(toEditableItem)
@@ -93,7 +104,11 @@ const submitMenu = async () => {
   submitMessage.value = 'Submitting full menu...'
 
   try {
-    await submitMenuItems(normalizedMenuItems.value)
+    await fetchApi<MenuItemPayload[]>('/menu-items', {
+      method: 'PUT',
+      req: normalizedMenuItems.value,
+      errMsg: 'Failed to submit the full menu',
+    })
     submitState.value = 'success'
     submitMessage.value = `Submitted ${normalizedMenuItems.value.length} menu items.`
   } catch {

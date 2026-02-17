@@ -1,35 +1,30 @@
-export type MenuItemPayload = {
-  name: string
-  price: number
-  status: string
-}
-
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
 
 const buildUrl = (path: string) => `${API_BASE}${path}`
 
-export const fetchMenuItems = async () => {
-  const response = await fetch(buildUrl('/menu-items'))
+type ApiMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch menu items (${response.status})`)
-  }
-
-  const data = (await response.json()) as MenuItemPayload[]
-  return data
+type FetchApiOptions<T> = {
+  method?: ApiMethod
+  req?: T
+  jwt?: string
+  errMsg: string
 }
 
-export const submitMenuItems = async (menuItems: MenuItemPayload[]) => {
-  const response = await fetch(buildUrl('/menu-items'), {
-    method: 'PUT',
+export const fetchApi = async <T>(path: string, options: FetchApiOptions<T>) => {
+  const { method = 'PUT', req, jwt, errMsg } = options
+
+  const response = await fetch(buildUrl(path), {
+    method,
     headers: {
       'Content-Type': 'application/json',
+      ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
     },
-    body: JSON.stringify({ menuItems }),
+    ...(req === undefined ? {} : { body: JSON.stringify({ req }) }),
   })
 
   if (!response.ok) {
-    throw new Error(`Failed to submit menu items (${response.status})`)
+    throw new Error(errMsg)
   }
 
   return response
