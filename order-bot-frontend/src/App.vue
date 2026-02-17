@@ -10,11 +10,6 @@
           <p class="brand-subtitle">C-side and B-side interfaces</p>
         </div>
       </div>
-      <nav class="app-nav">
-        <RouterLink to="/c">C-side</RouterLink>
-        <RouterLink to="/b/login">B-side Login</RouterLink>
-        <RouterLink to="/b/app">B-side App</RouterLink>
-      </nav>
     </header>
     <main class="app-main">
       <RouterView />
@@ -139,31 +134,6 @@ a {
   font-size: 0.9rem;
 }
 
-.app-nav {
-  display: flex;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-
-.app-nav a {
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: #f6efe4;
-  border: 1px solid rgba(19, 32, 28, 0.1);
-  font-weight: 600;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.app-nav a.router-link-active {
-  background: var(--accent);
-  color: #fffaf3;
-}
-
-.app-nav a:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 16px rgba(19, 32, 28, 0.18);
-}
-
 .app-main {
   display: flex;
   flex-direction: column;
@@ -172,8 +142,7 @@ a {
 
 @media (max-width: 900px) {
   .app-header {
-    flex-direction: column;
-    align-items: flex-start;
+    justify-content: flex-start;
   }
 }
 </style>

@@ -1,30 +1,112 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+
+import { fetchMenuItems, submitMenuItems, type MenuItemPayload } from '../utils/menuApi'
 
 type Panel = 'menu' | 'events'
 
+type EditableMenuItem = {
+  id: number
+  name: string
+  price: string
+  status: string
+}
+
+const defaultMenuItems: MenuItemPayload[] = [
+  { name: 'Citrus Chili Bowl', price: 12, status: 'Available' },
+  { name: 'Miso Maple Noodles', price: 11, status: 'Low stock' },
+  { name: 'Charred Corn Salad', price: 8, status: 'Paused' },
+]
+
 const router = useRouter()
 const activePanel = ref<Panel>('menu')
-const fileInput = ref<HTMLInputElement | null>(null)
-const uploadedFile = ref('')
+const menuItems = ref<EditableMenuItem[]>([])
+const submitState = ref<'idle' | 'submitting' | 'success' | 'error'>('idle')
+const submitMessage = ref('')
+
+let nextId = 1
+
+const toEditableItem = (menuItem: MenuItemPayload): EditableMenuItem => ({
+  id: nextId++,
+  name: menuItem.name,
+  price: String(menuItem.price),
+  status: menuItem.status,
+})
+
+const loadMenu = async () => {
+  submitMessage.value = ''
+
+  try {
+    const fetchedMenuItems = await fetchMenuItems()
+    menuItems.value = fetchedMenuItems.length
+      ? fetchedMenuItems.map(toEditableItem)
+      : defaultMenuItems.map(toEditableItem)
+  } catch {
+    menuItems.value = defaultMenuItems.map(toEditableItem)
+    submitMessage.value = 'Could not load menu from API. Showing local defaults instead.'
+  }
+}
 
 const setPanel = (panel: Panel) => {
   activePanel.value = panel
 }
 
-const triggerImport = () => {
-  fileInput.value?.click()
+const addRow = () => {
+  menuItems.value.push({
+    id: nextId++,
+    name: '',
+    price: '',
+    status: 'Available',
+  })
 }
 
-const onFileChange = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  uploadedFile.value = target.files?.[0]?.name ?? ''
+const removeRow = (id: number) => {
+  menuItems.value = menuItems.value.filter((item) => item.id !== id)
+}
+
+const normalizedMenuItems = computed<MenuItemPayload[]>(() =>
+  menuItems.value
+    .map((item) => ({
+      name: item.name.trim(),
+      price: Number(item.price),
+      status: item.status.trim(),
+    }))
+    .filter((item) => item.name && Number.isFinite(item.price) && item.status),
+)
+
+const canSubmit = computed(
+  () =>
+    menuItems.value.length > 0 &&
+    normalizedMenuItems.value.length === menuItems.value.length &&
+    submitState.value !== 'submitting',
+)
+
+const submitMenu = async () => {
+  if (!canSubmit.value) {
+    submitState.value = 'error'
+    submitMessage.value = 'Please complete every row before submitting the full menu.'
+    return
+  }
+
+  submitState.value = 'submitting'
+  submitMessage.value = 'Submitting full menu...'
+
+  try {
+    await submitMenuItems(normalizedMenuItems.value)
+    submitState.value = 'success'
+    submitMessage.value = `Submitted ${normalizedMenuItems.value.length} menu items.`
+  } catch {
+    submitState.value = 'error'
+    submitMessage.value = 'Failed to submit the full menu. Please try again.'
+  }
 }
 
 const logout = () => {
   router.push('/b/login')
 }
+
+onMounted(loadMenu)
 </script>
 
 <template>
@@ -33,13 +115,9 @@ const logout = () => {
       <div>
         <p class="eyebrow">B-side</p>
         <h1>Operations control</h1>
-        <p class="panel-subtitle">Manage menus, imports, and live orders.</p>
+        <p class="panel-subtitle">Manage menu updates and live orders.</p>
       </div>
       <div class="panel-actions">
-        <input ref="fileInput" type="file" accept=".csv" hidden @change="onFileChange" />
-        <button type="button" class="ghost-btn" @click="triggerImport">
-          Import CSV
-        </button>
         <button
           type="button"
           :class="['toggle-btn', activePanel === 'menu' ? 'is-active' : '']"
@@ -61,31 +139,40 @@ const logout = () => {
     <div class="panel-content">
       <div v-if="activePanel === 'menu'" class="menu-view">
         <div class="menu-card">
-          <h2>Current menu</h2>
-          <p class="menu-note">Last import: {{ uploadedFile || 'No CSV uploaded yet.' }}</p>
-          <ul>
-            <li>
-              <span>Citrus Chili Bowl</span>
-              <span>Available</span>
-            </li>
-            <li>
-              <span>Miso Maple Noodles</span>
-              <span>Low stock</span>
-            </li>
-            <li>
-              <span>Charred Corn Salad</span>
-              <span>Paused</span>
-            </li>
-          </ul>
+          <div class="menu-heading">
+            <h2>Current menu</h2>
+            <button type="button" class="ghost-btn" @click="addRow">Insert row</button>
+          </div>
+          <p class="menu-note">Update rows directly, then submit once to send the full menu.</p>
+          <div class="menu-table" role="table" aria-label="Editable menu items">
+            <div class="table-head" role="row">
+              <span>Name</span>
+              <span>Price ($)</span>
+              <span>Status</span>
+              <span>Action</span>
+            </div>
+            <div class="table-row" role="row" v-for="item in menuItems" :key="item.id">
+              <input v-model="item.name" type="text" placeholder="Item name" />
+              <input v-model="item.price" type="number" min="0" step="0.01" placeholder="0.00" />
+              <select v-model="item.status">
+                <option>Available</option>
+                <option>Low stock</option>
+                <option>Paused</option>
+              </select>
+              <button type="button" class="danger-btn" @click="removeRow(item.id)">Delete</button>
+            </div>
+          </div>
           <div class="menu-actions">
-            <button type="button" class="primary-btn">Edit items</button>
-            <button type="button" class="ghost-btn">Publish updates</button>
+            <button type="button" class="primary-btn" :disabled="!canSubmit" @click="submitMenu">
+              {{ submitState === 'submitting' ? 'Submitting...' : 'Submit full menu' }}
+            </button>
+            <p :class="['submit-note', submitState]">{{ submitMessage }}</p>
           </div>
         </div>
         <div class="menu-highlight">
-          <p class="eyebrow">Inventory sync</p>
-          <h3>14 items tracked</h3>
-          <p>Auto-pause low-stock items and notify the front-of-house.</p>
+          <p class="eyebrow">Bulk update mode</p>
+          <h3>{{ menuItems.length }} rows staged</h3>
+          <p>All menu rows are sent together only when you press submit.</p>
         </div>
       </div>
 
@@ -161,7 +248,8 @@ h1 {
   box-shadow: 0 10px 18px rgba(210, 79, 35, 0.35);
 }
 
-.ghost-btn {
+.ghost-btn,
+.danger-btn {
   border: 1px solid rgba(19, 32, 28, 0.2);
   padding: 10px 16px;
   border-radius: 999px;
@@ -169,6 +257,11 @@ h1 {
   color: var(--ink);
   font-weight: 600;
   cursor: pointer;
+}
+
+.danger-btn {
+  border-color: rgba(179, 34, 34, 0.25);
+  color: #b32222;
 }
 
 .panel-content {
@@ -187,21 +280,15 @@ h1 {
   border-radius: 20px;
   padding: 20px 22px;
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
-.menu-card ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: 10px;
-}
-
-.menu-card li {
+.menu-heading {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  font-weight: 600;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .menu-note {
@@ -209,10 +296,38 @@ h1 {
   color: var(--muted);
 }
 
+.menu-table {
+  display: grid;
+  gap: 10px;
+}
+
+.table-head,
+.table-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.table-head {
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.table-row input,
+.table-row select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(19, 32, 28, 0.15);
+  font-size: 0.95rem;
+}
+
 .menu-actions {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .primary-btn {
@@ -223,6 +338,24 @@ h1 {
   color: #fff7ed;
   font-weight: 600;
   cursor: pointer;
+}
+
+.primary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.submit-note {
+  margin: 0;
+  color: var(--muted);
+}
+
+.submit-note.success {
+  color: #1f7a4d;
+}
+
+.submit-note.error {
+  color: #b32222;
 }
 
 .menu-highlight {
@@ -272,9 +405,27 @@ h1 {
   color: var(--muted);
 }
 
+@media (max-width: 1100px) {
+  .table-head,
+  .table-row {
+    grid-template-columns: 1.5fr 1fr 1fr auto;
+  }
+}
+
 @media (max-width: 900px) {
   .menu-view {
     grid-template-columns: 1fr;
+  }
+
+  .table-head {
+    display: none;
+  }
+
+  .table-row {
+    grid-template-columns: 1fr;
+    background: #fff;
+    padding: 12px;
+    border-radius: 12px;
   }
 }
 </style>
