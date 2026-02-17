@@ -35,8 +35,23 @@ const router = createRouter({
       path: '/b/app',
       name: 'b-dashboard',
       component: BDashboard,
+      meta: { requiresAuth: true },
     },
   ],
 })
+
+function isLoggedIn(): boolean {
+  return Boolean(localStorage.getItem("access_token"));
+}
+
+router.beforeEach((to) => {
+  if (to.meta.requiresAuth && !isLoggedIn()) {
+    return {
+      name: "b-login", // name of a router
+      query: { redirect: to.fullPath }, // so you can return after login
+    };
+  }
+  return true;
+});
 
 export default router
