@@ -35,6 +35,8 @@ const router = createRouter({
       path: '/b/app',
       name: 'b-dashboard',
       component: BDashboard,
+      beforeEnter: (_to, from) =>
+        from.name === 'b-login' || from.name === 'b-signup' ? true : { name: 'b-login' },
     },
   ],
 })
