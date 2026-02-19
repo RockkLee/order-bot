@@ -8,19 +8,24 @@ type FetchApiOptions<T> = {
   method?: ApiMethod
   req?: T
   jwt?: string
+  headers?: Record<string, string>
+  wrapReq?: boolean
   errMsg: string
 }
 
 export const fetchApi = async <T>(path: string, options: FetchApiOptions<T>) => {
-  const { method = 'PUT', req, jwt, errMsg } = options
+  const { method = 'PUT', req, jwt, headers, wrapReq = true, errMsg } = options
 
   const response = await fetch(buildUrl(path), {
     method,
     headers: {
       'Content-Type': 'application/json',
       ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
+      ...(headers ?? {}),
     },
-    ...(req === undefined ? {} : { body: JSON.stringify({ req }) }),
+    ...(req === undefined
+      ? {}
+      : { body: JSON.stringify(wrapReq ? { req } : req) }),
   })
 
   if (!response.ok) {
