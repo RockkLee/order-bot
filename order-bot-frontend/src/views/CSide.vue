@@ -1,12 +1,83 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+import { fetchApi } from '@/utils/menuApi'
+
 type Panel = 'dialogue' | 'menu'
 
+type DialogHis = {
+  incomingMsg: string
+  outgoingMsg: string
+}
+
+type ChatRequest = {
+  menu_id: string
+  bot_id: string
+  message: string
+}
+
+type ChatResponse = {
+  session_id: string
+  reply: string
+  intent: unknown
+  cart: unknown
+  order_id: string | null
+  menu_results: unknown[]
+}
+
+const CHAT_PATH = '/orderbot/chat'
+const MENU_ID = '26c89938-82d7-4b5f-9cbf-069bab7c66c5'
+const BOT_ID = 'd9407c68-e084-4fb4-b791-55caaf7613fb'
+const SESSION_ID = '0250bafa-c421-4326-b14c-d5c6837c3309'
+
 const activePanel = ref<Panel>('dialogue')
+const userMessage = ref('')
+const isSending = ref(false)
+const dialogHis = ref<DialogHis[]>([])
 
 const setPanel = (panel: Panel) => {
   activePanel.value = panel
+}
+
+const sendMessage = async () => {
+  const trimmedMessage = userMessage.value.trim()
+
+  if (!trimmedMessage || isSending.value) {
+    return
+  }
+
+  const reqJson: ChatRequest = {
+    menu_id: MENU_ID,
+    bot_id: BOT_ID,
+    message: trimmedMessage,
+  }
+
+  isSending.value = true
+
+  try {
+    const response = await fetchApi(CHAT_PATH, {
+      method: 'POST',
+      req: reqJson,
+      wrapReq: false,
+      headers: {
+        'Session-Id': SESSION_ID,
+      },
+      errMsg: 'Failed to send message to order bot.',
+    })
+
+    const resJson = (await response.json()) as ChatResponse
+
+    dialogHis.value.push({
+      incomingMsg: reqJson.message,
+      outgoingMsg: resJson.reply,
+    })
+
+    userMessage.value = ''
+  } catch (error) {
+    console.error(error)
+  } finally {
+    isSending.value = false
+  }
 }
 </script>
 
@@ -38,25 +109,25 @@ const setPanel = (panel: Panel) => {
 
     <div class="panel-content">
       <div v-if="activePanel === 'dialogue'" class="dialogue-view">
-        <div class="chat-bubble incoming">
-          <p>Welcome! I can help you pick today&apos;s special.</p>
-          <span>Order Bot</span>
-        </div>
-        <div class="chat-bubble outgoing">
-          <p>Show me something light and spicy.</p>
-          <span>You</span>
-        </div>
-        <div class="chat-bubble incoming">
-          <p>Try the Citrus Chili Bowl with sparkling yuzu.</p>
-          <span>Order Bot</span>
-        </div>
-        <div class="chat-bubble outgoing">
-          <p>Add it to my order.</p>
-          <span>You</span>
-        </div>
+        <template v-for="(dialog, index) in dialogHis" :key="`${index}-${dialog.incomingMsg}`">
+          <div class="chat-bubble incoming">
+            <p>{{ dialog.outgoingMsg }}</p>
+            <span>Order Bot</span>
+          </div>
+          <div class="chat-bubble outgoing">
+            <p>{{ dialog.incomingMsg }}</p>
+            <span>You</span>
+          </div>
+        </template>
         <div class="chat-input">
-          <input placeholder="Ask for a recommendation..." />
-          <button type="button">Send</button>
+          <input
+            v-model="userMessage"
+            placeholder="Ask for a recommendation..."
+            @keyup.enter="sendMessage"
+          />
+          <button type="button" :disabled="isSending" @click="sendMessage">
+            {{ isSending ? 'Sending...' : 'Send' }}
+          </button>
         </div>
       </div>
 
@@ -204,6 +275,11 @@ h1 {
   color: #fff7ed;
   font-weight: 600;
   cursor: pointer;
+}
+
+.chat-input button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .menu-view {
