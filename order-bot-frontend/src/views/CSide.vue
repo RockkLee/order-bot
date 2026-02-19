@@ -109,7 +109,7 @@ const sendMessage = async () => {
 
     <div class="panel-content">
       <div v-if="activePanel === 'dialogue'" class="dialogue-view">
-        <template v-for="(dialog, index) in dialogHis" :key="`${index}-${dialog.incomingMsg}`">
+        <div v-for="(dialog, index) in dialogHis" :key="`${index}-${dialog.incomingMsg}`" class="dialog-row">
           <div class="chat-bubble incoming">
             <p>{{ dialog.outgoingMsg }}</p>
             <span>Order Bot</span>
@@ -118,7 +118,7 @@ const sendMessage = async () => {
             <p>{{ dialog.incomingMsg }}</p>
             <span>You</span>
           </div>
-        </template>
+        </div>
         <div class="chat-input">
           <input
             v-model="userMessage"
@@ -223,6 +223,11 @@ h1 {
 }
 
 .dialogue-view {
+  display: grid;
+  gap: 16px;
+}
+
+.dialog-row {
   display: grid;
   gap: 16px;
 }
