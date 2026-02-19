@@ -75,6 +75,7 @@ const sendMessage = async () => {
     userMessage.value = ''
   } catch (error) {
     console.error(error)
+    alert("A Chat API error occurs")
   } finally {
     isSending.value = false
   }
@@ -110,11 +111,11 @@ const sendMessage = async () => {
     <div class="panel-content">
       <div v-if="activePanel === 'dialogue'" class="dialogue-view">
         <div v-for="(dialog, index) in dialogHis" :key="`${index}-${dialog.incomingMsg}`" class="dialog-row">
-          <div class="chat-bubble incoming">
+          <div class="chat-bubble outgoing">
             <p>{{ dialog.outgoingMsg }}</p>
             <span>Order Bot</span>
           </div>
-          <div class="chat-bubble outgoing">
+          <div class="chat-bubble incoming">
             <p>{{ dialog.incomingMsg }}</p>
             <span>You</span>
           </div>
@@ -247,11 +248,11 @@ h1 {
   color: var(--muted);
 }
 
-.incoming {
+.outgoing {
   background: #ffffff;
 }
 
-.outgoing {
+.incoming {
   margin-left: auto;
   background: #f7d8c8;
 }
