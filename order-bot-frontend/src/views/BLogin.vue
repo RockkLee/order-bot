@@ -2,13 +2,55 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+
+import { fetchAuthApi } from '@/utils/api'
+
+const API_BASE = import.meta.env.VITE_ORDER_BOT_MGMT_BASE_PATH ?? ''
+const API_PATH_LOGIN = '/auth/login'
+
+type LoginReq = {
+  email: string
+  password: string
+}
+
+type LoginRes = {
+  access_token: string,
+  refresh_token: string,
+}
+
 const router = useRouter()
 const email = ref('')
 const password = ref('')
 
-const submit = () => {
+localStorage.removeItem('access_token')
+
+const submit = async () => {
   if (!email.value || !password.value) return
-  router.push('/b/app')
+  try {
+    const reqJson: LoginReq = {
+      email: email.value,
+      password: password.value
+    }
+
+    const response = await fetchAuthApi(API_BASE, API_PATH_LOGIN, {
+      method: 'POST',
+      req: reqJson,
+      wrapReq: false,
+      errMsg: 'Failed to login',
+    })
+
+    if (response.status === 401) {
+      alert("The email or password is incorrect, or both.")
+      return
+    }
+    const resJson = (await response.json()) as LoginRes
+
+    localStorage.setItem('access_token', resJson.access_token)
+    router.push('/b/app')
+  } catch (error) {
+    console.error(error)
+    alert(error)
+  }
 }
 </script>
 

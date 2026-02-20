@@ -77,8 +77,8 @@ func loginHdlrFunc(s AuthServer) gin.HandlerFunc {
 		tokens, err := s.AuthService().Login(c.Request.Context(), req.Email, req.Password)
 		if err != nil {
 			slog.Error(errutil.FormatErrChain(err))
-			switch err {
-			case authsvc.ErrInvalidCredentials:
+			switch {
+			case errors.Is(err, authsvc.ErrInvalidCredentials):
 				c.JSON(http.StatusUnauthorized, gin.H{"error": authsvc.ErrInvalidCredentials.Error()})
 			default:
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to login"})

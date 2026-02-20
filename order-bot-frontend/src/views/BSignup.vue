@@ -2,14 +2,61 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { fetchAuthApi } from '@/utils/api'
+
+const API_BASE = import.meta.env.VITE_ORDER_BOT_MGMT_BASE_PATH ?? ''
+const API_PATH_SIGNUP = '/auth/signup'
+
+type SignupReq = {
+  email: string
+  password: string
+  bot_name: string
+}
+
+type SignupRes = {
+  access_token: string,
+  refresh_token: string,
+}
+
 const router = useRouter()
-const name = ref('')
 const email = ref('')
 const password = ref('')
+const name = ref('')
 
-const submit = () => {
+localStorage.removeItem('access_token')
+
+const submit = async () => {
   if (!name.value || !email.value || !password.value) return
-  router.push('/b/app')
+  try {
+    const reqJson: SignupReq = {
+      email: email.value,
+      password: password.value,
+      bot_name: name.value
+    }
+
+    const response = await fetchAuthApi(API_BASE, API_PATH_SIGNUP, {
+      method: 'POST',
+      req: reqJson,
+      wrapReq: false,
+      errMsg: 'Failed to signup',
+    })
+
+    if (response.status === 401) {
+      alert("The email or password is incorrect, or both.")
+      return
+    }
+    if (response.status === 409) {
+      alert("The email has already been registered")
+      return
+    }
+    const resJson = (await response.json()) as SignupRes
+
+    localStorage.setItem('access_token', resJson.access_token)
+    router.push('/b/app')
+  } catch (error) {
+    console.error(error)
+    alert(error)
+  }
 }
 </script>
 
@@ -23,16 +70,16 @@ const submit = () => {
       </div>
       <form class="auth-form" @submit.prevent="submit">
         <label>
-          Team name
-          <input v-model="name" type="text" placeholder="Order Bot Labs" />
-        </label>
-        <label>
           Email
           <input v-model="email" type="email" placeholder="owner@orderbot.ai" />
         </label>
         <label>
           Password
           <input v-model="password" type="password" placeholder="Create a password" />
+        </label>
+        <label>
+          Bot name
+          <input v-model="name" type="text" placeholder="Order Bot Labs" />
         </label>
         <button type="submit">Sign up</button>
       </form>

@@ -7,6 +7,7 @@ import (
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 )
 
@@ -45,6 +46,12 @@ func (s *UserStore) Create(ctx context.Context, tx store.Tx, user entities.User)
 	if err := db.WithContext(ctx).Create(&record).Error; err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return fmt.Errorf("sqldb.UserStore.Create: %w", store.ErrUserExists)
+		}
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == "23505" { // or pgerrcode.UniqueViolation
+				return fmt.Errorf("sqldb.UserStore.Create: %w", store.ErrUserExists)
+			}
 		}
 		return fmt.Errorf("sqldb.UserStore.Create: %w", err)
 	}

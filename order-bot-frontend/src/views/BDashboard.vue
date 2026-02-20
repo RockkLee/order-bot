@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { fetchApi } from '../utils/menuApi'
+import { fetchApi } from '@/utils/api'
 
 type Panel = 'menu' | 'events'
 
@@ -118,6 +118,7 @@ const submitMenu = async () => {
 }
 
 const logout = () => {
+  localStorage.removeItem('access_token')
   router.push('/b/login')
 }
 

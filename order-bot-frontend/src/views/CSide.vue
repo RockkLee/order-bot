@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import { fetchApi } from '@/utils/menuApi'
+import { fetchApi } from '@/utils/api'
+
+const API_BASE = import.meta.env.VITE_ORDER_BOT_BASE_PATH ?? ''
+const API_PATH_CHAT = '/chat'
 
 type Panel = 'dialogue' | 'menu'
 
@@ -25,7 +28,6 @@ type ChatResponse = {
   menu_results: unknown[]
 }
 
-const CHAT_PATH = '/orderbot/chat'
 const MENU_ID = '26c89938-82d7-4b5f-9cbf-069bab7c66c5'
 const BOT_ID = 'd9407c68-e084-4fb4-b791-55caaf7613fb'
 const SESSION_ID = '0250bafa-c421-4326-b14c-d5c6837c3309'
@@ -55,7 +57,7 @@ const sendMessage = async () => {
   isSending.value = true
 
   try {
-    const response = await fetchApi(CHAT_PATH, {
+    const response = await fetchApi(API_BASE, API_PATH_CHAT, {
       method: 'POST',
       req: reqJson,
       wrapReq: false,
@@ -75,7 +77,7 @@ const sendMessage = async () => {
     userMessage.value = ''
   } catch (error) {
     console.error(error)
-    alert("A Chat API error occurs")
+    alert(error)
   } finally {
     isSending.value = false
   }
