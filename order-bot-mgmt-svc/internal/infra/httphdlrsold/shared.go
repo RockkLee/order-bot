@@ -14,7 +14,7 @@ func writeJSON(w http.ResponseWriter, status int, payload any) {
 func decodeJsonRequest[T any](w http.ResponseWriter, r *http.Request) (T, bool) {
 	var req T
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody)
+		WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody.Error())
 		var emptyT T
 		return emptyT, false
 	}

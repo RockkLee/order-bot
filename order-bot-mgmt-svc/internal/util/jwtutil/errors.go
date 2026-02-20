@@ -1,8 +1,14 @@
 package jwtutil
 
-import "errors"
+import "order-bot-mgmt-svc/internal/apperr"
 
 var (
-	ErrInvalidToken = errors.New("invalid token")
-	ErrExpiredToken = errors.New("expired token")
+	ErrInvalidToken = apperr.Err{
+		Code: "ErrInvalidToken",
+		Msg:  "invalid token",
+	}
+	ErrExpiredToken = apperr.Err{
+		Code: "ErrExpiredToken",
+		Msg:  "expired token",
+	}
 )

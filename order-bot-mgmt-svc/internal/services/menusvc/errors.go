@@ -1,7 +1,10 @@
 package menusvc
 
-import "errors"
+import "order-bot-mgmt-svc/internal/apperr"
 
 var (
-	ErrInvalidMenu = errors.New("invalid menu request")
+	ErrInvalidMenu = apperr.Err{
+		Code: "ErrInvalidMenu",
+		Msg:  "invalid menu request",
+	}
 )

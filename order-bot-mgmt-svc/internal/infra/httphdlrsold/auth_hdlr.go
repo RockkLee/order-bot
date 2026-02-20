@@ -38,7 +38,7 @@ func signupHdlrFunc(s AuthServer) http.HandlerFunc {
 			return
 		}
 		if err := validatorutil.RequiredStrings(req); err != nil {
-			WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody)
+			WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody.Error())
 			return
 		}
 		var (
@@ -79,14 +79,14 @@ func loginHdlrFunc(s AuthServer) http.HandlerFunc {
 			return
 		}
 		if err := validatorutil.RequiredStrings(req); err != nil {
-			WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody)
+			WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody.Error())
 			return
 		}
 		tokens, err := s.AuthService().Login(r.Context(), req.Email, req.Password)
 		if err != nil {
 			slog.Error(errutil.FormatErrChain(err))
-			switch err {
-			case authsvc.ErrInvalidCredentials:
+			switch {
+			case errors.Is(err, authsvc.ErrInvalidCredentials):
 				http.Error(w, authsvc.ErrInvalidCredentials.Error(), http.StatusUnauthorized)
 			default:
 				http.Error(w, "failed to login", http.StatusInternalServerError)
@@ -104,7 +104,7 @@ func logoutHldrFunc(s AuthServer) http.HandlerFunc {
 			return
 		}
 		if err := validatorutil.RequiredStrings(req); err != nil {
-			WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody)
+			WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody.Error())
 			return
 		}
 		if err := s.AuthService().Logout(r.Context(), req.RefreshToken); err != nil {

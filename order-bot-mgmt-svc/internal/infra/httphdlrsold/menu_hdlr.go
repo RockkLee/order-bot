@@ -33,7 +33,7 @@ func createMenuHdlrFunc(s MenuServer) http.HandlerFunc {
 			return
 		}
 		if err := validatorutil.RequiredStrings(req); err != nil {
-			WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody)
+			WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody.Error())
 			return
 		}
 		menu, items, err := service.CreateMenu(r.Context(), req.BotID, modelFromMenReq(req))
@@ -68,7 +68,7 @@ func updateMenuHdlrFunc(s MenuServer) http.HandlerFunc {
 			return
 		}
 		if err := validatorutil.RequiredStrings(req); err != nil {
-			WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody)
+			WriteError(w, http.StatusBadRequest, ErrMsgInvalidRequestBody.Error())
 			return
 		}
 		menu, items, err := service.UpdateMenu(r.Context(), req.BotID, modelFromMenReq(req))

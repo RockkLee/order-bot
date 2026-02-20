@@ -38,7 +38,7 @@ func (s *Server) helloWorldHandler(w http.ResponseWriter, r *http.Request) {
 	resp := map[string]string{"message": "Hello World"}
 	jsonResp, err := json.Marshal(resp)
 	if err != nil {
-		httphdlrsold.WriteError(w, http.StatusInternalServerError, httphdlrsold.ErrMsgFailedMarshalResponse)
+		httphdlrsold.WriteError(w, http.StatusInternalServerError, httphdlrsold.ErrMsgFailedMarshalResponse.Error())
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -50,12 +50,12 @@ func (s *Server) helloWorldHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 	stats, err := s.dbService().Health()
 	if err != nil {
-		httphdlrsold.WriteError(w, http.StatusServiceUnavailable, httphdlrsold.ErrMsgFailedCheckDatabaseHealth)
+		httphdlrsold.WriteError(w, http.StatusServiceUnavailable, httphdlrsold.ErrMsgFailedCheckDatabaseHealth.Error())
 		return
 	}
 	resp, err := json.Marshal(stats)
 	if err != nil {
-		httphdlrsold.WriteError(w, http.StatusInternalServerError, httphdlrsold.ErrMsgFailedMarshalHealthCheck)
+		httphdlrsold.WriteError(w, http.StatusInternalServerError, httphdlrsold.ErrMsgFailedMarshalHealthCheck.Error())
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

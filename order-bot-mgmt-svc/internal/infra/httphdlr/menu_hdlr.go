@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"order-bot-mgmt-svc/internal/apperr"
 	"order-bot-mgmt-svc/internal/services/menusvc"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/util/errutil"
@@ -89,7 +90,13 @@ func writeMenuError(c *gin.Context, err error) {
 	case errors.Is(err, menusvc.ErrInvalidMenu):
 		c.JSON(http.StatusBadRequest, gin.H{"error": menusvc.ErrInvalidMenu.Error()})
 	case errors.Is(err, store.ErrMenuNotFound):
-		c.JSON(http.StatusNotFound, gin.H{"error": store.ErrMenuNotFound.Error()})
+		var appErr apperr.Err
+		if ok := errors.As(err, &appErr); !ok {
+			slog.Error("httpserver.menu_hdlr.writeMenuError(), appErr parsing failed")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "menu request failed"})
+			return
+		}
+		c.JSON(http.StatusNotFound, appErr)
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "menu request failed"})
 	}
