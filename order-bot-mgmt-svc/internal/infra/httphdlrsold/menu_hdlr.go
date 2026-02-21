@@ -50,7 +50,7 @@ func getMenuHdlrFunc(s MenuServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		service := s.MenuService()
 		botId := r.PathValue("botId")
-		menu, items, err := service.GetMenu(r.Context(), botId)
+		menu, items, err := service.GetMenuMenuItems(r.Context(), botId)
 		if err != nil {
 			slog.Error(errutil.FormatErrChain(err))
 			writeMenuError(w, err)

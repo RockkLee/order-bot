@@ -45,7 +45,7 @@ func createMenuHdlrFunc(s MenuServer) gin.HandlerFunc {
 func getMenuHdlrFunc(s MenuServer) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		botID := c.Param("botId")
-		menu, items, err := s.MenuService().GetMenu(c.Request.Context(), botID)
+		menu, items, err := s.MenuService().GetMenuMenuItems(c.Request.Context(), botID)
 		if err != nil {
 			slog.Error(errutil.FormatErrChain(err))
 			writeMenuError(c, err)

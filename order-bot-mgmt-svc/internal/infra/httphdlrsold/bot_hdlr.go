@@ -30,7 +30,7 @@ func getBotHdlrFunc(s BotServer) http.HandlerFunc {
 			return
 		}
 		botIdAny, err := s.GetWithTx(r.Context(), func(ctx context.Context, tx store.Tx) (any, error) {
-			botId, err := s.BotService().GetBotId(ctx, tx, tokenStr)
+			botId, err := s.BotService().GetBotId(ctx, tokenStr)
 			if err != nil {
 				return nil, err
 			}

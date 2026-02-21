@@ -12,6 +12,11 @@ const API_PATH_MENUS = '/menus/'
 type Panel = 'menu' | 'events'
 type MenuAct = 'create' | 'update'
 
+type BotInfoRes = {
+  bot_id: string
+  menu_id: string
+}
+
 type MenuItemPayload = {
   name: string
   price: number
@@ -44,6 +49,7 @@ const submitMessage = ref('')
 const publishState = ref<'idle' | 'publishing' | 'success' | 'error'>('idle')
 const publishMessage = ref('')
 const botId = ref<string | null>(null)
+const menuId = ref<string | null>(null)
 
 let nextId = 1
 let menuAct: MenuAct = 'update'
@@ -64,13 +70,13 @@ const getJwt = () => {
   return jwt
 }
 
-const fetchBotId = async (jwt: string) => {
+const fetchBotInfo = async (jwt: string) => {
   const response = await fetchApi<undefined>(API_BASE, API_PATH_BOT, {
     method: 'GET',
     jwt,
     errMsg: 'Failed to fetch bot id',
   })
-  return (await response.json()) as string
+  return (await response.json()) as BotInfoRes
 }
 
 const loadMenu = async () => {
@@ -81,7 +87,9 @@ const loadMenu = async () => {
     const jwt = getJwt()
     if (!jwt) return
 
-    botId.value = await fetchBotId(jwt)
+    const botInfo = await fetchBotInfo(jwt)
+    botId.value = botInfo.bot_id
+    menuId.value = botInfo.menu_id
     const response = await fetchApi<undefined>(API_BASE, `${API_PATH_MENUS}${botId.value}`, {
       method: 'GET',
       jwt,
@@ -166,7 +174,9 @@ const submitMenu = async () => {
     if (!jwt) return
 
     if (!botId.value) {
-      botId.value = await fetchBotId(jwt)
+      const botInfo = await fetchBotInfo(jwt)
+      botId.value = botInfo.bot_id
+      menuId.value = botInfo.menu_id
     }
 
     const reqPayload = {
@@ -204,7 +214,9 @@ const publishMenu = async () => {
     if (!jwt) return
 
     if (!botId.value) {
-      botId.value = await fetchBotId(jwt)
+      const botInfo = await fetchBotInfo(jwt)
+      botId.value = botInfo.bot_id
+      menuId.value = botInfo.menu_id
     }
 
     await fetchApi<undefined>(API_BASE, `${API_PATH_MENUS}${botId.value}/publish`, {

@@ -52,9 +52,9 @@ func (s *Svc) CreateMenu(ctx context.Context, botID string, menuItems []entities
 		_, errFinding := s.menuStore.FindByBotID(ctx, botID)
 		switch {
 		case errFinding == nil:
-			return fmt.Errorf("menusvc.GetMenu(), duplicated bot ID: %w", ErrInvalidMenu)
+			return fmt.Errorf("menusvc.GetMenuMenuItems(), duplicated bot ID: %w", ErrInvalidMenu)
 		case !errors.Is(errFinding, store.ErrMenuNotFound):
-			return fmt.Errorf("menusvc.GetMenu: %w", errFinding)
+			return fmt.Errorf("menusvc.GetMenuMenuItems: %w", errFinding)
 		}
 		menu = entities.Menu{
 			ID:    util.NewID(),
@@ -78,16 +78,26 @@ func (s *Svc) CreateMenu(ctx context.Context, botID string, menuItems []entities
 	return menu, items, nil
 }
 
-func (s *Svc) GetMenu(ctx context.Context, botId string) (entities.Menu, []entities.MenuItem, error) {
+func (s *Svc) GetMenuMenu(ctx context.Context, botId string) (entities.Menu, error) {
 	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
 	defer cancel()
 	menu, err := s.menuStore.FindByBotID(ctx, botId)
 	if err != nil {
-		return entities.Menu{}, nil, fmt.Errorf("menusvc.GetMenu: %w", err)
+		return entities.Menu{}, fmt.Errorf("menusvc.GetMenuMenu: %w", err)
+	}
+	return menu, nil
+}
+
+func (s *Svc) GetMenuMenuItems(ctx context.Context, botId string) (entities.Menu, []entities.MenuItem, error) {
+	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
+	defer cancel()
+	menu, err := s.menuStore.FindByBotID(ctx, botId)
+	if err != nil {
+		return entities.Menu{}, nil, fmt.Errorf("menusvc.GetMenuMenuItems: %w", err)
 	}
 	items, err := s.menuItemStore.FindItems(ctx, menu.ID)
 	if err != nil {
-		return entities.Menu{}, nil, fmt.Errorf("menusvc.GetMenu: %w", err)
+		return entities.Menu{}, nil, fmt.Errorf("menusvc.GetMenuMenuItems: %w", err)
 	}
 	return menu, items, nil
 }
@@ -121,7 +131,7 @@ func (s *Svc) UpdateMenu(ctx context.Context, botID string, items []entities.Men
 func (s *Svc) PublishMenu(ctx context.Context, botID string) (entities.Menu, []entities.MenuItem, error) {
 	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
 	defer cancel()
-	menu, items, err := s.GetMenu(ctx, botID)
+	menu, items, err := s.GetMenuMenuItems(ctx, botID)
 	if err != nil {
 		return entities.Menu{}, nil, fmt.Errorf("menusvc.PublishMenu: %w", err)
 	}
