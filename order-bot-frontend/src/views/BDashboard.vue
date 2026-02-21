@@ -41,6 +41,8 @@ const activePanel = ref<Panel>('menu')
 const menuItems = ref<EditableMenuItem[]>([])
 const submitState = ref<'idle' | 'submitting' | 'success' | 'error'>('idle')
 const submitMessage = ref('')
+const publishState = ref<'idle' | 'publishing' | 'success' | 'error'>('idle')
+const publishMessage = ref('')
 const botId = ref<string | null>(null)
 
 let nextId = 1
@@ -73,6 +75,7 @@ const fetchBotId = async (jwt: string) => {
 
 const loadMenu = async () => {
   submitMessage.value = ''
+  publishMessage.value = ''
 
   try {
     const jwt = getJwt()
@@ -138,7 +141,12 @@ const canSubmit = computed(
   () =>
     menuItems.value.length > 0 &&
     normalizedMenuItems.value.length === menuItems.value.length &&
-    submitState.value !== 'submitting',
+    submitState.value !== 'submitting' &&
+    publishState.value !== 'publishing',
+)
+
+const canPublish = computed(
+  () => menuItems.value.length > 0 && submitState.value !== 'submitting' && publishState.value !== 'publishing',
 )
 
 const submitMenu = async () => {
@@ -180,6 +188,32 @@ const submitMenu = async () => {
   } catch {
     submitState.value = 'error'
     submitMessage.value = 'Failed to submit the full menu. Please try again.'
+  }
+}
+
+const publishMenu = async () => {
+  publishState.value = 'publishing'
+  publishMessage.value = 'Publishing menu to c-Side...'
+
+  try {
+    const jwt = getJwt()
+    if (!jwt) return
+
+    if (!botId.value) {
+      botId.value = await fetchBotId(jwt)
+    }
+
+    await fetchApi<undefined>(API_BASE, `${API_PATH_MENUS}${botId.value}/publish`, {
+      method: 'POST',
+      jwt,
+      errMsg: 'Failed to publish menu to c-Side',
+    })
+
+    publishState.value = 'success'
+    publishMessage.value = 'Published menu to c-Side.'
+  } catch {
+    publishState.value = 'error'
+    publishMessage.value = 'Failed to publish menu to c-Side. Please try again.'
   }
 }
 
@@ -250,7 +284,22 @@ onMounted(loadMenu)
             <button type="button" class="primary-btn" :disabled="!canSubmit" @click="submitMenu">
               {{ submitState === 'submitting' ? 'Submitting...' : 'Submit full menu' }}
             </button>
+            <button
+              type="button"
+              class="icon-btn"
+              :disabled="!canPublish"
+              aria-label="Publish menu to c-Side"
+              title="Publish menu to c-Side"
+              @click="publishMenu"
+            >
+              <svg aria-hidden="true" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 32 32" enable-background="new 0 0 32 32" xml:space="preserve">
+                <line fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" x1="25" y1="27" x2="7" y2="27"/>
+                <line fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" x1="16" y1="5" x2="16" y2="24"/>
+                <polyline fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" points="23,12 16,5 9,12 "/>
+              </svg>
+            </button>
             <p :class="['submit-note', submitState]">{{ submitMessage }}</p>
+            <p :class="['submit-note', publishState]">{{ publishMessage }}</p>
           </div>
         </div>
         <div class="menu-highlight">
@@ -422,6 +471,30 @@ h1 {
   color: #fff7ed;
   font-weight: 600;
   cursor: pointer;
+}
+
+.icon-btn {
+  border: 1px solid rgba(19, 32, 28, 0.2);
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: #fff;
+  color: #13201c;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.icon-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.icon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .primary-btn:disabled {
