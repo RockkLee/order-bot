@@ -2,14 +2,31 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { fetchApi } from '@/utils/api'
+import { fetchApi, isControlledErr } from '@/utils/api'
+import { errMenuNotFound } from '@/models/errs'
+
+const API_BASE = import.meta.env.VITE_ORDER_BOT_MGMT_BASE_PATH ?? ''
+const API_PATH_BOT = '/bot/'
+const API_PATH_MENUS = '/menus/'
 
 type Panel = 'menu' | 'events'
+type MenuAct = 'create' | 'update'
 
 type MenuItemPayload = {
   name: string
   price: number
   status: string
+}
+
+type MenuItemRes = {
+  id: string
+  name: string
+  price: number
+}
+
+type MenuRes = {
+  bot_id: string
+  items: MenuItemRes[]
 }
 
 type EditableMenuItem = {
@@ -19,19 +36,15 @@ type EditableMenuItem = {
   status: string
 }
 
-const defaultMenuItems: MenuItemPayload[] = [
-  { name: 'Citrus Chili Bowl', price: 12, status: 'Available' },
-  { name: 'Miso Maple Noodles', price: 11, status: 'Low stock' },
-  { name: 'Charred Corn Salad', price: 8, status: 'Paused' },
-]
-
 const router = useRouter()
 const activePanel = ref<Panel>('menu')
 const menuItems = ref<EditableMenuItem[]>([])
 const submitState = ref<'idle' | 'submitting' | 'success' | 'error'>('idle')
 const submitMessage = ref('')
+const botId = ref<string | null>(null)
 
 let nextId = 1
+let menuAct: MenuAct = 'update'
 
 const toEditableItem = (menuItem: MenuItemPayload): EditableMenuItem => ({
   id: nextId++,
@@ -40,22 +53,57 @@ const toEditableItem = (menuItem: MenuItemPayload): EditableMenuItem => ({
   status: menuItem.status,
 })
 
+const getJwt = () => {
+  const jwt = localStorage.getItem('access_token')
+  if (!jwt) {
+    router.push('/b/login')
+    return null
+  }
+  return jwt
+}
+
+const fetchBotId = async (jwt: string) => {
+  const response = await fetchApi<undefined>(API_BASE, API_PATH_BOT, {
+    method: 'GET',
+    jwt,
+    errMsg: 'Failed to fetch bot id',
+  })
+  return (await response.json()) as string
+}
+
 const loadMenu = async () => {
   submitMessage.value = ''
 
   try {
-    const response = await fetchApi<undefined>('/menu-items', {
+    const jwt = getJwt()
+    if (!jwt) return
+
+    botId.value = await fetchBotId(jwt)
+    const response = await fetchApi<undefined>(API_BASE, `${API_PATH_MENUS}${botId.value}`, {
       method: 'GET',
+      jwt,
       errMsg: 'Failed to fetch menu items',
     })
+    const body: unknown = await response.json()
+    if (isControlledErr(body)) {
+      console.log(body)
+      if (body.code === errMenuNotFound) {
+        menuAct = 'create'
+        console.log('Menu not found')
+        return
+      }
+    }
 
-    const fetchedMenuItems = (await response.json()) as MenuItemPayload[]
-    menuItems.value = fetchedMenuItems.length
-      ? fetchedMenuItems.map(toEditableItem)
-      : defaultMenuItems.map(toEditableItem)
+    const fetchedMenu = body as MenuRes
+    menuItems.value = fetchedMenu.items.map((item) =>
+      toEditableItem({
+        name: item.name,
+        price: item.price,
+        status: 'Available',
+      }),
+    )
   } catch {
-    menuItems.value = defaultMenuItems.map(toEditableItem)
-    submitMessage.value = 'Could not load menu from API. Showing local defaults instead.'
+    submitMessage.value = 'Failed to load menu from API.'
   }
 }
 
@@ -104,9 +152,27 @@ const submitMenu = async () => {
   submitMessage.value = 'Submitting full menu...'
 
   try {
-    await fetchApi<MenuItemPayload[]>('/menu-items', {
-      method: 'PUT',
-      req: normalizedMenuItems.value,
+    const jwt = getJwt()
+    if (!jwt) return
+
+    if (!botId.value) {
+      botId.value = await fetchBotId(jwt)
+    }
+
+    const reqPayload = {
+      bot_id: botId.value,
+      items: normalizedMenuItems.value.map((item) => ({
+        name: item.name,
+        price: item.price,
+      })),
+    }
+
+    console.log(`submit action: ${menuAct}`)
+    await fetchApi<typeof reqPayload>(API_BASE, API_PATH_MENUS, {
+      method: menuAct === 'create' ? 'POST' : 'PUT',
+      jwt,
+      req: reqPayload,
+      wrapReq: false,
       errMsg: 'Failed to submit the full menu',
     })
     submitState.value = 'success'
@@ -172,8 +238,10 @@ onMounted(loadMenu)
               <input v-model="item.price" type="number" min="0" step="0.01" placeholder="0.00" />
               <select v-model="item.status">
                 <option>Available</option>
+                <!--
                 <option>Low stock</option>
                 <option>Paused</option>
+                -->
               </select>
               <button type="button" class="danger-btn" @click="removeRow(item.id)">Delete</button>
             </div>

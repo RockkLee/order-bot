@@ -96,7 +96,7 @@ func writeMenuError(c *gin.Context, err error) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "menu request failed"})
 			return
 		}
-		c.JSON(http.StatusNotFound, appErr)
+		c.JSON(http.StatusOK, appErr)
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "menu request failed"})
 	}
