@@ -150,6 +150,8 @@ const canPublish = computed(
 )
 
 const submitMenu = async () => {
+  submitMessage.value = ''
+  publishMessage.value = ''
   if (!canSubmit.value) {
     submitState.value = 'error'
     submitMessage.value = 'Please complete every row before submitting the full menu.'
@@ -192,6 +194,8 @@ const submitMenu = async () => {
 }
 
 const publishMenu = async () => {
+  submitMessage.value = ''
+  publishMessage.value = ''
   publishState.value = 'publishing'
   publishMessage.value = 'Publishing menu to c-Side...'
 
@@ -281,25 +285,29 @@ onMounted(loadMenu)
             </div>
           </div>
           <div class="menu-actions">
-            <button type="button" class="primary-btn" :disabled="!canSubmit" @click="submitMenu">
-              {{ submitState === 'submitting' ? 'Submitting...' : 'Submit full menu' }}
-            </button>
-            <button
-              type="button"
-              class="icon-btn"
-              :disabled="!canPublish"
-              aria-label="Publish menu to c-Side"
-              title="Publish menu to c-Side"
-              @click="publishMenu"
-            >
-              <svg aria-hidden="true" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 32 32" enable-background="new 0 0 32 32" xml:space="preserve">
-                <line fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" x1="25" y1="27" x2="7" y2="27"/>
-                <line fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" x1="16" y1="5" x2="16" y2="24"/>
-                <polyline fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" points="23,12 16,5 9,12 "/>
-              </svg>
-            </button>
-            <p :class="['submit-note', submitState]">{{ submitMessage }}</p>
-            <p :class="['submit-note', publishState]">{{ publishMessage }}</p>
+            <div class="menu-actions-buttons">
+              <button type="button" class="primary-btn" :disabled="!canSubmit" @click="submitMenu">
+                {{ submitState === 'submitting' ? 'Submitting...' : 'Submit full menu' }}
+              </button>
+              <button
+                type="button"
+                class="icon-btn"
+                :disabled="!canPublish"
+                aria-label="Publish menu to c-Side"
+                title="Publish menu to c-Side"
+                @click="publishMenu"
+              >
+                <svg aria-hidden="true" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 32 32" enable-background="new 0 0 32 32" xml:space="preserve">
+                  <line fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" x1="25" y1="27" x2="7" y2="27"/>
+                  <line fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" x1="16" y1="5" x2="16" y2="24"/>
+                  <polyline fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" points="23,12 16,5 9,12 "/>
+                </svg>
+              </button>
+            </div>
+            <div class="menu-actions-messages">
+              <p v-if="submitMessage" :class="['submit-note', submitState]">{{ submitMessage }}</p>
+              <p v-if="publishMessage" :class="['submit-note', publishState]">{{ publishMessage }}</p>
+            </div>
           </div>
         </div>
         <div class="menu-highlight">
@@ -461,6 +469,19 @@ h1 {
   gap: 12px;
   flex-wrap: wrap;
   align-items: center;
+}
+
+.menu-actions-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.menu-actions-messages {
+  flex-basis: 100%;
+  display: grid;
+  gap: 6px;
 }
 
 .primary-btn {
