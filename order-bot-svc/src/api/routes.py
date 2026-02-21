@@ -17,6 +17,18 @@ router = APIRouter()
 intent_parser = IntentParser()
 
 
+@router.get("/published-menu/{bot_id}/{menu_id}")
+async def get_published_menu(
+        bot_id: str,
+        menu_id: str,
+        db: AsyncSession = Depends(get_db_session),
+):
+    published_menu = await repositories.get_published_menu(db, bot_id, menu_id)
+    return {"exists": bool(published_menu)}
+
+
+
+
 @router.post("", response_model=ChatResponse)
 async def chat(
         req: ChatRequest,

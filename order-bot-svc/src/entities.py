@@ -20,6 +20,13 @@ class MenuItem(Base):
     price: Mapped[float] = mapped_column(Double)
 
 
+class PublishedMenu(Base):
+    __tablename__ = "published_menu"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    bot_id: Mapped[str] = mapped_column(String(64), index=True)
+
+
 class Cart(Base):
     __tablename__ = "cart"
 
