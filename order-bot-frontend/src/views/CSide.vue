@@ -30,6 +30,12 @@ type ChatResponse = {
   menu_results: unknown[]
 }
 
+type MenuItem = {
+  menu_item_id: string
+  name: string
+  price: number
+}
+
 const route = useRoute()
 const botId = ref<string | null>(null)
 const menuId = ref<string | null>(null)
@@ -39,12 +45,13 @@ const activePanel = ref<Panel>('dialogue')
 const userMessage = ref('')
 const isSending = ref(false)
 const dialogHis = ref<DialogHis[]>([])
+const menuItems = ref<MenuItem[]>([])
 
 const setPanel = (panel: Panel) => {
   activePanel.value = panel
 }
 
-const fetchChkBotIdAndMenuId = async (): boolean => {
+const fetchChkBotIdAndMenuId = async (): Promise<boolean> => {
   const response = await fetchApi<undefined>(
     API_BASE,
     `${API_PATH_PUBLISHED_MENU}/${botId.value}/${menuId.value}`,
@@ -55,6 +62,19 @@ const fetchChkBotIdAndMenuId = async (): boolean => {
   )
   const resJson = (await response.json()) as { exists: boolean }
   return resJson.exists
+}
+
+const fetchPublishedMenuItems = async (): Promise<void> => {
+  const response = await fetchApi<undefined>(
+    API_BASE,
+    `${API_PATH_PUBLISHED_MENU}/${botId.value}/${menuId.value}/items`,
+    {
+      method: 'GET',
+      errMsg: 'Failed to fetch published menu items.',
+    },
+  )
+  const resJson = (await response.json()) as { published_menu_items: MenuItem[] }
+  menuItems.value = resJson.published_menu_items
 }
 
 onMounted(async () => {
@@ -72,7 +92,10 @@ onMounted(async () => {
     let exists = await fetchChkBotIdAndMenuId()
     if (!exists) {
       alert('Invalid botId or menuId. Please check your link.')
+      return
     }
+
+    await fetchPublishedMenuItems()
   } catch (error) {
     console.error(error)
     alert(error)
@@ -193,21 +216,9 @@ const sendMessage = async () => {
         <div class="menu-card">
           <h2>Today&apos;s menu</h2>
           <ul>
-            <li>
-              <span>Citrus Chili Bowl</span>
-              <span>$12</span>
-            </li>
-            <li>
-              <span>Miso Maple Noodles</span>
-              <span>$11</span>
-            </li>
-            <li>
-              <span>Charred Corn Salad</span>
-              <span>$8</span>
-            </li>
-            <li>
-              <span>Cold Brew Spritz</span>
-              <span>$5</span>
+            <li v-for="menuItem in menuItems" :key="menuItem.menu_item_id">
+              <span>{{ menuItem.name }}</span>
+              <span>${{ menuItem.price }}</span>
             </li>
           </ul>
           <button type="button" class="primary-btn">Start an order</button>

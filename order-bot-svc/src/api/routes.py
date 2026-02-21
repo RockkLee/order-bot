@@ -27,6 +27,20 @@ async def get_published_menu(
     return {"exists": bool(published_menu)}
 
 
+@router.get("/menu/{bot_id}/{menu_id}/items")
+async def get_published_menu_items(
+        bot_id: str,
+        menu_id: str,
+        db: AsyncSession = Depends(get_db_session),
+):
+    published_menu = await repositories.get_published_menu(db, bot_id, menu_id)
+    if not published_menu:
+        return {"published_menu_items": []}
+
+    menu_items = await menu_service.search_menu_for_intent(db, menu_id)
+    return {"published_menu_items": menu_items}
+
+
 @router.post("", response_model=ChatResponse)
 async def chat(
         req: ChatRequest,
