@@ -233,6 +233,28 @@ const publishMenu = async () => {
   }
 }
 
+const alertCsideUrl = async () => {
+  try {
+    if (!botId.value || !menuId.value) {
+      const jwt = getJwt()
+      if (!jwt) return
+      const botInfo = await fetchBotId(jwt)
+      botId.value = botInfo.bot_id
+      menuId.value = botInfo.menu_id
+    }
+
+    if (!botId.value || !menuId.value) {
+      alert('Missing botId or menuId for the C-side URL.')
+      return
+    }
+
+    const csideUrl = `${window.location.origin}/c/${botId.value}/${menuId.value}`
+    alert(csideUrl)
+  } catch {
+    alert('Failed to generate the C-side URL. Please try again.')
+  }
+}
+
 const logout = () => {
   localStorage.removeItem('access_token')
   router.push('/b/login')
@@ -313,6 +335,33 @@ onMounted(loadMenu)
                   <line fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" x1="25" y1="27" x2="7" y2="27"/>
                   <line fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" x1="16" y1="5" x2="16" y2="24"/>
                   <polyline fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" points="23,12 16,5 9,12 "/>
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="icon-btn"
+                :disabled="!botId || !menuId"
+                aria-label="Copy C-side bot URL"
+                title="Show C-side bot URL"
+                @click="alertCsideUrl"
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                  <path
+                    d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L11.4 4.53"
+                    fill="none"
+                    stroke="#000000"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                  />
+                  <path
+                    d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 1 0 7.07 7.07L12.6 19.47"
+                    fill="none"
+                    stroke="#000000"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                  />
                 </svg>
               </button>
             </div>
