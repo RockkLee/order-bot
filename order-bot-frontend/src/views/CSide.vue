@@ -6,6 +6,7 @@ import { fetchApi } from '@/utils/api'
 
 const API_BASE = import.meta.env.VITE_ORDER_BOT_BASE_PATH ?? ''
 const API_PATH_CHAT = '/chat'
+const API_PATH_PUBLISHED_MENU = '/chat/menu'
 
 type Panel = 'dialogue' | 'menu'
 
@@ -43,7 +44,20 @@ const setPanel = (panel: Panel) => {
   activePanel.value = panel
 }
 
-onMounted(() => {
+const fetchChkBotIdAndMenuId = async (): boolean => {
+  const response = await fetchApi<undefined>(
+    API_BASE,
+    `${API_PATH_PUBLISHED_MENU}/${botId.value}/${menuId.value}`,
+    {
+      method: 'GET',
+      errMsg: 'Failed to check the botId and menuId.',
+    },
+  )
+  const resJson = (await response.json()) as { exists: boolean }
+  return resJson.exists
+}
+
+onMounted(async () => {
   const rawBotId = route.params.botId
   const rawMenuId = route.params.menuId
   botId.value = typeof rawBotId === 'string' ? rawBotId : null
@@ -51,6 +65,17 @@ onMounted(() => {
 
   if (!botId.value || !menuId.value) {
     alert('Missing botId or menuId in the URL. Expected /c/{botId}/{menuId}.')
+    return
+  }
+
+  try {
+    let exists = await fetchChkBotIdAndMenuId()
+    if (!exists) {
+      alert('Invalid botId or menuId. Please check your link.')
+    }
+  } catch (error) {
+    console.error(error)
+    alert(error)
   }
 })
 
@@ -63,6 +88,18 @@ const sendMessage = async () => {
 
   if (!botId.value || !menuId.value) {
     alert('Missing botId or menuId in the URL. Expected /c/{botId}/{menuId}.')
+    return
+  }
+
+  try {
+    let exists = await fetchChkBotIdAndMenuId()
+    if (!exists) {
+      alert('Invalid botId or menuId. Please check your link.')
+      return
+    }
+  } catch (error) {
+    console.error(error)
+    alert(error)
     return
   }
 

@@ -1,6 +1,6 @@
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.entities import MenuItem, Cart, CartItem, Order, OrderItem
+from src.entities import MenuItem, Cart, CartItem, Order, OrderItem, Menu
 
 
 async def get_menu_by_query(db: AsyncSession, menu_id: str) -> list[MenuItem]:
@@ -15,6 +15,15 @@ async def get_menu_item_by_menu_item_ids(db: AsyncSession, menu_item_ids: list[s
     stmt = select(MenuItem).where(MenuItem.id.in_(menu_item_ids))
     result = await db.scalars(stmt)
     return list(result.all())
+
+
+async def get_published_menu(db: AsyncSession, bot_id: str, menu_id: str) -> Menu | None:
+    stmt = select(Menu).where(
+        Menu.id == menu_id,
+        Menu.bot_id == bot_id,
+    )
+    result = await db.scalars(stmt)
+    return result.first()
 
 
 async def get_cart_by_session(

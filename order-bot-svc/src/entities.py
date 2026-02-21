@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, UTC
 
-from sqlalchemy import String, Integer ,Double, Enum, ForeignKey, DateTime, UniqueConstraint
+from sqlalchemy import String, Integer, Double, Enum, ForeignKey, DateTime, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.db import Base
 from src.enums import CartStatus
@@ -9,6 +9,13 @@ from src.enums import CartStatus
 
 def _uuid_str() -> str:
     return str(uuid.uuid4())
+
+
+class Menu(Base):
+    __tablename__ = "published_menu"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    bot_id: Mapped[str] = mapped_column(String(64), index=True)
 
 
 class MenuItem(Base):
