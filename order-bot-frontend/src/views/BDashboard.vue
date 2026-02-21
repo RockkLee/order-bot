@@ -292,10 +292,10 @@ onMounted(loadMenu)
               title="Publish menu to c-Side"
               @click="publishMenu"
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M12 21a1 1 0 0 1-1-1v-8.59l-2.3 2.3a1 1 0 0 1-1.4-1.42l4-3.99a1 1 0 0 1 1.4 0l4 4a1 1 0 1 1-1.4 1.42L13 11.41V20a1 1 0 0 1-1 1Zm-7-14a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V8a1 1 0 1 0-2 0v1H6V8a1 1 0 0 0-1-1Z"
-                />
+              <svg aria-hidden="true" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 32 32" enable-background="new 0 0 32 32" xml:space="preserve">
+                <line fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" x1="25" y1="27" x2="7" y2="27"/>
+                <line fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" x1="16" y1="5" x2="16" y2="24"/>
+                <polyline fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" points="23,12 16,5 9,12 "/>
               </svg>
             </button>
             <p :class="['submit-note', submitState]">{{ submitMessage }}</p>
