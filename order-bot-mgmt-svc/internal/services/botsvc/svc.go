@@ -53,7 +53,7 @@ func (s *Svc) CreateBot(ctx context.Context, tx store.Tx, name string, userId st
 	return nil
 }
 
-func (s *Svc) GetBotId(ctx context.Context, tx store.Tx, tokenStr string) (botId string, err error) {
+func (s *Svc) GetBotId(ctx context.Context, tokenStr string) (botId string, err error) {
 	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
 	defer cancel()
 
@@ -61,7 +61,7 @@ func (s *Svc) GetBotId(ctx context.Context, tx store.Tx, tokenStr string) (botId
 	if err != nil {
 		return "", fmt.Errorf("botsvc.GetBotId(): %w", err)
 	}
-	userBots, err := s.userBotStore.FindByUserID(ctx, tx, claims.Sub)
+	userBots, err := s.userBotStore.FindByUserID(ctx, nil, claims.Sub)
 	if err != nil {
 		return "", fmt.Errorf("botsvc.GetBotId: %w", err)
 	}
