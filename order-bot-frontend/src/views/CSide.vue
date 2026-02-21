@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { fetchApi } from '@/utils/api'
 
@@ -28,8 +29,9 @@ type ChatResponse = {
   menu_results: unknown[]
 }
 
-const MENU_ID = '26c89938-82d7-4b5f-9cbf-069bab7c66c5'
-const BOT_ID = 'd9407c68-e084-4fb4-b791-55caaf7613fb'
+const route = useRoute()
+const botId = ref<string | null>(null)
+const menuId = ref<string | null>(null)
 const SESSION_ID = '0250bafa-c421-4326-b14c-d5c6837c3309'
 
 const activePanel = ref<Panel>('dialogue')
@@ -41,6 +43,17 @@ const setPanel = (panel: Panel) => {
   activePanel.value = panel
 }
 
+onMounted(() => {
+  const rawBotId = route.params.botId
+  const rawMenuId = route.params.menuId
+  botId.value = typeof rawBotId === 'string' ? rawBotId : null
+  menuId.value = typeof rawMenuId === 'string' ? rawMenuId : null
+
+  if (!botId.value || !menuId.value) {
+    alert('Missing botId or menuId in the URL. Expected /c/{botId}/{menuId}.')
+  }
+})
+
 const sendMessage = async () => {
   const trimmedMessage = userMessage.value.trim()
 
@@ -48,9 +61,14 @@ const sendMessage = async () => {
     return
   }
 
+  if (!botId.value || !menuId.value) {
+    alert('Missing botId or menuId in the URL. Expected /c/{botId}/{menuId}.')
+    return
+  }
+
   const reqJson: ChatRequest = {
-    menu_id: MENU_ID,
-    bot_id: BOT_ID,
+    menu_id: menuId.value,
+    bot_id: botId.value,
     message: trimmedMessage,
   }
 

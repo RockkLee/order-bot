@@ -9,11 +9,7 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/',
-      redirect: '/c',
-    },
-    {
-      path: '/c',
+      path: '/c/:botId/:menuId',
       name: 'c-side',
       component: CSide,
     },
