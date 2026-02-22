@@ -12,3 +12,21 @@ CREATE TABLE IF NOT EXISTS published_menu_item (
     price DOUBLE PRECISION
 );
 CREATE INDEX IF NOT EXISTS idx_menu_item_menu_id ON published_menu_item (menu_id);
+
+CREATE TABLE IF NOT EXISTS orders (
+    id TEXT PRIMARY KEY,
+    cart_id TEXT NOT NULL,
+    session_id TEXT NOT NULL,
+    total_scaled BIGINT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS order_item (
+    id TEXT PRIMARY KEY,
+    order_id TEXT NOT NULL REFERENCES orders(id),
+    menu_item_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    unit_price_scaled BIGINT NOT NULL,
+    total_price_scaled BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_order_item_order_id ON order_item (order_id);

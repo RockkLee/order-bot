@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.config import settings
 from src.db import engine, SessionLocal, Base
 from src.api import routes
+from src.grpc.server import OrderCallbackServer
 
 
 _LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -22,7 +23,13 @@ def create_app() -> FastAPI:
     async def lifespan(_: FastAPI):
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-        yield
+
+        grpc_server = OrderCallbackServer()
+        await grpc_server.start()
+        try:
+            yield
+        finally:
+            await grpc_server.stop()
 
     app_root_path = settings.root_path
     app = FastAPI(

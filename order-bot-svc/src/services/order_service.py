@@ -6,6 +6,7 @@ from src.entities import Cart, CartItem
 from src.enums import CartStatus
 from src.schemas import IntentResult, ChatResponse
 from src.services import cart_service
+from src.grpc.client import submit_order_background
 
 
 async def checkout(db: AsyncSession, session_id: str, intent: IntentResult, cart: Cart) -> ChatResponse:
@@ -19,9 +20,6 @@ async def checkout(db: AsyncSession, session_id: str, intent: IntentResult, cart
             cart=cart_summary,
         )
 
-    # A tx will automatically start once the db session is created in SQLAlchemy 2.0,
-    # so we don't have to manually create a tx
-    # async with db.begin():
     cart = await cart_service.lock_cart(db, session_id)
     if cart.status != CartStatus.OPEN:
         raise HTTPException(status_code=400, detail="Cart is closed")
@@ -32,10 +30,13 @@ async def checkout(db: AsyncSession, session_id: str, intent: IntentResult, cart
     total_scaled = sum(item.total_price_scaled for item in items)
     order = await repositories.insert_order(db, cart, total_scaled)
     await repositories.insert_order_items(db, order, items)
+    order_items = list(await order.awaitable_attrs.order_items)
     order_id = order.id
 
     cart.status = CartStatus.CLOSED
     await db.commit()
+
+    submit_order_background(order, order_items)
 
     cart_summary = await cart_service.build_cart_summary(cart)
     return ChatResponse(
