@@ -13,6 +13,7 @@ import (
 	"order-bot-mgmt-svc/internal/services/authsvc"
 	"order-bot-mgmt-svc/internal/services/botsvc"
 	"order-bot-mgmt-svc/internal/services/menusvc"
+	"order-bot-mgmt-svc/internal/services/ordersvc"
 	"order-bot-mgmt-svc/internal/util"
 	"order-bot-mgmt-svc/internal/util/errutil"
 	"os/signal"
@@ -65,6 +66,11 @@ func newServices(db *sqldb.DB, orderBotDb *sqldb.DB, cfg config.Config) *service
 			botStore := sqldb.NewBotStore(db)
 			userBotStore := sqldb.NewUserBotStore(db)
 			return botsvc.NewSvc(db, ctxFunc, cfg, botStore, userBotStore)
+		},
+		func() *ordersvc.Svc {
+			orderStore := sqldb.NewOrderStore(orderBotDb)
+			orderItemStore := sqldb.NewOrderItemStore(orderBotDb)
+			return ordersvc.NewSvc(ctxFunc, orderStore, orderItemStore)
 		},
 	)
 }
