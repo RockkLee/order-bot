@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 
 
 import { fetchAuthApi } from '@/utils/api'
+import { getLocalStorage, setLocalStorage } from '@/utils/localstorage'
 
 const API_BASE = import.meta.env.VITE_ORDER_BOT_MGMT_BASE_PATH ?? ''
 const API_PATH_LOGIN = '/auth/login'
@@ -45,7 +46,7 @@ const submit = async () => {
     }
     const resJson = (await response.json()) as LoginRes
 
-    localStorage.setItem('access_token', resJson.access_token)
+    setLocalStorage<string>('access_token', resJson.access_token)
     router.push('/b/app')
   } catch (error) {
     console.error(error)

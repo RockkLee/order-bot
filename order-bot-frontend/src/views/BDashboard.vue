@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 
 import { fetchApi, isControlledErr } from '@/utils/api'
 import { errMenuNotFound } from '@/models/errs'
+import { getLocalStorage, setLocalStorage } from '@/utils/localstorage'
 
 const API_BASE = import.meta.env.VITE_ORDER_BOT_MGMT_BASE_PATH ?? ''
 const API_PATH_BOT = '/bot/'
@@ -62,7 +63,7 @@ const toEditableItem = (menuItem: MenuItemPayload): EditableMenuItem => ({
 })
 
 const getJwt = () => {
-  const jwt = localStorage.getItem('access_token')
+  const jwt = getLocalStorage<string>('access_token')
   if (!jwt) {
     router.push('/b/login')
     return null

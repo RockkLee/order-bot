@@ -39,13 +39,14 @@ type MenuItem = {
 const route = useRoute()
 const botId = ref<string | null>(null)
 const menuId = ref<string | null>(null)
-const SESSION_ID = '0250bafa-c421-4326-b14c-d5c6837c3309'
 
 const activePanel = ref<Panel>('dialogue')
 const userMessage = ref('')
 const isSending = ref(false)
 const dialogHis = ref<DialogHis[]>([])
 const menuItems = ref<MenuItem[]>([])
+
+let sessionId = null
 
 const setPanel = (panel: Panel) => {
   activePanel.value = panel
@@ -140,7 +141,7 @@ const sendMessage = async () => {
       req: reqJson,
       wrapReq: false,
       headers: {
-        'Session-Id': SESSION_ID,
+        ...(sessionId ? { 'Session-Id': `${sessionId}` } : {}),
       },
       errMsg: 'Failed to send message to order bot.',
     })
