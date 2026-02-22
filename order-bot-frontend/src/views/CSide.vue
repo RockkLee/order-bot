@@ -24,8 +24,8 @@ type ChatRequest = {
 type ChatResponse = {
   session_id: string
   reply: string
-  intent: unknown
-  cart: unknown
+  intent?: { intent_type?: string | null }
+  cart?: { status?: string | null } | null
   order_id: string | null
   menu_results: unknown[]
 }
@@ -153,6 +153,13 @@ const sendMessage = async () => {
       incomingMsg: reqJson.message,
       outgoingMsg: resJson.reply,
     })
+
+    console.log(`ChatResponse: ${resJson.intent.intent_type}, ${resJson.cart?.status}`)
+    if (resJson.intent?.intent_type === 'checkout' && resJson.cart?.status === 'CLOSED') {
+      alert(resJson.reply)
+      window.location.reload()
+      return
+    }
 
     userMessage.value = ''
   } catch (error) {
