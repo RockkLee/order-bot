@@ -47,10 +47,14 @@ CREATE TABLE IF NOT EXISTS orders (
   cart_id      VARCHAR(36) NOT NULL,
   session_id   VARCHAR(36) NOT NULL,
   total_scaled INTEGER NOT NULL,
+  status       TEXT NOT NULL DEFAULT 'PROCESSING',
 
   CONSTRAINT fk_orders_cart
     FOREIGN KEY (cart_id) REFERENCES cart (id)
-    ON DELETE RESTRICT
+    ON DELETE RESTRICT,
+
+  CONSTRAINT order_status_chk
+    CHECK (status IN ('PROCESSING', 'DONE'))
 );
 
 -- Index because SQLAlchemy used index=True on session_id

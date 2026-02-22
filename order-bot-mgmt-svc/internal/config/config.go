@@ -29,7 +29,9 @@ type Auth struct {
 }
 
 type Others struct {
-	QryCtxTimeout time.Duration
+	QryCtxTimeout    time.Duration
+	OrderSvcGRPCAddr string
+	MgmtSvcGRPCAddr  string
 }
 
 type Config struct {
@@ -70,7 +72,9 @@ func Load() Config {
 			RefreshTokenTTL: parseDurationEnv("JWT_REFRESH_TTL", 7*24*time.Hour),
 		},
 		Others: Others{
-			QryCtxTimeout: parseDurationEnv("QRY_CTX_TIMEOUT", 15*time.Second),
+			QryCtxTimeout:    parseDurationEnv("QRY_CTX_TIMEOUT", 15*time.Second),
+			OrderSvcGRPCAddr: envOrDefault("ORDER_SVC_GRPC_ADDR", "localhost:50052"),
+			MgmtSvcGRPCAddr:  envOrDefault("MGMT_SVC_GRPC_ADDR", "0.0.0.0:50051"),
 		},
 	}
 }

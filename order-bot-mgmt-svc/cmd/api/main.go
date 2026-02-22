@@ -7,12 +7,14 @@ import (
 	"log/slog"
 	"net/http"
 	"order-bot-mgmt-svc/internal/config"
+	"order-bot-mgmt-svc/internal/infra/grpcsync"
 	"order-bot-mgmt-svc/internal/infra/httphdlr/httpserver"
 	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/infra/sqldb/orderbotmgmtsqldb"
 	"order-bot-mgmt-svc/internal/services/authsvc"
 	"order-bot-mgmt-svc/internal/services/botsvc"
 	"order-bot-mgmt-svc/internal/services/menusvc"
+	"order-bot-mgmt-svc/internal/services/ordersvc"
 	"order-bot-mgmt-svc/internal/util"
 	"order-bot-mgmt-svc/internal/util/errutil"
 	"os/signal"
@@ -66,6 +68,12 @@ func newServices(db *sqldb.DB, orderBotDb *sqldb.DB, cfg config.Config) *service
 			userBotStore := sqldb.NewUserBotStore(db)
 			return botsvc.NewSvc(db, ctxFunc, cfg, botStore, userBotStore)
 		},
+		func() *ordersvc.Svc {
+			orderStore := sqldb.NewOrderStore(orderBotDb)
+			orderItemStore := sqldb.NewOrderItemStore(orderBotDb)
+			callbackClient := grpcsync.NewCallbackClient(cfg.Others.OrderSvcGRPCAddr)
+			return ordersvc.NewSvc(orderBotDb, orderStore, orderItemStore, callbackClient)
+		},
 	)
 }
 
@@ -93,6 +101,11 @@ func main() {
 		}
 	}()
 	serviceContainer := newServices(db, orderBotDb, cfg)
+
+	grpcServer := grpcsync.NewServer(cfg.Others.MgmtSvcGRPCAddr, serviceContainer.Order.Get())
+	if err := grpcServer.Start(); err != nil {
+		log.Fatalf("failed to start grpc server: %v", err)
+	}
 
 	server := httpserver.NewServer(
 		port,
