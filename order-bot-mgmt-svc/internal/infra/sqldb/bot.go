@@ -11,8 +11,9 @@ import (
 )
 
 type BotRecord struct {
-	ID      string `gorm:"column:id;primaryKey"`
-	BotName string `gorm:"column:bot_name"`
+	Base    BaseRecord `gorm:"embedded"`
+	ID      string     `gorm:"column:id;primaryKey"`
+	BotName string     `gorm:"column:bot_name"`
 }
 
 func (BotRecord) TableName() string { return "bot" }

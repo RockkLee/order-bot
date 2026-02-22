@@ -78,12 +78,12 @@ func (s *Svc) CreateMenu(ctx context.Context, botID string, menuItems []entities
 	return menu, items, nil
 }
 
-func (s *Svc) GetMenuMenu(ctx context.Context, botId string) (entities.Menu, error) {
+func (s *Svc) GetMenu(ctx context.Context, botId string) (entities.Menu, error) {
 	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
 	defer cancel()
 	menu, err := s.menuStore.FindByBotID(ctx, botId)
 	if err != nil {
-		return entities.Menu{}, fmt.Errorf("menusvc.GetMenuMenu: %w", err)
+		return entities.Menu{}, fmt.Errorf("menusvc.GetMenu: %w", err)
 	}
 	return menu, nil
 }

@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS cart_item (
 CREATE TABLE IF NOT EXISTS orders (
   id           VARCHAR(36) PRIMARY KEY,
   cart_id      VARCHAR(36) NOT NULL,
+  bot_id       VARCHAR(64) NOT NULL,
   session_id   VARCHAR(36) NOT NULL,
   total_scaled INTEGER NOT NULL,
 
@@ -53,7 +54,8 @@ CREATE TABLE IF NOT EXISTS orders (
     ON DELETE RESTRICT
 );
 
--- Index because SQLAlchemy used index=True on session_id
+-- Indexes because SQLAlchemy used index=True on bot_id/session_id
+CREATE INDEX IF NOT EXISTS ix_orders_bot_id ON orders (bot_id);
 CREATE INDEX IF NOT EXISTS ix_orders_session_id ON orders (session_id);
 
 CREATE TABLE IF NOT EXISTS order_item (

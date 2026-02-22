@@ -13,6 +13,7 @@ import (
 	"order-bot-mgmt-svc/internal/services/authsvc"
 	"order-bot-mgmt-svc/internal/services/botsvc"
 	"order-bot-mgmt-svc/internal/services/menusvc"
+	"order-bot-mgmt-svc/internal/services/ordersvc"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/util"
 	"strings"
@@ -131,6 +132,7 @@ func TestServerDependencies(t *testing.T) {
 	authInitCalls := 0
 	menuInitCalls := 0
 	botInitCalls := 0
+	orderInitCalls := 0
 	serviceContainer := services.NewServices(
 		func() *authsvc.Svc {
 			authInitCalls++
@@ -144,6 +146,10 @@ func TestServerDependencies(t *testing.T) {
 		func() *botsvc.Svc {
 			botInitCalls++
 			return botsvc.NewSvc(&sqldb.DB{}, nil, cfg, &fakeBotStore{}, &fakeUserBotStore{})
+		},
+		func() *ordersvc.Svc {
+			orderInitCalls++
+			return nil
 		},
 	)
 	server := NewServer(0, db, serviceContainer)
@@ -163,6 +169,9 @@ func TestServerDependencies(t *testing.T) {
 	}
 	if botInitCalls != 1 {
 		t.Fatalf("expected bot init to be called once for signup handler, got %d", botInitCalls)
+	}
+	if orderInitCalls != 0 {
+		t.Fatalf("expected order init to be uncalled, got %d", orderInitCalls)
 	}
 	if menuInitCalls != 0 {
 		t.Fatalf("expected menu init to be unused for auth handler, got %d", menuInitCalls)

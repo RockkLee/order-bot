@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, UTC
 
-from sqlalchemy import String, Integer, Double, Enum, ForeignKey, DateTime, UniqueConstraint
+from sqlalchemy import String, Integer, Double, Enum, ForeignKey, DateTime, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.db import Base
 from src.enums import CartStatus
@@ -11,14 +11,30 @@ def _uuid_str() -> str:
     return str(uuid.uuid4())
 
 
-class Menu(Base):
+class BaseModel(Base):
+    __abstract__ = True
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+
+class Menu(BaseModel):
     __tablename__ = "published_menu"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     bot_id: Mapped[str] = mapped_column(String(64), index=True)
 
 
-class MenuItem(Base):
+class MenuItem(BaseModel):
     __tablename__ = "published_menu_item"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid_str)
@@ -27,7 +43,7 @@ class MenuItem(Base):
     price: Mapped[float] = mapped_column(Double)
 
 
-class Cart(Base):
+class Cart(BaseModel):
     __tablename__ = "cart"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid_str)
@@ -46,7 +62,7 @@ class Cart(Base):
     )
 
 
-class CartItem(Base):
+class CartItem(BaseModel):
     __tablename__ = "cart_item"
     __table_args__ = (
         UniqueConstraint("cart_id", "menu_item_id", name="menu_item_id"),
@@ -63,11 +79,12 @@ class CartItem(Base):
     cart: Mapped[Cart] = relationship("Cart", back_populates="items")
 
 
-class Order(Base):
+class Order(BaseModel):
     __tablename__ = "orders"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid_str)
     cart_id: Mapped[str] = mapped_column(String(36), ForeignKey("cart.id"))
+    bot_id: Mapped[str] = mapped_column(String(64), index=True)
     session_id: Mapped[str] = mapped_column(String(36), index=True)
     total_scaled: Mapped[int] = mapped_column(Integer)
 
@@ -77,7 +94,7 @@ class Order(Base):
     )
 
 
-class OrderItem(Base):
+class OrderItem(BaseModel):
     __tablename__ = "order_item"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid_str)

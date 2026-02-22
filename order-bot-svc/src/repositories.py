@@ -53,8 +53,8 @@ async def upsert_cart_item(
     await db.flush()
 
 
-async def insert_order(db: AsyncSession, cart: Cart, total_scaled: int) -> Order:
-    order = Order(cart_id=cart.id, session_id=cart.session_id, total_scaled=total_scaled)
+async def insert_order(db: AsyncSession, cart: Cart, bot_id: str, total_scaled: int) -> Order:
+    order = Order(cart_id=cart.id, bot_id=bot_id, session_id=cart.session_id, total_scaled=total_scaled)
     db.add(order)
     await db.flush()
     return order

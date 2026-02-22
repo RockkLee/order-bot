@@ -11,8 +11,9 @@ import (
 )
 
 type MenuRecord struct {
-	ID    string `gorm:"column:id;primaryKey"`
-	BotID string `gorm:"column:bot_id"`
+	Base  BaseRecord `gorm:"embedded"`
+	ID    string     `gorm:"column:id;primaryKey"`
+	BotID string     `gorm:"column:bot_id"`
 }
 
 func (MenuRecord) TableName() string { return "menu" }

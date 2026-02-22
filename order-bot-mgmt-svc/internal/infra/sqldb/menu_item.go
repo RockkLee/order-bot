@@ -10,10 +10,11 @@ import (
 )
 
 type MenuItemRecord struct {
-	ID           string  `gorm:"column:id;primaryKey"`
-	MenuID       string  `gorm:"column:menu_id"`
-	MenuItemName string  `gorm:"column:menu_item_name"`
-	Price        float64 `gorm:"column:price"`
+	Base         BaseRecord `gorm:"embedded"`
+	ID           string     `gorm:"column:id;primaryKey"`
+	MenuID       string     `gorm:"column:menu_id"`
+	MenuItemName string     `gorm:"column:menu_item_name"`
+	Price        float64    `gorm:"column:price"`
 }
 
 func (MenuItemRecord) TableName() string { return "menu_item" }

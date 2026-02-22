@@ -12,11 +12,12 @@ import (
 )
 
 type UserRecord struct {
-	ID           string `gorm:"column:id;primaryKey"`
-	Email        string `gorm:"column:email"`
-	PasswordHash string `gorm:"column:password_hash"`
-	AccessToken  string `gorm:"column:access_token"`
-	RefreshToken string `gorm:"column:refresh_token"`
+	Base         BaseRecord `gorm:"embedded"`
+	ID           string     `gorm:"column:id;primaryKey"`
+	Email        string     `gorm:"column:email"`
+	PasswordHash string     `gorm:"column:password_hash"`
+	AccessToken  string     `gorm:"column:access_token"`
+	RefreshToken string     `gorm:"column:refresh_token"`
 }
 
 func (UserRecord) TableName() string { return "users" }

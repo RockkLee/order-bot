@@ -46,6 +46,8 @@ func Run(s *Server, ginMode string, addr string) {
 	httphdlr.RegisterMenuRoutes(menus, s)
 	bot := protected.Group(httphdlr.BotPrefix)
 	httphdlr.RegisterBotRoutes(bot, s)
+	orders := protected.Group(httphdlr.OrderPrefix)
+	httphdlr.RegisterOrderRoutes(orders, s)
 
 	err := routers.Run(addr)
 	if err != nil {

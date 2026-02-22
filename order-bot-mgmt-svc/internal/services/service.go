@@ -3,6 +3,7 @@ package services
 import (
 	"order-bot-mgmt-svc/internal/services/botsvc"
 	"order-bot-mgmt-svc/internal/services/menusvc"
+	"order-bot-mgmt-svc/internal/services/ordersvc"
 	"sync"
 
 	"order-bot-mgmt-svc/internal/services/authsvc"
@@ -32,15 +33,22 @@ func (l *lazy[T]) Get() *T {
 }
 
 type Services struct {
-	Auth *lazy[authsvc.Svc]
-	Menu *lazy[menusvc.Svc]
-	Bot  *lazy[botsvc.Svc]
+	Auth  *lazy[authsvc.Svc]
+	Menu  *lazy[menusvc.Svc]
+	Bot   *lazy[botsvc.Svc]
+	Order *lazy[ordersvc.Svc]
 }
 
-func NewServices(authInit func() *authsvc.Svc, menuInit func() *menusvc.Svc, botInit func() *botsvc.Svc) *Services {
+func NewServices(
+	authInit func() *authsvc.Svc,
+	menuInit func() *menusvc.Svc,
+	botInit func() *botsvc.Svc,
+	orderInit func() *ordersvc.Svc,
+) *Services {
 	return &Services{
-		Auth: newLazy(authInit),
-		Menu: newLazy(menuInit),
-		Bot:  newLazy(botInit),
+		Auth:  newLazy(authInit),
+		Menu:  newLazy(menuInit),
+		Bot:   newLazy(botInit),
+		Order: newLazy(orderInit),
 	}
 }

@@ -112,7 +112,7 @@ async def _handle_show_cart(
 async def _handle_checkout(
         *, db: AsyncSession, bot_id: str, menu_id: str, intent: IntentResult, cart: Cart
 ) -> ChatResponse:
-    return await order_service.checkout(db, cart.session_id, intent, cart)
+    return await order_service.checkout(db, cart.session_id, bot_id, intent, cart)
 
 
 _INTENT_HANDLERS = {

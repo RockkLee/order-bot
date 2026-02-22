@@ -10,9 +10,10 @@ import (
 )
 
 type UserBotRecord struct {
-	ID     string `gorm:"column:id;primaryKey"`
-	UserID string `gorm:"column:user_id"`
-	BotID  string `gorm:"column:bot_id"`
+	Base   BaseRecord `gorm:"embedded"`
+	ID     string     `gorm:"column:id;primaryKey"`
+	UserID string     `gorm:"column:user_id"`
+	BotID  string     `gorm:"column:bot_id"`
 }
 
 func (UserBotRecord) TableName() string { return "user_bot" }
