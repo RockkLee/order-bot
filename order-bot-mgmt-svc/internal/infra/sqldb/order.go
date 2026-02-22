@@ -10,6 +10,7 @@ import (
 
 type OrderRecord struct {
 	ID          string `gorm:"column:id;primaryKey"`
+	BotID       string `gorm:"column:bot_id"`
 	CartID      string `gorm:"column:cart_id"`
 	SessionID   string `gorm:"column:session_id"`
 	TotalScaled int    `gorm:"column:total_scaled"`
@@ -20,6 +21,7 @@ func (OrderRecord) TableName() string { return "orders" }
 func (r OrderRecord) ToModel() entities.Order {
 	return entities.Order{
 		ID:          r.ID,
+		BotID:       r.BotID,
 		CartID:      r.CartID,
 		SessionID:   r.SessionID,
 		TotalScaled: r.TotalScaled,

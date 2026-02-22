@@ -8,7 +8,7 @@ from src.schemas import IntentResult, ChatResponse
 from src.services import cart_service
 
 
-async def checkout(db: AsyncSession, session_id: str, intent: IntentResult, cart: Cart) -> ChatResponse:
+async def checkout(db: AsyncSession, session_id: str, bot_id: str, intent: IntentResult, cart: Cart) -> ChatResponse:
     cart_summary = await cart_service.build_cart_summary(cart)
     if not intent.confirmed:
         reply = "Please confirm checkout by replying with 'confirm' or 'yes'."
@@ -30,7 +30,7 @@ async def checkout(db: AsyncSession, session_id: str, intent: IntentResult, cart
         raise HTTPException(status_code=400, detail="Cart is empty")
 
     total_scaled = sum(item.total_price_scaled for item in items)
-    order = await repositories.insert_order(db, cart, total_scaled)
+    order = await repositories.insert_order(db, cart, bot_id, total_scaled)
     await repositories.insert_order_items(db, order, items)
     order_id = order.id
 

@@ -48,6 +48,7 @@ type OrderItemRes = {
 
 type OrderRes = {
   id: string
+  bot_id: string
   cart_id: string
   session_id: string
   total_scaled: number
@@ -474,6 +475,7 @@ onMounted(async () => {
         <div v-for="order in orderEvents" :key="order.id" class="event-card">
           <p class="event-time">Session {{ order.session_id }}</p>
           <h3>Order #{{ order.id }}</h3>
+          <p>Bot {{ order.bot_id }}</p>
           <p>Total: ${{ (order.total_scaled / 100).toFixed(2) }}</p>
           <ul class="event-items">
             <li v-for="item in order.items" :key="item.id">

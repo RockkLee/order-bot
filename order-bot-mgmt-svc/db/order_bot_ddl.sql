@@ -15,10 +15,12 @@ CREATE INDEX IF NOT EXISTS idx_menu_item_menu_id ON published_menu_item (menu_id
 
 CREATE TABLE IF NOT EXISTS orders (
     id TEXT PRIMARY KEY,
+    bot_id TEXT NOT NULL,
     cart_id TEXT NOT NULL,
     session_id TEXT NOT NULL,
     total_scaled INTEGER NOT NULL
 );
+CREATE INDEX IF NOT EXISTS idx_orders_bot_id ON orders (bot_id);
 CREATE INDEX IF NOT EXISTS idx_orders_session_id ON orders (session_id);
 
 CREATE TABLE IF NOT EXISTS order_item (

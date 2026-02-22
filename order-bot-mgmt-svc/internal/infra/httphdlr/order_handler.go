@@ -27,6 +27,7 @@ type orderItemRes struct {
 
 type orderRes struct {
 	ID          string         `json:"id"`
+	BotID       string         `json:"bot_id"`
 	CartID      string         `json:"cart_id"`
 	SessionID   string         `json:"session_id"`
 	TotalScaled int            `json:"total_scaled"`
@@ -61,6 +62,7 @@ func getOrdersHdlrFunc(s OrderServer) gin.HandlerFunc {
 			}
 			response = append(response, orderRes{
 				ID:          orderWithItems.Order.ID,
+				BotID:       orderWithItems.Order.BotID,
 				CartID:      orderWithItems.Order.CartID,
 				SessionID:   orderWithItems.Order.SessionID,
 				TotalScaled: orderWithItems.Order.TotalScaled,

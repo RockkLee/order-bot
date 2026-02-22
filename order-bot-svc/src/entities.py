@@ -68,6 +68,7 @@ class Order(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid_str)
     cart_id: Mapped[str] = mapped_column(String(36), ForeignKey("cart.id"))
+    bot_id: Mapped[str] = mapped_column(String(64), index=True)
     session_id: Mapped[str] = mapped_column(String(36), index=True)
     total_scaled: Mapped[int] = mapped_column(Integer)
 
