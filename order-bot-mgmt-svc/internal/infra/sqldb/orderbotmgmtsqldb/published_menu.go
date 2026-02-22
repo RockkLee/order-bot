@@ -2,6 +2,7 @@ package orderbotmgmtsqldb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/models/entities"
@@ -33,6 +34,18 @@ func NewPublishedMenuStore(db *sqldb.DB) *PublishedMenuStore {
 		panic("orderbotmgmtsqldb.NewPublishedMenuStore(), the db ptr is nil")
 	}
 	return &PublishedMenuStore{db: db.Gorm()}
+}
+
+func (s *PublishedMenuStore) IsMenuPublished(ctx context.Context, menuID string) (bool, error) {
+	var record PublishedMenuRecord
+	err := s.db.WithContext(ctx).Where("id = ?", menuID).Take(&record).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, nil
+		}
+		return false, fmt.Errorf("orderbotmgmtsqldb.PublishedMenuStore.IsMenuPublished: %w", err)
+	}
+	return true, nil
 }
 
 func (s *PublishedMenuStore) ReplaceMenuItems(ctx context.Context, tx store.Tx, menu entities.Menu, items []entities.MenuItem) error {

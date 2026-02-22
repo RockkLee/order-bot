@@ -23,6 +23,7 @@ func RegisterMenuRoutes(r gin.IRoutes, s MenuServer) {
 	r.GET("/:botId", getMenuHdlrFunc(s))
 	r.PUT("/", updateMenuHdlrFunc(s))
 	r.POST("/:botId/publish", publishMenuHdlrFunc(s))
+	r.GET("/published/:menuId", isMenuPublishedHdlrFunc(s))
 }
 
 func createMenuHdlrFunc(s MenuServer) gin.HandlerFunc {
@@ -82,6 +83,19 @@ func publishMenuHdlrFunc(s MenuServer) gin.HandlerFunc {
 			return
 		}
 		c.JSON(http.StatusOK, menuResFromModel(menu, items))
+	}
+}
+
+func isMenuPublishedHdlrFunc(s MenuServer) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		menuID := c.Param("menuId")
+		exists, err := s.MenuService().IsMenuPublished(nil, menuID)
+		if err != nil {
+			slog.Error(errutil.FormatErrChain(err))
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "menu request failed"})
+			return
+		}
+		c.JSON(http.StatusOK, menuPublishedRes{Exists: exists})
 	}
 }
 

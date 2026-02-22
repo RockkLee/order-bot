@@ -145,3 +145,13 @@ func (s *Svc) PublishMenu(ctx context.Context, botID string) (entities.Menu, []e
 	}
 	return menu, items, nil
 }
+
+func (s *Svc) IsMenuPublished(ctx context.Context, menuID string) (bool, error) {
+	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
+	defer cancel()
+	exists, err := s.publishedMenuStore.IsMenuPublished(ctx, menuID)
+	if err != nil {
+		return false, fmt.Errorf("menusvc.IsMenuPublished: %w", err)
+	}
+	return exists, nil
+}

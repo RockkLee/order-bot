@@ -36,6 +36,10 @@ type MenuRes = {
   items: MenuItemRes[]
 }
 
+type MenuPublishedRes = {
+  exists: boolean
+}
+
 type OrderItemRes = {
   id: string
   order_id: string
@@ -194,7 +198,7 @@ const normalizedMenuItems = computed<MenuItemPayload[]>(() =>
       price: Number(item.price),
       status: item.status.trim(),
     }))
-    .filter((item) => item.name && Number.isFinite(item.price) && item.status),
+    .filter((item) => item.name && Number.isFinite(item.price) && item.price > 0 && item.status),
 )
 
 const canSubmit = computed(
@@ -258,6 +262,7 @@ const submitMenu = async () => {
       botId.value = botInfo.bot_id
       menuId.value = botInfo.menu_id
     }
+    menuAct = 'update'
   } catch {
     submitState.value = 'error'
     submitMessage.value = 'Failed to submit the full menu. Please try again.'
@@ -309,9 +314,27 @@ const alertCsideUrl = async () => {
       return
     }
 
+    const jwt = getJwt()
+
+    const publishCheck = await fetchApi<undefined>(
+      API_BASE,
+      `${API_PATH_MENUS}published/${menuId.value}`,
+      {
+        method: 'GET',
+        jwt,
+        errMsg: 'Failed to check published menu status',
+      },
+    )
+    const publishBody = (await publishCheck.json()) as MenuPublishedRes
+    if (!publishBody.exists) {
+      alert('This menu is not published yet. Publish it before sharing the C-side URL.')
+      return
+    }
+
     const csideUrl = `${window.location.origin}/c/${botId.value}/${menuId.value}`
     alert(csideUrl)
-  } catch {
+  } catch (error) {
+    console.log(error)
     alert('Failed to generate the C-side URL. Please try again.')
   }
 }
@@ -371,7 +394,7 @@ onMounted(async () => {
             </div>
             <div class="table-row" role="row" v-for="item in menuItems" :key="item.id">
               <input v-model="item.name" type="text" placeholder="Item name" />
-              <input v-model="item.price" type="number" min="0" step="0.01" placeholder="0.00" />
+              <input v-model="item.price" type="number" min="0.01" step="0.01" placeholder="0.00" />
               <select v-model="item.status">
                 <option>Available</option>
                 <!--

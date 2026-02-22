@@ -43,7 +43,13 @@ const menuId = ref<string | null>(null)
 const activePanel = ref<Panel>('dialogue')
 const userMessage = ref('')
 const isSending = ref(false)
-const dialogHis = ref<DialogHis[]>([])
+const dialogHis = ref<DialogHis[]>([
+  {
+    incomingMsg: '',
+    outgoingMsg:
+      'Welcome! I’m ready to take your order—tell me what you’d like, and I’ll get it started.',
+  },
+])
 const menuItems = ref<MenuItem[]>([])
 
 let sessionId = null
@@ -199,8 +205,12 @@ const sendMessage = async () => {
 
     <div class="panel-content">
       <div v-if="activePanel === 'dialogue'" class="dialogue-view">
-        <div v-for="(dialog, index) in dialogHis" :key="`${index}-${dialog.incomingMsg}`" class="dialog-row">
-          <div class="chat-bubble incoming">
+        <div
+          v-for="(dialog, index) in dialogHis"
+          :key="`${index}-${dialog.outgoingMsg}`"
+          class="dialog-row"
+        >
+          <div v-if="dialog.incomingMsg" class="chat-bubble incoming">
             <p>{{ dialog.incomingMsg }}</p>
             <span>You</span>
           </div>

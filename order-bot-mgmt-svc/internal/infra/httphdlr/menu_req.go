@@ -15,6 +15,10 @@ type menuRes struct {
 	Items []menuItemRes `json:"items"`
 }
 
+type menuPublishedRes struct {
+	Exists bool `json:"exists"`
+}
+
 type menuItemReq struct {
 	Name  string  `json:"name"`
 	Price float64 `json:"price"`
