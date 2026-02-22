@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +16,7 @@ from src.services.response_builder import build_reply
 API_PREFIX = "/chat"
 router = APIRouter()
 intent_parser = IntentParser()
+logger = logging.getLogger(__name__)
 
 
 @router.get("/menu/{bot_id}/{menu_id}")
@@ -59,7 +61,9 @@ async def chat(
     cart_summary = await cart_service.build_cart_summary(cart)
     cart_item_intents = await cart_service.build_cart_item_intents(cart)
     menu_item_intents = await menu_service.search_menu_for_intent(db, req.menu_id)
+    logger.info("before...")
     intent = await intent_parser.parse(req.message, menu_item_intents, bool(cart_summary.items), cart_item_intents)
+    logger.info("routes.chat(), intent: %s", intent)
 
     if not intent.valid:
         return ChatResponse(

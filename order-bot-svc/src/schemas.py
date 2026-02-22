@@ -5,8 +5,8 @@ from src.enums import CartStatus
 
 
 class ChatRequest(BaseModel):
-    menu_id: str = Field(..., alias="menu_id")
-    bot_id: str = Field(..., alias="bot_id")
+    menu_id: str
+    bot_id: str
     message: str = Field(..., min_length=1)
 
 

@@ -1,4 +1,6 @@
 from contextlib import asynccontextmanager
+import logging
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,6 +8,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.config import settings
 from src.db import engine, SessionLocal, Base
 from src.api import routes
+
+
+_LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+logging.basicConfig(
+    level=_LOG_LEVEL,
+    format="%(asctime)s %(levelname)s %(name)s - %(message)s",
+)
 
 
 def create_app() -> FastAPI:

@@ -147,6 +147,7 @@ const sendMessage = async () => {
     })
 
     const resJson = (await response.json()) as ChatResponse
+    sessionId = resJson.session_id
 
     dialogHis.value.push({
       incomingMsg: reqJson.message,
@@ -192,13 +193,13 @@ const sendMessage = async () => {
     <div class="panel-content">
       <div v-if="activePanel === 'dialogue'" class="dialogue-view">
         <div v-for="(dialog, index) in dialogHis" :key="`${index}-${dialog.incomingMsg}`" class="dialog-row">
-          <div class="chat-bubble outgoing">
-            <p>{{ dialog.outgoingMsg }}</p>
-            <span>Order Bot</span>
-          </div>
           <div class="chat-bubble incoming">
             <p>{{ dialog.incomingMsg }}</p>
             <span>You</span>
+          </div>
+          <div class="chat-bubble outgoing">
+            <p>{{ dialog.outgoingMsg }}</p>
+            <span>Order Bot</span>
           </div>
         </div>
         <div class="chat-input">
@@ -310,6 +311,11 @@ h1 {
   gap: 6px;
   position: relative;
   box-shadow: 0 12px 20px rgba(19, 32, 28, 0.15);
+}
+
+.chat-bubble p {
+  margin: 0;
+  white-space: pre-wrap;
 }
 
 .chat-bubble span {
