@@ -152,7 +152,7 @@ const loadOrders = async () => {
     const jwt = getJwt()
     if (!jwt) return
 
-    const response = await fetchApi<undefined>(API_BASE, API_PATH_ORDERS, {
+    const response = await fetchApi<undefined>(API_BASE, `${API_PATH_ORDERS}${botId.value}`, {
       method: 'GET',
       jwt,
       errMsg: 'Failed to fetch orders',
@@ -252,6 +252,12 @@ const submitMenu = async () => {
     })
     submitState.value = 'success'
     submitMessage.value = `Submitted ${normalizedMenuItems.value.length} menu items.`
+
+    if (!menuId.value) {
+      const botInfo = await fetchBotInfo(jwt)
+      botId.value = botInfo.bot_id
+      menuId.value = botInfo.menu_id
+    }
   } catch {
     submitState.value = 'error'
     submitMessage.value = 'Failed to submit the full menu. Please try again.'

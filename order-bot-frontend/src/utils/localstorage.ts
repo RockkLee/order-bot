@@ -26,7 +26,6 @@ export function setLocalStorage<T> (key: string, value: T) {
 }
 
 export function getLocalStorage<T> (key: string): T | null {
-  console.log("getLocalStorage")
   const itemStr = localStorage.getItem(key)
 
   if (!itemStr) return null

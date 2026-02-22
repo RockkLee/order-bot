@@ -39,7 +39,12 @@ type Services struct {
 	Order *lazy[ordersvc.Svc]
 }
 
-func NewServices(authInit func() *authsvc.Svc, menuInit func() *menusvc.Svc, botInit func() *botsvc.Svc, orderInit func() *ordersvc.Svc) *Services {
+func NewServices(
+	authInit func() *authsvc.Svc,
+	menuInit func() *menusvc.Svc,
+	botInit func() *botsvc.Svc,
+	orderInit func() *ordersvc.Svc,
+) *Services {
 	return &Services{
 		Auth:  newLazy(authInit),
 		Menu:  newLazy(menuInit),

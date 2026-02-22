@@ -15,32 +15,14 @@ type OrderServer interface {
 
 const OrderPrefix = "/orders"
 
-type orderItemRes struct {
-	ID               string `json:"id"`
-	OrderID          string `json:"order_id"`
-	MenuItemID       string `json:"menu_item_id"`
-	Name             string `json:"name"`
-	Quantity         int    `json:"quantity"`
-	UnitPriceScaled  int    `json:"unit_price_scaled"`
-	TotalPriceScaled int    `json:"total_price_scaled"`
-}
-
-type orderRes struct {
-	ID          string         `json:"id"`
-	BotID       string         `json:"bot_id"`
-	CartID      string         `json:"cart_id"`
-	SessionID   string         `json:"session_id"`
-	TotalScaled int            `json:"total_scaled"`
-	Items       []orderItemRes `json:"items"`
-}
-
 func RegisterOrderRoutes(r gin.IRoutes, s OrderServer) {
-	r.GET("/", getOrdersHdlrFunc(s))
+	r.GET("/:botId", getOrdersHdlrFunc(s))
 }
 
 func getOrdersHdlrFunc(s OrderServer) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		ordersWithItems, err := s.OrderService().GetOrdersWithItems(c.Request.Context())
+		botId := c.Param("botId")
+		ordersWithItems, err := s.OrderService().GetOrdersWithItems(nil, botId)
 		if err != nil {
 			slog.Error(errutil.FormatErrChain(err))
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load orders"})

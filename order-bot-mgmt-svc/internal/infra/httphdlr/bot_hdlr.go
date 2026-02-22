@@ -2,6 +2,7 @@ package httphdlr
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"order-bot-mgmt-svc/internal/services/botsvc"
@@ -47,8 +48,12 @@ func getBotHdlrFunc(s BotServer) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load bot"})
 			return
 		}
-		menu, err := s.MenuService().GetMenuMenu(nil, botID)
+		menu, err := s.MenuService().GetMenu(nil, botID)
 		if err != nil {
+			if errors.Is(err, store.ErrMenuNotFound) {
+				c.JSON(http.StatusOK, gin.H{"bot_id": botID, "menu_id": nil})
+				return
+			}
 			slog.Error(errutil.FormatErrChain(err))
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load bot"})
 			return

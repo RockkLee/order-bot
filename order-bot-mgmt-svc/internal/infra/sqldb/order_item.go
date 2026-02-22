@@ -9,13 +9,14 @@ import (
 )
 
 type OrderItemRecord struct {
-	ID               string `gorm:"column:id;primaryKey"`
-	OrderID          string `gorm:"column:order_id"`
-	MenuItemID       string `gorm:"column:menu_item_id"`
-	Name             string `gorm:"column:name"`
-	Quantity         int    `gorm:"column:quantity"`
-	UnitPriceScaled  int    `gorm:"column:unit_price_scaled"`
-	TotalPriceScaled int    `gorm:"column:total_price_scaled"`
+	Base             BaseRecord `gorm:"embedded"`
+	ID               string     `gorm:"column:id;primaryKey"`
+	OrderID          string     `gorm:"column:order_id"`
+	MenuItemID       string     `gorm:"column:menu_item_id"`
+	Name             string     `gorm:"column:name"`
+	Quantity         int        `gorm:"column:quantity"`
+	UnitPriceScaled  int        `gorm:"column:unit_price_scaled"`
+	TotalPriceScaled int        `gorm:"column:total_price_scaled"`
 }
 
 func (OrderItemRecord) TableName() string { return "order_item" }

@@ -6,5 +6,5 @@ import (
 )
 
 type Order interface {
-	FindOrders(ctx context.Context) ([]entities.Order, error)
+	FindByBotID(ctx context.Context, tx Tx, botId string) ([]entities.Order, error)
 }

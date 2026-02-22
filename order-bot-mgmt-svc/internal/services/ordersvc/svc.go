@@ -26,11 +26,11 @@ func NewSvc(ctxFunc util.CtxFunc, orderStore store.Order, orderItemStore store.O
 	return &Svc{orderStore: orderStore, orderItemStore: orderItemStore, ctxFunc: ctxFunc}
 }
 
-func (s *Svc) GetOrdersWithItems(ctx context.Context) ([]OrderWithItems, error) {
+func (s *Svc) GetOrdersWithItems(ctx context.Context, botId string) ([]OrderWithItems, error) {
 	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
 	defer cancel()
 
-	orders, err := s.orderStore.FindOrders(ctx)
+	orders, err := s.orderStore.FindByBotID(ctx, nil, botId)
 	if err != nil {
 		return nil, fmt.Errorf("ordersvc.GetOrdersWithItems: %w", err)
 	}

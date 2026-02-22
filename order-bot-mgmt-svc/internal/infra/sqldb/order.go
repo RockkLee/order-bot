@@ -2,18 +2,21 @@ package sqldb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"order-bot-mgmt-svc/internal/models/entities"
+	"order-bot-mgmt-svc/internal/store"
 
 	"gorm.io/gorm"
 )
 
 type OrderRecord struct {
-	ID          string `gorm:"column:id;primaryKey"`
-	BotID       string `gorm:"column:bot_id"`
-	CartID      string `gorm:"column:cart_id"`
-	SessionID   string `gorm:"column:session_id"`
-	TotalScaled int    `gorm:"column:total_scaled"`
+	Base        BaseRecord `gorm:"embedded"`
+	ID          string     `gorm:"column:id;primaryKey"`
+	BotID       string     `gorm:"column:bot_id"`
+	CartID      string     `gorm:"column:cart_id"`
+	SessionID   string     `gorm:"column:session_id"`
+	TotalScaled int        `gorm:"column:total_scaled"`
 }
 
 func (OrderRecord) TableName() string { return "orders" }
@@ -37,10 +40,17 @@ func NewOrderStore(db *DB) *OrderStore {
 	return &OrderStore{db: db.Gorm()}
 }
 
-func (s *OrderStore) FindOrders(ctx context.Context) ([]entities.Order, error) {
+func (s *OrderStore) FindByBotID(ctx context.Context, tx store.Tx, botId string) ([]entities.Order, error) {
+	db, errDb := resolveDB(s.db, tx)
+	if errDb != nil {
+		return nil, fmt.Errorf("sqldb.OrderStore.FindByBotID: %w", errDb)
+	}
 	var records []OrderRecord
-	if err := s.db.WithContext(ctx).Order("id desc").Find(&records).Error; err != nil {
-		return nil, fmt.Errorf("sqldb.OrderStore.FindOrders: %w", err)
+	if err := db.WithContext(ctx).Where("bot_id = ?", botId).Find(&records).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("sqldb.OrderStore.FindByBotID: %w", store.ErrBotNotFound)
+		}
+		return nil, fmt.Errorf("sqldb.OrderStore.FindByBotID: %w", err)
 	}
 	orders := make([]entities.Order, 0, len(records))
 	for _, rec := range records {
