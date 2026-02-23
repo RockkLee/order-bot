@@ -41,6 +41,16 @@ npm run dev
 npm run build
 ```
 
+
+### Build Artifact for S3/CloudFront Deployment
+
+```sh
+npm run build:cloudfront
+```
+
+This command installs dependencies, builds the production bundle, and creates a
+`build-artifacts/frontend-dist.tar.gz` archive that can be uploaded to S3.
+
 ### Run Unit Tests with [Vitest](https://vitest.dev/)
 
 ```sh
