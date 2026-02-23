@@ -5,20 +5,28 @@ variable "private_subnet_ids" { type = list(string) }
 variable "hosted_zone_id" { type = string }
 
 variable "alb_certificate_arn" { type = string }
-variable "chat_domain" { type = string }
-variable "mgmt_domain" { type = string }
+variable "orderbot_domain" { type = string }
+variable "orderbot_mgmt_domain" { type = string }
 
 variable "order_bot_image" { type = string }
 variable "order_bot_mgmt_image" { type = string }
 
-variable "order_bot_port" { type = number default = 8000 }
-variable "order_bot_mgmt_port" { type = number default = 8080 }
+variable "order_bot_port" {
+  type    = number
+  default = 8000
+}
+variable "order_bot_mgmt_port" {
+  type    = number
+  default = 8080
+}
 
 variable "default_desired_count" {
   type    = number
   default = 1
 }
 
+# cidrs: Classless Inter‑Domain Routing
+# A fancy name that refers to IPv4 or IPv6
 variable "alb_ingress_cidrs" {
   type    = list(string)
   default = ["0.0.0.0/0"]

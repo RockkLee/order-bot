@@ -19,23 +19,25 @@ module "security_group" {
 module "alb" {
   source = "../../modules/alb"
 
-  name_prefix          = "order-bot-prod"
-  vpc_id               = var.vpc_id
-  public_subnet_ids    = var.public_subnet_ids
-  alb_security_group_id  = module.security_group.alb_security_group_id
-  acm_certificate_arn  = var.alb_certificate_arn
-  mgmt_host            = var.mgmt_domain
-  chat_host            = var.chat_domain
-  order_bot_port       = var.order_bot_port
-  order_bot_mgmt_port  = var.order_bot_mgmt_port
-  tags                 = locals.tags
+  name_prefix           = "order-bot-prod"
+  vpc_id                = var.vpc_id
+  public_subnet_ids     = var.public_subnet_ids
+  alb_security_group_id = module.security_group.alb_security_group_id
+  acm_certificate_arn   = var.alb_certificate_arn
+  orderbot_mgmt_host    = var.orderbot_mgmt_domain
+  orderbot_host         = var.orderbot_domain
+  order_bot_port        = var.order_bot_port
+  order_bot_mgmt_port   = var.order_bot_mgmt_port
+  tags                  = locals.tags
 }
 
-resource "aws_route53_record" "mgmt_alias" {
+resource "aws_route53_record" "orderbot_mgmt_alias" {
+  # the zone_id and domain_name for the inbound traffic
   zone_id = var.hosted_zone_id
-  name    = var.mgmt_domain
+  name    = var.orderbot_mgmt_domain
   type    = "A"
 
+  # the actual zone_id and domain name
   alias {
     name                   = module.alb.alb_dns_name
     zone_id                = module.alb.alb_zone_id
@@ -43,11 +45,13 @@ resource "aws_route53_record" "mgmt_alias" {
   }
 }
 
-resource "aws_route53_record" "chat_alias" {
+resource "aws_route53_record" "orderbot_alias" {
+  # the zone_id and domain_name for the inbound traffic
   zone_id = var.hosted_zone_id
-  name    = var.chat_domain
+  name    = var.orderbot_domain
   type    = "A"
 
+  # the actual zone_id and domain name
   alias {
     name                   = module.alb.alb_dns_name
     zone_id                = module.alb.alb_zone_id
@@ -58,10 +62,10 @@ resource "aws_route53_record" "chat_alias" {
 module "ecs" {
   source = "../../modules/ecs"
 
-  name_prefix                    = "order-bot-prod"
-  private_subnet_ids             = var.private_subnet_ids
-  app_security_group_id          = module.security_group.app_security_group_id
-  order_bot_target_group_arn     = module.alb.order_bot_target_group_arn
+  name_prefix                     = "order-bot-prod"
+  private_subnet_ids              = var.private_subnet_ids
+  app_security_group_id           = module.security_group.app_security_group_id
+  order_bot_target_group_arn      = module.alb.order_bot_target_group_arn
   order_bot_mgmt_target_group_arn = module.alb.order_bot_mgmt_target_group_arn
 
   order_bot_image      = var.order_bot_image

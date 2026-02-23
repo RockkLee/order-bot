@@ -18,10 +18,10 @@ resource "aws_security_group" "alb" {
   }
 
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port   = 0             # all ports
+    to_port     = 0             # all ports
+    protocol    = "-1"          # it means all protocols
+    cidr_blocks = ["0.0.0.0/0"] # allow all outbound traffic
   }
 
   tags = merge(var.tags, { Name = "${var.name_prefix}-alb-sg" })

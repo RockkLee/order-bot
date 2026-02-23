@@ -8,7 +8,7 @@ resource "aws_lb" "this" {
   tags = merge(var.tags, { Name = "${var.name_prefix}-alb" })
 }
 
-resource "aws_lb_target_group" "svc" {
+resource "aws_lb_target_group" "orderbot" {
   name        = "${var.name_prefix}-svc-tg"
   port        = var.order_bot_port
   protocol    = "HTTP"
@@ -26,7 +26,7 @@ resource "aws_lb_target_group" "svc" {
   tags = var.tags
 }
 
-resource "aws_lb_target_group" "mgmt" {
+resource "aws_lb_target_group" "orderbot_mgmt" {
   name        = "${var.name_prefix}-mgmt-tg"
   port        = var.order_bot_mgmt_port
   protocol    = "HTTP"
@@ -78,34 +78,34 @@ resource "aws_lb_listener" "http_redirect" {
   }
 }
 
-resource "aws_lb_listener_rule" "mgmt_by_host" {
+resource "aws_lb_listener_rule" "orderbot_mgmt_by_host" {
   listener_arn = aws_lb_listener.https.arn
   priority     = 10
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.mgmt.arn
+    target_group_arn = aws_lb_target_group.orderbot_mgmt.arn
   }
 
   condition {
     host_header {
-      values = [var.mgmt_host]
+      values = [var.orderbot_mgmt_host]
     }
   }
 }
 
-resource "aws_lb_listener_rule" "svc_by_host" {
+resource "aws_lb_listener_rule" "orderbot_by_host" {
   listener_arn = aws_lb_listener.https.arn
   priority     = 20
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.svc.arn
+    target_group_arn = aws_lb_target_group.orderbot.arn
   }
 
   condition {
     host_header {
-      values = [var.chat_host]
+      values = [var.orderbot_host]
     }
   }
 }
