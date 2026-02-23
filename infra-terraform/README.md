@@ -5,6 +5,7 @@ Terraform code for deploying the order-bot system shown in the architecture diag
 ## Directory layout
 
 - `docs/`: architecture and operational notes.
+- `docs/cost-estimate.md`: rough monthly cost estimate and pricing caveats.
 - `environments/global`: global resources (ECR, frontend S3 + CloudFront + Route53).
 - `environments/prod`: production runtime resources (ALB, ECS, SG, scheduled scaling).
 - `modules/`: reusable Terraform modules.
