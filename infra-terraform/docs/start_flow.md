@@ -13,7 +13,8 @@ There are two environment entry points:
 
 ```mermaid
 flowchart TD
-  A[Terraform apply]\n
+  A[Terraform apply]
+
   subgraph G[Global environment]
     G1[module.ecr]
     G2[module.frontend (S3 + CloudFront + Route53)]
@@ -23,11 +24,11 @@ flowchart TD
   end
 
   subgraph P[Prod environment]
-    P1[module.security_group]\ncreates ALB SG + APP SG
-    P2[module.alb]\ncreates ALB, listeners, host rules, target groups
-    P3[Route53 aliases]\norderbot + orderbot_mgmt -> ALB
-    P4[module.ecs]\ncluster, roles, task defs, services, autoscaling targets
-    P5[module.schedule]\ncron scale up/down for both ECS services
+    P1["module.security_group<br/>creates ALB SG + APP SG"]
+    P2["module.alb<br/>creates ALB, listeners, host rules, target groups"]
+    P3["Route53 aliases<br/>orderbot + orderbot_mgmt -> ALB"]
+    P4["module.ecs<br/>cluster, roles, task defs, services, autoscaling targets"]
+    P5["module.schedule<br/>cron scale up/down for both ECS services"]
     P6[(Outputs: alb_dns_name, ecs_cluster_name)]
 
     P1 --> P2
