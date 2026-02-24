@@ -25,10 +25,12 @@ resource "aws_ecs_cluster" "this" {
   tags = var.tags
 }
 
+# Allow the ECS Tasks service to assume (use) this IAM role.
 data "aws_iam_policy_document" "ecs_task_assume" {
   statement {
-    actions = ["sts:AssumeRole"]
+    actions = ["sts:AssumeRole"] # the "sts:AssumeRole" action allows someone to assume (use) this role
 
+    # This defines who is allowed to assume the role
     principals {
       type        = "Service"
       identifiers = ["ecs-tasks.amazonaws.com"]
@@ -36,6 +38,8 @@ data "aws_iam_policy_document" "ecs_task_assume" {
   }
 }
 
+# For aws_ecs_task_definition.execution_role_arn
+# execution_role_arn: used by ECS/Fargate agent (pull image from ECR, send logs to CloudWatch, fetch secrets refs, etc.)
 resource "aws_iam_role" "task_execution" {
   name               = "${var.name_prefix}-ecs-task-exec"
   assume_role_policy = data.aws_iam_policy_document.ecs_task_assume.json
@@ -47,6 +51,9 @@ resource "aws_iam_role_policy_attachment" "task_exec_default" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
+# For aws_ecs_task_definition.task_role_arn
+# task_role_arn: used by your application code inside the container to call AWS APIs (S3, SQS, DynamoDB, Secrets Manager, etc.)
+# (No policy is attached to it for now)
 resource "aws_iam_role" "task_role" {
   name               = "${var.name_prefix}-ecs-task-role"
   assume_role_policy = data.aws_iam_policy_document.ecs_task_assume.json

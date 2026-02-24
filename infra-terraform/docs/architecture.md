@@ -16,7 +16,12 @@ This Terraform implementation follows the provided Mermaid diagram and the disco
 
 - Route53 -> ALB for API domains (`chat`, `mgmt`) in `environments/prod`.
 - Route53 -> CloudFront -> S3 for frontend domain in `environments/global`.
-- ALB across two public subnets/AZs (input-driven).
+- ALB across two public subnets/AZs.
+  - _**ALB is forced to have two AZs (AZ: Availability Zone)**_
+- Set up the ECS services with one security group, two subnets, and one desired count.
+  - _**If there are two subnets and the desired count is 1,**_
+  - _**the only task will be placed in one available subnet,**_
+  - _**and if that subnet goes down, it will automatically switch to the other subnet.**_
 - ECS services and PostgreSQL EC2 are assumed to share one app SG.
 - ECS task definitions use ECR images and ship logs to CloudWatch Logs.
 - Scheduled autoscaling sets desired capacity to 1 during 10:00-18:00 and allows 0 outside that window.
@@ -25,8 +30,8 @@ This Terraform implementation follows the provided Mermaid diagram and the disco
 graph TD
     subgraph "Networking"
         R53[AWS Route 53] --> ALB[AWS Application Loadbalancer]
-        ALB --> AZa
-        ALB --> AZb
+        ALB --> AZa["public_subnet_a<br>|<br>V<br>AZa<br>|<br>V<br>private_subnet_a"]
+        ALB --> AZb["public_subnet_b<br>|<br>V<br>AZb<br>|<br>V<br>private_subnet_b"]
         AZa --> SG[Security Groups:<br>one for ALB, on for others]
         AZb --> SG
     end
