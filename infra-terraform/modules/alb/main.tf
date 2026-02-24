@@ -9,7 +9,7 @@ resource "aws_lb" "this" {
 }
 
 resource "aws_lb_target_group" "orderbot" {
-  name        = "${var.name_prefix}-svc-tg"
+  name        = "${var.name_prefix}-orderbot-tg"
   port        = var.order_bot_port
   protocol    = "HTTP"
   target_type = "ip"
@@ -27,7 +27,7 @@ resource "aws_lb_target_group" "orderbot" {
 }
 
 resource "aws_lb_target_group" "orderbot_mgmt" {
-  name        = "${var.name_prefix}-mgmt-tg"
+  name        = "${var.name_prefix}-orderbot-mgmt-tg"
   port        = var.order_bot_mgmt_port
   protocol    = "HTTP"
   target_type = "ip"
