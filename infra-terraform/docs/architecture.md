@@ -54,6 +54,26 @@ graph TD
     end
 ```
 
+```mermaid
+flowchart TD
+  B[Users / Clients] -->|HTTPS| C[Route53 records]
+  C --> D[ALB 443 listener]
+  D -->|Host: orderbot domain| E[order-bot target group]
+  D -->|Host: orderbot-mgmt domain| F[order-bot-mgmt target group]
+  E --> G4[ECS service: order-bot-svc]
+  F --> G5[ECS service: order-bot-mgmt-svc]
+
+  H[Frontend users] --> I[Frontend Route53 alias]
+  I --> J[CloudFront]
+  J --> K[S3 frontend bucket via OAC]
+
+  L[CI/CD image push] --> M[ECR repositories]
+  M --> N[ECS task definitions pull images]
+  N --> G4
+  N --> G5
+
+```
+
 ## Gaps and assumptions
 
 - PostgreSQL EC2 instance provisioning is intentionally external to keep module list aligned with the request; DB host is injected via environment variables.
