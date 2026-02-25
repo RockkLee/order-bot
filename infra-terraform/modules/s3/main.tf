@@ -5,16 +5,24 @@ resource "aws_s3_bucket" "frontend" {
 
 resource "aws_s3_bucket_public_access_block" "frontend" {
   bucket                  = aws_s3_bucket.frontend.id
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
+  block_public_acls       = true  # Block public ACLs
+  block_public_policy     = true  # Block public policies
+  ignore_public_acls      = true  # Even if public ACLs already exist, S3 ignores them for access evaluation.
+  # if TRUE: restricts access to this bucket to only Amazon Web Services service principals and authorized users.
   restrict_public_buckets = true
 }
 
+# OAC: Origin Access Control: a new feature that is similar to OAI
+# Cloudfront: CDN / Cloudfront origin: where the file originally comes from
 resource "aws_cloudfront_origin_access_control" "this" {
   name                              = "${var.name_prefix}-oac"
   description                       = "OAC for frontend bucket"
   origin_access_control_origin_type = "s3"
+
+  # CloudFront sends the request
+  # It includes a calculated signature (SigV4)
+  # S3 verifies it using AWS auth rules
+  # S3 can trust: “Yep, this request is legit”
   signing_behavior                  = "always"
   signing_protocol                  = "sigv4"
 }
