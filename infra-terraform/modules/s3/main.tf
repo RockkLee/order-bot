@@ -27,6 +27,10 @@ resource "aws_cloudfront_origin_access_control" "this" {
   signing_protocol                  = "sigv4"
 }
 
+data "aws_cloudfront_cache_policy" "caching_optimized" {
+  name = "Managed-CachingOptimized"
+}
+
 resource "aws_cloudfront_distribution" "this" {
   enabled             = true
   default_root_object = "index.html"
@@ -43,13 +47,14 @@ resource "aws_cloudfront_distribution" "this" {
     cached_methods         = ["GET", "HEAD"]
     target_origin_id       = "frontend-s3"
     viewer_protocol_policy = "redirect-to-https"
-
-    forwarded_values {
-      query_string = false
-      cookies {
-        forward = "none"
-      }
-    }
+    cache_policy_id        = data.aws_cloudfront_cache_policy.caching_optimized.id
+    # Replace `forwarded_values` (deprecated) with `cache_policy_id`
+    # forwarded_values {
+    #   query_string = false
+    #   cookies {
+    #     forward = "none"
+    #   }
+    # }
   }
 
   restrictions {
@@ -58,25 +63,26 @@ resource "aws_cloudfront_distribution" "this" {
     }
   }
 
+  # The SSL config for this distribution
   viewer_certificate {
     acm_certificate_arn      = var.acm_certificate_arn
     ssl_support_method       = "sni-only"
     minimum_protocol_version = "TLSv1.2_2021"
   }
 
-  custom_error_response {
-    error_code            = 403
-    response_code         = 200
-    response_page_path    = "/index.html"
-    error_caching_min_ttl = 0
-  }
+  # custom_error_response {
+  #   error_code            = 403
+  #   response_code         = 200
+  #   response_page_path    = "/index.html"
+  #   error_caching_min_ttl = 0
+  # }
 
-  custom_error_response {
-    error_code            = 404
-    response_code         = 200
-    response_page_path    = "/index.html"
-    error_caching_min_ttl = 0
-  }
+  # custom_error_response {
+  #   error_code            = 404
+  #   response_code         = 200
+  #   response_page_path    = "/index.html"
+  #   error_caching_min_ttl = 0
+  # }
 
   tags = var.tags
 }
@@ -87,6 +93,7 @@ resource "aws_s3_bucket_policy" "frontend" {
     Version = "2012-10-17"
     Statement = [
       {
+        # Sid (statement ID):
         Sid       = "AllowCloudFrontServicePrincipalReadOnly"
         Effect    = "Allow"
         Principal = { Service = "cloudfront.amazonaws.com" }
