@@ -89,18 +89,27 @@ resource "aws_cloudfront_distribution" "this" {
 
 resource "aws_s3_bucket_policy" "frontend" {
   bucket = aws_s3_bucket.frontend.id
+  # the format of the policy parameter is based on "AWS JSON policy"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        # Sid (statement ID):
+        # Sid (statement ID): an optional identifier for the policy statement.
         Sid       = "AllowCloudFrontServicePrincipalReadOnly"
         Effect    = "Allow"
-        Principal = { Service = "cloudfront.amazonaws.com" }
-        Action    = ["s3:GetObject"]
+        # AWS service principals: define a policy that can be attached to which services
+        Principal = {
+          Service : [
+            "cloudfront.amazonaws.com"
+          ]
+        }
+        # Principal = { Service = "cloudfront.amazonaws.com" }
+        Action    = ["s3:GetObject"]  # Define what actions are allowed
+        # Define what resources can be used with a list of ARNs (ARN: AWS Resource Name)
         Resource  = ["${aws_s3_bucket.frontend.arn}/*"]
         Condition = {
           StringEquals = {
+            # Source ARN: the arns that are needed based on services defined from `Statement.Principal.Service`
             "AWS:SourceArn" = aws_cloudfront_distribution.this.arn
           }
         }
