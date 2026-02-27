@@ -2,13 +2,13 @@ data "aws_region" "current" {}
 
 data "aws_caller_identity" "current" {}
 
-resource "aws_cloudwatch_log_group" "svc" {
+resource "aws_cloudwatch_log_group" "orderbot" {
   name              = "/ecs/${var.name_prefix}/order-bot-svc"
   retention_in_days = 30
   tags              = var.tags
 }
 
-resource "aws_cloudwatch_log_group" "mgmt" {
+resource "aws_cloudwatch_log_group" "orderbot_mgmt" {
   name              = "/ecs/${var.name_prefix}/order-bot-mgmt-svc"
   retention_in_days = 30
   tags              = var.tags
@@ -60,7 +60,7 @@ resource "aws_iam_role" "task_role" {
   tags               = var.tags
 }
 
-resource "aws_ecs_task_definition" "svc" {
+resource "aws_ecs_task_definition" "orderbot" {
   family                   = "${var.name_prefix}-order-bot-svc"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
@@ -87,7 +87,7 @@ resource "aws_ecs_task_definition" "svc" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          awslogs-group         = aws_cloudwatch_log_group.svc.name
+          awslogs-group         = aws_cloudwatch_log_group.orderbot.name
           awslogs-region        = data.aws_region.current.name
           awslogs-stream-prefix = "ecs"
         }
@@ -98,7 +98,7 @@ resource "aws_ecs_task_definition" "svc" {
   tags = var.tags
 }
 
-resource "aws_ecs_task_definition" "mgmt" {
+resource "aws_ecs_task_definition" "orderbot_mgmt" {
   family                   = "${var.name_prefix}-order-bot-mgmt-svc"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
@@ -125,7 +125,7 @@ resource "aws_ecs_task_definition" "mgmt" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          awslogs-group         = aws_cloudwatch_log_group.mgmt.name
+          awslogs-group         = aws_cloudwatch_log_group.orderbot_mgmt.name
           awslogs-region        = data.aws_region.current.name
           awslogs-stream-prefix = "ecs"
         }
@@ -136,10 +136,10 @@ resource "aws_ecs_task_definition" "mgmt" {
   tags = var.tags
 }
 
-resource "aws_ecs_service" "svc" {
+resource "aws_ecs_service" "orderbot" {
   name            = "order-bot-svc"
   cluster         = aws_ecs_cluster.this.id
-  task_definition = aws_ecs_task_definition.svc.arn
+  task_definition = aws_ecs_task_definition.orderbot.arn
   desired_count   = var.order_bot_desired_count
   launch_type     = "FARGATE"
 
@@ -161,10 +161,10 @@ resource "aws_ecs_service" "svc" {
   tags = var.tags
 }
 
-resource "aws_ecs_service" "mgmt" {
+resource "aws_ecs_service" "orderbot_mgmt" {
   name            = "order-bot-mgmt-svc"
   cluster         = aws_ecs_cluster.this.id
-  task_definition = aws_ecs_task_definition.mgmt.arn
+  task_definition = aws_ecs_task_definition.orderbot_mgmt.arn
   desired_count   = var.order_bot_mgmt_desired_count
   launch_type     = "FARGATE"
 
@@ -186,18 +186,18 @@ resource "aws_ecs_service" "mgmt" {
   tags = var.tags
 }
 
-resource "aws_appautoscaling_target" "svc" {
+resource "aws_appautoscaling_target" "orderbot" {
   max_capacity       = 1
   min_capacity       = 0
-  resource_id        = "service/${aws_ecs_cluster.this.name}/${aws_ecs_service.svc.name}"
+  resource_id        = "service/${aws_ecs_cluster.this.name}/${aws_ecs_service.orderbot.name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
 }
 
-resource "aws_appautoscaling_target" "mgmt" {
+resource "aws_appautoscaling_target" "orderbot_mgmt" {
   max_capacity       = 1
   min_capacity       = 0
-  resource_id        = "service/${aws_ecs_cluster.this.name}/${aws_ecs_service.mgmt.name}"
+  resource_id        = "service/${aws_ecs_cluster.this.name}/${aws_ecs_service.orderbot_mgmt.name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
 }
