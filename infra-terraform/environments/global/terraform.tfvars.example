@@ -1,6 +1,12 @@
+# AWS console: Region selector in the top-right (must match where you create resources).
 aws_region                  = "ap-northeast-1"
+# Not set in AWS UI; naming label used by Terraform.
 environment                 = "global"
+# Route 53 console: Hosted zones -> pick zone -> Hosted zone details -> Hosted zone ID.
 hosted_zone_id              = "ZXXXXXXXXXXXXX"
+# Route 53 console: Hosted zones -> record name you will create for the frontend.
 frontend_domain             = "app.example.com"
+# S3 console: Buckets -> create/find bucket name used for the frontend.
 frontend_bucket_name        = "order-bot-prod-frontend"
+# ACM console (us-east-1): Certificates -> select cert -> ARN (for CloudFront).
 cloudfront_certificate_arn  = "arn:aws:acm:us-east-1:123456789012:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"

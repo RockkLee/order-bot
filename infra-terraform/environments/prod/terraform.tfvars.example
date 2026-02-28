@@ -1,26 +1,38 @@
+# AWS console: Region selector in the top-right (must match where you create resources).
 aws_region         = "ap-northeast-1"
+# VPC console: Your VPCs -> select VPC -> VPC ID.
 vpc_id             = "vpc-xxxxxxxx"
+# VPC console: Subnets -> select each public subnet -> Subnet ID.
 public_subnet_ids  = ["subnet-public-a", "subnet-public-b"]
+# VPC console: Subnets -> select each private subnet -> Subnet ID.
 private_subnet_ids = ["subnet-private-a", "subnet-private-b"]
+# Route 53 console: Hosted zones -> pick zone -> Hosted zone details -> Hosted zone ID.
 hosted_zone_id     = "ZXXXXXXXXXXXXX"
 
+# ACM console (same region as ALB): Certificates -> select cert -> ARN.
 alb_certificate_arn  = "arn:aws:acm:ap-northeast-1:123456789012:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+# Route 53 console: Hosted zones -> record name you will create for the API.
 orderbot_domain      = "api.example.com"
+# Route 53 console: Hosted zones -> record name you will create for the mgmt API.
 orderbot_mgmt_domain = "mgmt-api.example.com"
 
+# ECR console: Repositories -> select repo -> image URI (tagged).
 order_bot_image      = "123456789012.dkr.ecr.ap-northeast-1.amazonaws.com/order-bot-svc:latest"
+# ECR console: Repositories -> select repo -> image URI (tagged).
 order_bot_mgmt_image = "123456789012.dkr.ecr.ap-northeast-1.amazonaws.com/order-bot-mgmt-svc:latest"
 
+# ECS console: Cluster -> Service -> desired tasks (used as desired count).
 default_desired_count = 1
 
+# ECS console: Task definitions -> select task -> Container -> Environment variables.
 order_bot_environment = {
-  HOST           = "0.0.0.0"
-  PORT           = "8000"
-  ROOT_PATH      = ""
-  IS_PRODUCTION  = "true"
-  DATABASE_URL   = "postgresql+psycopg://postgres:password@10.0.10.10:5432/order_bot"
+  HOST            = "0.0.0.0"
+  PORT            = "8000"
+  ROOT_PATH       = ""
+  IS_PRODUCTION   = "true"
+  DATABASE_URL    = "postgresql+psycopg://postgres:password@10.0.10.10:5432/order_bot"
   DATABASE_SCHEMA = "public"
-  SEED_MENU      = "false"
+  SEED_MENU       = "false"
   MISTRAL_API_KEY = "replace-me"
   MISTRAL_MODEL   = "mistral-small-latest"
 }
