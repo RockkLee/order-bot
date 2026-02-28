@@ -16,8 +16,8 @@ resource "aws_lb_target_group" "orderbot" {
   vpc_id      = var.vpc_id
 
   health_check {
-    path                = "/chat/menu/health"
-    matcher             = "200-499"
+    path                = "/orderbot/health/chk"
+    matcher             = "200-202"  # Define what HTTP status codes are treated as success
     interval            = 30
     healthy_threshold   = 2
     unhealthy_threshold = 3
@@ -34,8 +34,8 @@ resource "aws_lb_target_group" "orderbot_mgmt" {
   vpc_id      = var.vpc_id
 
   health_check {
-    path                = "/health"
-    matcher             = "200-499"
+    path                = "/orderbotmgmt/health/chk"
+    matcher             = "200-202"  # Define what HTTP status codes are treated as success
     interval            = 30
     healthy_threshold   = 2
     unhealthy_threshold = 3
