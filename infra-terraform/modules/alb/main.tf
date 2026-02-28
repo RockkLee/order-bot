@@ -16,7 +16,7 @@ resource "aws_lb_target_group" "orderbot" {
   vpc_id      = var.vpc_id
 
   health_check {
-    path                = "/chat/menu/health"
+    path                = "/health"
     matcher             = "200-499"
     interval            = 30
     healthy_threshold   = 2

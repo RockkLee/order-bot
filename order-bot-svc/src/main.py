@@ -46,7 +46,13 @@ def create_app() -> FastAPI:
         expose_headers=["*"],
     )
 
+
     app.include_router(routes.router, prefix=routes.API_PREFIX)
+
+    @app.get("/health")
+    async def health_check() -> dict[str, str]:
+        return {"status": "ok"}
+
     return app
 
 
