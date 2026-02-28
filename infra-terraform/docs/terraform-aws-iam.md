@@ -1,6 +1,6 @@
 # Terraform AWS IAM wiring (parent + sub-accounts)
 
-## Diagram
+## Diagrams
 
 ```mermaid
 flowchart TD
@@ -24,7 +24,32 @@ flowchart TD
 
   User <--"2. call STS(AWS Security Token Service)<br> to request temporary credentials"--> R
   User -->|3. terraform apply uses temp creds| AWS
+```
 
+```mermaid
+flowchart TD
+  subgraph UserGroups["User Group"]
+    direction TB
+    UserA["User A"]
+    UserB["User B"]
+    UserOthers["..."]
+  end
+  
+  subgraph Accounts["Accounts (AWS Organization)"]
+    direction TB
+    MgmtAccount["Management Account (root)"]
+    MemberAccount["Member Account"]
+  end
+
+  subgraph PermissionSet["Permission Sets"]
+    direction TB
+    PermissionAdministratorAccess["AdministratorAccess"]
+    PermissionOthers["..."]
+  end
+
+  UserGroups --"set up o the IAM Identity Center web page"--> MemberAccount
+  PermissionSet --"set up o the IAM Identity Center web page"--> MgmtAccount
+  PermissionSet --"set up o the IAM Identity Center web page"--> MemberAccount
 ```
 
 ## Step-by-step Setup
