@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.config import settings
 from src.db import engine, SessionLocal, Base
 from src.api import routes
+from src.api import health_route
 
 
 _LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -48,10 +49,7 @@ def create_app() -> FastAPI:
 
 
     app.include_router(routes.router, prefix=routes.API_PREFIX)
-
-    @app.get("/health")
-    async def health_check() -> dict[str, str]:
-        return {"status": "ok"}
+    app.include_router(health_route.router, prefix=health_route.API_PREFIX)
 
     return app
 

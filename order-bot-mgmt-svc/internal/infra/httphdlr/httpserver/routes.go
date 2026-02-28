@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"order-bot-mgmt-svc/internal/infra/httphdlr"
 	"time"
@@ -27,14 +28,6 @@ func Run(s *Server, ginMode string, addr string) {
 	routers.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "Hello World"})
 	})
-	routers.GET("/health", func(c *gin.Context) {
-		stats, err := s.dbService().Health()
-		if err != nil {
-			c.JSON(http.StatusServiceUnavailable, gin.H{"error": httphdlr.ErrMsgFailedCheckDatabaseHealth})
-			return
-		}
-		c.JSON(http.StatusOK, stats)
-	})
 
 	root := routers.Group("/orderbotmgmt")
 	public := root.Group("")
@@ -48,6 +41,17 @@ func Run(s *Server, ginMode string, addr string) {
 	httphdlr.RegisterBotRoutes(bot, s)
 	orders := protected.Group(httphdlr.OrderPrefix)
 	httphdlr.RegisterOrderRoutes(orders, s)
+
+	health := public.Group("/health")
+	health.GET("/chk", func(c *gin.Context) {
+		stats, err := s.dbService().Health()
+		if err != nil {
+			c.JSON(http.StatusServiceUnavailable, gin.H{"error": httphdlr.ErrMsgFailedCheckDatabaseHealth})
+			return
+		}
+		slog.Info("httpserver.routes.Run.health(), stats: ", stats)
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
 
 	err := routers.Run(addr)
 	if err != nil {
