@@ -4,7 +4,7 @@ terraform {
   backend "s3" {
     bucket = "order-bot-terraform-state"
     key    = "prod/terraform.tfstate"
-    region = "ap-northeast-2"
+    region = "ap-northeast-1"
   }
 
   required_providers {
