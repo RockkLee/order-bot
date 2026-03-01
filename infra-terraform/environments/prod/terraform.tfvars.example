@@ -1,5 +1,7 @@
 # AWS console: Region selector in the top-right (must match where you create resources).
 aws_region         = "ap-northeast-1"
+# AWS CLI: named SSO profile to use for provider auth (e.g., from `aws configure list-profiles`).
+aws_profile        = "your-sso-profile"
 # VPC console: Your VPCs -> select VPC -> VPC ID.
 vpc_id             = "vpc-xxxxxxxx"
 # VPC console: Subnets -> select each public subnet -> Subnet ID.

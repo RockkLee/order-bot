@@ -5,6 +5,7 @@
 crash.log
 crash.*.log
 .terraform.lock.hcl
+/**/backend.hcl
 
 # Terraform CLI config (if used)
 .terraformrc
