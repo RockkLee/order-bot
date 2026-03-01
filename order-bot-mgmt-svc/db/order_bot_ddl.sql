@@ -1,35 +1,116 @@
 -- DDL for order-bot-svc entities.
 
-CREATE TABLE IF NOT EXISTS published_menu (
-    id TEXT PRIMARY KEY,
-    bot_id TEXT NOT NULL
+create table order_bot.published_menu
+(
+    id         text not null
+        primary key,
+    bot_id     text not null,
+    created_at timestamp,
+    updated_at timestamp
 );
 
-CREATE TABLE IF NOT EXISTS published_menu_item (
-    id TEXT PRIMARY KEY,
-    menu_id TEXT NOT NULL REFERENCES published_menu(id),
-    menu_item_name TEXT NOT NULL,
-    price DOUBLE PRECISION
-);
-CREATE INDEX IF NOT EXISTS idx_menu_item_menu_id ON published_menu_item (menu_id);
+alter table order_bot.published_menu
+    owner to melkey;
 
-CREATE TABLE IF NOT EXISTS orders (
-    id TEXT PRIMARY KEY,
-    bot_id TEXT NOT NULL,
-    cart_id TEXT NOT NULL,
-    session_id TEXT NOT NULL,
-    total_scaled INTEGER NOT NULL
+create table order_bot.published_menu_item
+(
+    id             text not null
+        primary key,
+    menu_id        text not null
+        references order_bot.published_menu,
+    menu_item_name text not null,
+    price          double precision,
+    created_at     timestamp,
+    updated_at     timestamp
 );
-CREATE INDEX IF NOT EXISTS idx_orders_bot_id ON orders (bot_id);
-CREATE INDEX IF NOT EXISTS idx_orders_session_id ON orders (session_id);
 
-CREATE TABLE IF NOT EXISTS order_item (
-    id TEXT PRIMARY KEY,
-    order_id TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-    menu_item_id TEXT NOT NULL,
-    name TEXT NOT NULL,
-    quantity INTEGER NOT NULL,
-    unit_price_scaled INTEGER NOT NULL,
-    total_price_scaled INTEGER NOT NULL
+alter table order_bot.published_menu_item
+    owner to melkey;
+
+create index idx_menu_item_menu_id
+    on order_bot.published_menu_item (menu_id);
+
+create table order_bot.cart
+(
+    id           varchar(36) not null
+        primary key,
+    session_id   varchar(36) not null,
+    status       varchar(6)  not null,
+    total_scaled integer     not null,
+    closed_at    timestamp,
+    created_at   timestamp,
+    updated_at   timestamp
 );
-CREATE INDEX IF NOT EXISTS idx_order_item_order_id ON order_item (order_id);
+
+alter table order_bot.cart
+    owner to melkey;
+
+create unique index ix_cart_session_id
+    on order_bot.cart (session_id);
+
+create table order_bot.cart_item
+(
+    id                 varchar(36)  not null
+        primary key,
+    cart_id            varchar(36)  not null
+        references order_bot.cart,
+    menu_item_id       varchar(64)  not null,
+    name               varchar(200) not null,
+    quantity           integer      not null,
+    unit_price_scaled  integer      not null,
+    total_price_scaled integer      not null,
+    created_at         timestamp,
+    updated_at         timestamp,
+    constraint menu_item_id
+        unique (cart_id, menu_item_id)
+);
+
+alter table order_bot.cart_item
+    owner to melkey;
+
+create index ix_cart_item_cart_id
+    on order_bot.cart_item (cart_id);
+
+create table order_bot.orders
+(
+    id           varchar(36) not null
+        primary key,
+    cart_id      varchar(36) not null
+        references order_bot.cart,
+    session_id   varchar(36) not null,
+    total_scaled integer     not null,
+    bot_id       varchar(36) not null,
+    created_at   timestamp,
+    updated_at   timestamp
+);
+
+alter table order_bot.orders
+    owner to melkey;
+
+create index ix_orders_session_id
+    on order_bot.orders (session_id);
+
+create index ix_orders_cart_id
+    on order_bot.orders (cart_id);
+
+create table order_bot.order_item
+(
+    id                 varchar(36)  not null
+        primary key,
+    order_id           varchar(36)  not null
+        references order_bot.orders,
+    menu_item_id       varchar(64)  not null,
+    name               varchar(200) not null,
+    quantity           integer      not null,
+    unit_price_scaled  integer      not null,
+    total_price_scaled integer      not null,
+    created_at         timestamp,
+    updated_at         timestamp
+);
+
+alter table order_bot.order_item
+    owner to melkey;
+
+create index ix_order_item_order_id
+    on order_bot.order_item (order_id);
+

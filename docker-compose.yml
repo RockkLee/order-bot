@@ -3,13 +3,13 @@ services:
     image: postgres:18-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${BLUEPRINT_DB_DATABASE:-order_bot}
-      POSTGRES_USER: ${BLUEPRINT_DB_USERNAME:-postgres}
-      POSTGRES_PASSWORD: ${BLUEPRINT_DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${BLUEPRINT_DB_DATABASE:-blueprint}
+      POSTGRES_USER: ${BLUEPRINT_DB_USERNAME:-melkey}
+      POSTGRES_PASSWORD: ${BLUEPRINT_DB_PASSWORD:-password1234}
     ports:
       - "${BLUEPRINT_DB_PORT:-5432}:5432"
     volumes:
-      - psql_volume_bp:/var/lib/postgresql/data
+      - psql_volume_bp:/var/lib/postgresql
 
   order-bot-mgmt-svc:
     build:
@@ -21,18 +21,13 @@ services:
       ADDRESS: ${MGMT_ADDRESS:-0.0.0.0}
       PORT: ${MGMT_PORT:-8080}
       GIN_MODE: ${GIN_MODE:-release}
-      BLUEPRINT_DB_DATABASE: ${BLUEPRINT_DB_DATABASE:-order_bot}
-      BLUEPRINT_DB_USERNAME: ${BLUEPRINT_DB_USERNAME:-postgres}
-      BLUEPRINT_DB_PASSWORD: ${BLUEPRINT_DB_PASSWORD:-postgres}
-      BLUEPRINT_DB_PORT: ${BLUEPRINT_DB_PORT:-5432}
       BLUEPRINT_DB_HOST: postgres
-      BLUEPRINT_DB_SCHEMA: ${BLUEPRINT_DB_SCHEMA:-public}
-      BLUEPRINT_DB_ORDER_BOT_SCHEMA: ${BLUEPRINT_DB_ORDER_BOT_SCHEMA:-public}
-      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-access-secret}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret}
-      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-30m}
-      JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-168h}
-      QRY_CTX_TIMEOUT: ${QRY_CTX_TIMEOUT:-15s}
+      BLUEPRINT_DB_PORT: ${BLUEPRINT_DB_PORT:-5432}
+      BLUEPRINT_DB_DATABASE: ${BLUEPRINT_DB_DATABASE:-blueprint}
+      BLUEPRINT_DB_USERNAME: ${BLUEPRINT_DB_USERNAME:-melkey}
+      BLUEPRINT_DB_PASSWORD: ${BLUEPRINT_DB_PASSWORD:-password1234}
+      BLUEPRINT_DB_SCHEMA: ${BLUEPRINT_DB_SCHEMA:-order_bot_mgmt}
+      BLUEPRINT_DB_ORDER_BOT_SCHEMA: ${BLUEPRINT_DB_ORDER_BOT_SCHEMA:-order_bot}
     ports:
       - "${MGMT_PORT:-8080}:8080"
 
@@ -43,15 +38,15 @@ services:
     depends_on:
       - postgres
     environment:
+      ROOT_PATH: ${ROOT_PATH:-/orderbot}
       HOST: ${ORDER_BOT_HOST:-0.0.0.0}
       PORT: ${ORDER_BOT_PORT:-8000}
-      ROOT_PATH: ${ROOT_PATH:-}
-      IS_PRODUCTION: ${IS_PRODUCTION:-false}
-      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://postgres:postgres@postgres:5432/order_bot}
-      DATABASE_SCHEMA: ${DATABASE_SCHEMA:-public}
-      SEED_MENU: ${SEED_MENU:-true}
+      IS_PRODUCTION: ${IS_PRODUCTION:-true}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://melkey:password1234@postgres:5432/blueprint}
+      DATABASE_SCHEMA: ${DATABASE_SCHEMA:-order_bot}
+      SEED_MENU: ${SEED_MENU:-false}
       MISTRAL_API_KEY: ${MISTRAL_API_KEY:-dummy}
-      MISTRAL_MODEL: ${MISTRAL_MODEL:-mistral-small-latest}
+      MISTRAL_MODEL: ${MISTRAL_MODEL:-mistral-large-latest}
     ports:
       - "${ORDER_BOT_PORT:-8000}:8000"
 
