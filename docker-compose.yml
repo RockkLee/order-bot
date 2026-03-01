@@ -42,7 +42,7 @@ services:
       HOST: ${ORDER_BOT_HOST:-0.0.0.0}
       PORT: ${ORDER_BOT_PORT:-8000}
       IS_PRODUCTION: ${IS_PRODUCTION:-true}
-      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://melkey:password1234@postgres:5432/blueprint}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://melkey:password1234@postgres:5432/blueprint}
       DATABASE_SCHEMA: ${DATABASE_SCHEMA:-order_bot}
       SEED_MENU: ${SEED_MENU:-false}
       MISTRAL_API_KEY: ${MISTRAL_API_KEY:-dummy}
