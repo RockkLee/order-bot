@@ -5,7 +5,7 @@ variable "resources" {
 
 variable "timezone" {
   type    = string
-  default = "Asia/Tokyo"
+  default = "Asia/Taipei"
 }
 
 variable "scale_up_cron" {

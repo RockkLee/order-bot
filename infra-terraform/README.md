@@ -29,3 +29,9 @@ Terraform code for deploying the order-bot system shown in the architecture diag
 - Backend services are deployed on ECS Fargate behind ALB.
 - A shared app SG is used for ECS services and PostgreSQL EC2 access to match the requested "one security" model.
 - Autoscaling targets support scale-to-zero out of business hours.
+
+## Commands
+- You can disable the ALB (and its Route53 aliases) by applying `environments/prod` with `enable_alb = false`
+```bash
+terraform apply -var=enable_alb=false
+```
