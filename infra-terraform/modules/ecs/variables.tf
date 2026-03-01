@@ -30,13 +30,31 @@ variable "order_bot_mgmt_image" { type = string }
 variable "order_bot_port" { type = number }
 variable "order_bot_mgmt_port" { type = number }
 
-variable "order_bot_task_cpu" { type = number default = 256 }
-variable "order_bot_task_memory" { type = number default = 512 }
-variable "order_bot_mgmt_task_cpu" { type = number default = 256 }
-variable "order_bot_mgmt_task_memory" { type = number default = 512 }
+variable "order_bot_task_cpu" {
+  type    = number
+  default = 256
+}
+variable "order_bot_task_memory" {
+  type    = number
+  default = 512
+}
+variable "order_bot_mgmt_task_cpu" {
+  type    = number
+  default = 256
+}
+variable "order_bot_mgmt_task_memory" {
+  type    = number
+  default = 512
+}
 
-variable "order_bot_desired_count" { type = number default = 1 }
-variable "order_bot_mgmt_desired_count" { type = number default = 1 }
+variable "order_bot_desired_count" {
+  type    = number
+  default = 1
+}
+variable "order_bot_mgmt_desired_count" {
+  type    = number
+  default = 1
+}
 
 variable "order_bot_environment" {
   type    = map(string)
