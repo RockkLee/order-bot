@@ -11,6 +11,10 @@ variable "hosted_zone_id" { type = string }
 variable "alb_certificate_arn" { type = string }
 variable "orderbot_domain" { type = string }
 variable "orderbot_mgmt_domain" { type = string }
+variable "enable_alb" {
+  type    = bool
+  default = true
+}
 
 variable "order_bot_image" { type = string }
 variable "order_bot_mgmt_image" { type = string }

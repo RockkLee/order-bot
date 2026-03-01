@@ -14,7 +14,7 @@ module "ecr" {
     "order-bot-mgmt-svc",
     "order-bot-frontend"
   ]
-  tags = locals.tags
+  tags = local.tags
 }
 
 module "frontend" {
@@ -25,5 +25,5 @@ module "frontend" {
   frontend_domain     = var.frontend_domain
   hosted_zone_id      = var.hosted_zone_id
   acm_certificate_arn = var.cloudfront_certificate_arn
-  tags                = locals.tags
+  tags                = local.tags
 }

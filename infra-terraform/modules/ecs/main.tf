@@ -152,10 +152,14 @@ resource "aws_ecs_service" "orderbot" {
     assign_public_ip = false
   }
 
-  load_balancer {
-    target_group_arn = var.order_bot_target_group_arn
-    container_name   = "order-bot-svc"
-    container_port   = var.order_bot_port
+  # In Terraform, a dynamic block repeats once per item in for_each
+  dynamic "load_balancer" {
+    for_each = var.enable_alb ? [1] : []  # [] means “iterate once if enabled, or zero times if disabled.”
+    content {
+      target_group_arn = var.order_bot_target_group_arn
+      container_name   = "order-bot-svc"
+      container_port   = var.order_bot_port
+    }
   }
 
   tags = var.tags
@@ -177,10 +181,14 @@ resource "aws_ecs_service" "orderbot_mgmt" {
     assign_public_ip = false
   }
 
-  load_balancer {
-    target_group_arn = var.order_bot_mgmt_target_group_arn
-    container_name   = "order-bot-mgmt-svc"
-    container_port   = var.order_bot_mgmt_port
+  # In Terraform, a dynamic block repeats once per item in for_each
+  dynamic "load_balancer" {
+    for_each = var.enable_alb ? [1] : []  # [] means “iterate once if enabled, or zero times if disabled.”
+    content {
+      target_group_arn = var.order_bot_mgmt_target_group_arn
+      container_name   = "order-bot-mgmt-svc"
+      container_port   = var.order_bot_mgmt_port
+    }
   }
 
   tags = var.tags

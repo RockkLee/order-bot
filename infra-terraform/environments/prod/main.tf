@@ -18,6 +18,7 @@ module "security_group" {
 
 module "alb" {
   source = "../../modules/alb"
+  count  = var.enable_alb ? 1 : 0
 
   name_prefix           = "order-bot-prod"
   vpc_id                = var.vpc_id
@@ -32,6 +33,7 @@ module "alb" {
 }
 
 resource "aws_route53_record" "orderbot_mgmt_alias" {
+  count = var.enable_alb ? 1 : 0
   # the zone_id and domain_name for the inbound traffic
   zone_id = var.hosted_zone_id
   name    = var.orderbot_mgmt_domain
@@ -39,13 +41,15 @@ resource "aws_route53_record" "orderbot_mgmt_alias" {
 
   # the actual zone_id and domain name
   alias {
-    name                   = module.alb.alb_dns_name
-    zone_id                = module.alb.alb_zone_id
+    # In Terraform, a counted module becomes a list of instances. So you must index it.
+    name                   = module.alb[0].alb_dns_name
+    zone_id                = module.alb[0].alb_zone_id
     evaluate_target_health = true
   }
 }
 
 resource "aws_route53_record" "orderbot_alias" {
+  count = var.enable_alb ? 1 : 0
   # the zone_id and domain_name for the inbound traffic
   zone_id = var.hosted_zone_id
   name    = var.orderbot_domain
@@ -53,8 +57,9 @@ resource "aws_route53_record" "orderbot_alias" {
 
   # the actual zone_id and domain name
   alias {
-    name                   = module.alb.alb_dns_name
-    zone_id                = module.alb.alb_zone_id
+    # In Terraform, a counted module becomes a list of instances. So you must index it.
+    name                   = module.alb[0].alb_dns_name
+    zone_id                = module.alb[0].alb_zone_id
     evaluate_target_health = true
   }
 }
@@ -65,8 +70,10 @@ module "ecs" {
   name_prefix                     = "order-bot-prod"
   private_subnet_ids              = var.private_subnet_ids
   app_security_group_id           = module.security_group.app_security_group_id
-  order_bot_target_group_arn      = module.alb.order_bot_target_group_arn
-  order_bot_mgmt_target_group_arn = module.alb.order_bot_mgmt_target_group_arn
+  enable_alb                      = var.enable_alb
+  # In Terraform, a counted module becomes a list of instances. So you must index it.
+  order_bot_target_group_arn      = var.enable_alb ? module.alb[0].order_bot_target_group_arn : null
+  order_bot_mgmt_target_group_arn = var.enable_alb ? module.alb[0].order_bot_mgmt_target_group_arn : null
 
   order_bot_image      = var.order_bot_image
   order_bot_mgmt_image = var.order_bot_mgmt_image
