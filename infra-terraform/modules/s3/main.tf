@@ -70,19 +70,21 @@ resource "aws_cloudfront_distribution" "this" {
     minimum_protocol_version = "TLSv1.2_2021"
   }
 
-  # custom_error_response {
-  #   error_code            = 403
-  #   response_code         = 200
-  #   response_page_path    = "/index.html"
-  #   error_caching_min_ttl = 0
-  # }
+  # Enable SPA (Single Page Application) fallback:
+  # Add the custom_error_response blocks for 403/404 so CloudFront serves /index.html for deep routes.
+  custom_error_response {
+    error_code            = 403
+    response_code         = 200
+    response_page_path    = "/index.html"
+    error_caching_min_ttl = 0
+  }
 
-  # custom_error_response {
-  #   error_code            = 404
-  #   response_code         = 200
-  #   response_page_path    = "/index.html"
-  #   error_caching_min_ttl = 0
-  # }
+  custom_error_response {
+    error_code            = 404
+    response_code         = 200
+    response_page_path    = "/index.html"
+    error_caching_min_ttl = 0
+  }
 
   tags = var.tags
 }
