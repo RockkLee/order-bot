@@ -1,3 +1,11 @@
+data "aws_route53_zone" "this" {
+  zone_id = var.zone_id
+}
+
+locals {
+  root_domain = trimsuffix(data.aws_route53_zone.this.name, ".")
+}
+
 resource "aws_lb" "this" {
   name               = "${var.name_prefix}-alb"
   internal           = false
@@ -17,7 +25,7 @@ resource "aws_lb_target_group" "orderbot" {
 
   health_check {
     path                = "/orderbot/health/chk"
-    matcher             = "200-202"  # Define what HTTP status codes are treated as success
+    matcher             = "200-202" # Define what HTTP status codes are treated as success
     interval            = 30
     healthy_threshold   = 2
     unhealthy_threshold = 3
@@ -35,7 +43,7 @@ resource "aws_lb_target_group" "orderbot_mgmt" {
 
   health_check {
     path                = "/orderbotmgmt/health/chk"
-    matcher             = "200-202"  # Define what HTTP status codes are treated as success
+    matcher             = "200-202" # Define what HTTP status codes are treated as success
     interval            = 30
     healthy_threshold   = 2
     unhealthy_threshold = 3
@@ -88,8 +96,8 @@ resource "aws_lb_listener_rule" "orderbot_mgmt_by_host" {
   }
 
   condition {
-    host_header {
-      values = [var.orderbot_mgmt_host]
+    host_header { # host_header: the domain name from an HTTP request
+      values = ["${var.orderbot_mgmt_host}.${local.root_domain}"]
     }
   }
 }
@@ -104,8 +112,8 @@ resource "aws_lb_listener_rule" "orderbot_by_host" {
   }
 
   condition {
-    host_header {
-      values = [var.orderbot_host]
+    host_header { # host_header: the domain name from an HTTP request
+      values = ["${var.orderbot_host}.${local.root_domain}"]
     }
   }
 }

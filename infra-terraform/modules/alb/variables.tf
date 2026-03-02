@@ -7,6 +7,7 @@ variable "orderbot_mgmt_host" { type = string }
 variable "orderbot_host" { type = string }
 variable "order_bot_port" { type = number }
 variable "order_bot_mgmt_port" { type = number }
+variable "zone_id" { type = string }
 variable "tags" {
   type    = map(string)
   default = {}
