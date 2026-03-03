@@ -56,6 +56,19 @@ resource "aws_cloudfront_cache_policy" "frontend_5m_ttl" {
   }
 }
 
+resource "aws_cloudfront_response_headers_policy" "frontend_cache_control_5m" {
+  name    = "${var.name_prefix}-frontend-cache-control-5m"
+  comment = "Force 5 minute Cache-Control for viewer responses"
+
+  custom_headers_config {
+    items {
+      header   = "Cache-Control"
+      override = true
+      value    = "public, max-age=300, s-maxage=300"
+    }
+  }
+}
+
 resource "aws_cloudfront_distribution" "this" {
   enabled             = true
   default_root_object = "index.html"
@@ -73,6 +86,7 @@ resource "aws_cloudfront_distribution" "this" {
     target_origin_id       = "frontend-s3"
     viewer_protocol_policy = "redirect-to-https"
     cache_policy_id        = aws_cloudfront_cache_policy.frontend_5m_ttl.id
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.frontend_cache_control_5m.id
     # Replace `forwarded_values` (deprecated) with `cache_policy_id`
     # forwarded_values {
     #   query_string = false
