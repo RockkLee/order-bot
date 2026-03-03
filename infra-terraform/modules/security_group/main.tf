@@ -32,9 +32,18 @@ resource "aws_security_group" "app" {
   description = "Shared SG for ECS services and PostgreSQL EC2"
   vpc_id      = var.vpc_id
 
+  # for the ecr service: order-bot-svc
   ingress {
-    from_port       = var.app_port
-    to_port         = var.app_port
+    from_port       = var.order_bot_port
+    to_port         = var.order_bot_port
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
+  }
+
+  # for the ecr service: order-bot-mgmt-svc
+  ingress {
+    from_port       = var.order_bot_mgmt_port
+    to_port         = var.order_bot_mgmt_port
     protocol        = "tcp"
     security_groups = [aws_security_group.alb.id]
   }

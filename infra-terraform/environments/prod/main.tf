@@ -9,11 +9,12 @@ locals {
 module "security_group" {
   source = "../../modules/security_group"
 
-  name_prefix       = "order-bot-prod"
-  vpc_id            = var.vpc_id
-  app_port          = var.order_bot_port
-  alb_ingress_cidrs = var.alb_ingress_cidrs
-  tags              = local.tags
+  name_prefix         = "order-bot-prod"
+  vpc_id              = var.vpc_id
+  order_bot_port      = var.order_bot_port
+  order_bot_mgmt_port = var.order_bot_mgmt_port
+  alb_ingress_cidrs   = var.alb_ingress_cidrs
+  tags                = local.tags
 }
 
 module "alb" {
@@ -68,10 +69,10 @@ resource "aws_route53_record" "orderbot_alias" {
 module "ecs" {
   source = "../../modules/ecs"
 
-  name_prefix           = "order-bot-prod"
-  private_subnet_ids    = var.private_subnet_ids
-  app_security_group_id = module.security_group.app_security_group_id
-  enable_alb            = var.enable_alb
+  name_prefix                     = "order-bot-prod"
+  private_subnet_ids              = var.private_subnet_ids
+  app_security_group_id           = module.security_group.app_security_group_id
+  enable_alb = var.enable_alb
   # In Terraform, a counted module becomes a list of instances. So you must index it.
   order_bot_target_group_arn      = var.enable_alb ? module.alb[0].order_bot_target_group_arn : null
   order_bot_mgmt_target_group_arn = var.enable_alb ? module.alb[0].order_bot_mgmt_target_group_arn : null

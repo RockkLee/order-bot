@@ -6,7 +6,12 @@ variable "vpc_id" {
   type = string
 }
 
-variable "app_port" {
+variable "order_bot_port" {
+  description = "Port exposed by ECS tasks"
+  type        = number
+}
+
+variable "order_bot_mgmt_port" {
   description = "Port exposed by ECS tasks"
   type        = number
 }
