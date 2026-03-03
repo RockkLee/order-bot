@@ -62,9 +62,14 @@ graph TD
 ```mermaid
 flowchart TD
   B[Users / Clients] -->|HTTPS| C[Route53 records]
-  C --> D[ALB 443 listener]
-  D -->|Host: orderbot domain| E[order-bot target group]
-  D -->|Host: orderbot-mgmt domain| F[order-bot-mgmt target group]
+  C --443--> D[aws_lb_listener]
+  subgraph "ALB"
+    D
+    D --> D1[aws_lb_listener_rule:<br>orderbot_by_host]
+    D --> D2[aws_lb_listener_rule:<br>orderbot_mgmt_by_host]
+  end
+  D1 -->|Host: orderbot domain| E[order-bot target group]
+  D2 -->|Host: orderbot-mgmt domain| F[order-bot-mgmt target group]
   E --> G4[ECS service: order-bot-svc]
   F --> G5[ECS service: order-bot-mgmt-svc]
 
@@ -76,7 +81,6 @@ flowchart TD
   M --> N[ECS task definitions pull images]
   N --> G4
   N --> G5
-
 ```
 
 ## Gaps and assumptions
