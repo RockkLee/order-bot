@@ -27,8 +27,33 @@ resource "aws_cloudfront_origin_access_control" "this" {
   signing_protocol                  = "sigv4"
 }
 
-data "aws_cloudfront_cache_policy" "caching_optimized" {
-  name = "Managed-CachingOptimized"
+# data "aws_cloudfront_cache_policy" "caching_optimized" {
+#   name = "Managed-CachingOptimized"
+# }
+
+resource "aws_cloudfront_cache_policy" "frontend_5m_ttl" {
+  name        = "${var.name_prefix}-frontend-5m-ttl"
+  comment     = "5 minute TTL for frontend assets"
+  default_ttl = 300
+  max_ttl     = 300
+  min_ttl     = 300
+
+  parameters_in_cache_key_and_forwarded_to_origin {
+    cookies_config {
+      cookie_behavior = "none"
+    }
+
+    headers_config {
+      header_behavior = "none"
+    }
+
+    query_strings_config {
+      query_string_behavior = "none"
+    }
+
+    enable_accept_encoding_gzip   = true
+    enable_accept_encoding_brotli = true
+  }
 }
 
 resource "aws_cloudfront_distribution" "this" {
@@ -47,7 +72,7 @@ resource "aws_cloudfront_distribution" "this" {
     cached_methods         = ["GET", "HEAD"]
     target_origin_id       = "frontend-s3"
     viewer_protocol_policy = "redirect-to-https"
-    cache_policy_id        = data.aws_cloudfront_cache_policy.caching_optimized.id
+    cache_policy_id        = aws_cloudfront_cache_policy.frontend_5m_ttl.id
     # Replace `forwarded_values` (deprecated) with `cache_policy_id`
     # forwarded_values {
     #   query_string = false
