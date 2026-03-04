@@ -209,12 +209,12 @@ const canSubmit = computed(
     publishState.value !== 'publishing',
 )
 
-const canPublish = computed(
-  () =>
-    menuItems.value.length > 0 &&
-    submitState.value !== 'submitting' &&
-    publishState.value !== 'publishing',
-)
+// const canPublish = computed(
+//   () =>
+//     menuItems.value.length > 0 &&
+//     submitState.value !== 'submitting' &&
+//     publishState.value !== 'publishing',
+// )
 
 const submitMenu = async () => {
   submitMessage.value = ''
@@ -355,7 +355,7 @@ onMounted(async () => {
     <header class="panel-top">
       <div>
         <p class="eyebrow">B-side</p>
-        <h1>Operations control</h1>
+        <h1>Menu & Order Management</h1>
         <p class="panel-subtitle">Manage menu updates and live orders.</p>
       </div>
       <div class="panel-actions">
@@ -413,7 +413,7 @@ onMounted(async () => {
               <button
                 type="button"
                 class="icon-btn"
-                :disabled="!canPublish"
+                :disabled="!canSubmit"
                 aria-label="Publish menu to c-Side"
                 title="Publish menu to c-Side"
                 @click="publishMenu"

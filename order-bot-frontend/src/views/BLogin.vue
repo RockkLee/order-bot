@@ -80,7 +80,7 @@ const submit = async () => {
     </div>
     <aside class="auth-aside">
       <h2>Live order control</h2>
-      <p>Track order events, upload menus, and keep the kitchen in sync.</p>
+      <p>Track order events and upload menus</p>
       <div class="metric-grid">
         <div>
           <h3>2m</h3>

@@ -182,8 +182,8 @@ const sendMessage = async () => {
     <header class="panel-top">
       <div>
         <p class="eyebrow">C-side</p>
-        <h1>Guest experience</h1>
-        <p class="panel-subtitle">No login needed. Tap a view to switch.</p>
+        <h1>Text • Order • Enjoy</h1>
+        <p class="panel-subtitle">Ordering via Text</p>
       </div>
       <div class="panel-actions">
         <button

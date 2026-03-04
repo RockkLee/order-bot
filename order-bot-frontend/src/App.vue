@@ -7,7 +7,7 @@
         <span class="brand-dot" />
         <div>
           <p class="brand-title">Order Bot</p>
-          <p class="brand-subtitle">C-side and B-side interfaces</p>
+          <p class="brand-subtitle">Text to order - Order your food by texting</p>
         </div>
       </div>
     </header>
