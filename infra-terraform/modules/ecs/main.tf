@@ -1,18 +1,19 @@
+locals {
+  containers = {
+    orderbot = {
+      name = "order-bot-svc"
+      port = var.order_bot_port
+    },
+    orderbot_mgmt = {
+      name = "order-bot-mgmt-svc"
+      port = var.order_bot_mgmt_port
+    }
+  }
+}
+
 data "aws_region" "current" {}
 
 data "aws_caller_identity" "current" {}
-
-resource "aws_cloudwatch_log_group" "orderbot" {
-  name              = "/ecs/${var.name_prefix}/order-bot-svc"
-  retention_in_days = 30
-  tags              = var.tags
-}
-
-resource "aws_cloudwatch_log_group" "orderbot_mgmt" {
-  name              = "/ecs/${var.name_prefix}/order-bot-mgmt-svc"
-  retention_in_days = 30
-  tags              = var.tags
-}
 
 resource "aws_ecs_cluster" "this" {
   name = "${var.name_prefix}-cluster"
@@ -71,14 +72,14 @@ resource "aws_ecs_task_definition" "orderbot" {
 
   container_definitions = jsonencode([
     {
-      name      = "order-bot-svc"
+      name      = local.containers.orderbot.name
       image     = var.order_bot_image
       cpu       = var.order_bot_task_cpu
       memory    = var.order_bot_task_memory
       essential = true
       portMappings = [{
-        containerPort = var.order_bot_port
-        hostPort      = var.order_bot_port
+        containerPort = local.containers.orderbot.port
+        hostPort      = local.containers.orderbot.port
         protocol      = "tcp"
       }]
       environment = [
@@ -109,14 +110,14 @@ resource "aws_ecs_task_definition" "orderbot_mgmt" {
 
   container_definitions = jsonencode([
     {
-      name      = "order-bot-mgmt-svc"
+      name      = local.containers.orderbot_mgmt.name
       image     = var.order_bot_mgmt_image
       cpu       = var.order_bot_mgmt_task_cpu
       memory    = var.order_bot_mgmt_task_memory
       essential = true
       portMappings = [{
-        containerPort = var.order_bot_mgmt_port
-        hostPort      = var.order_bot_mgmt_port
+        containerPort = local.containers.orderbot_mgmt.port
+        hostPort      = local.containers.orderbot_mgmt.port
         protocol      = "tcp"
       }]
       environment = [
@@ -137,7 +138,7 @@ resource "aws_ecs_task_definition" "orderbot_mgmt" {
 }
 
 resource "aws_ecs_service" "orderbot" {
-  name            = "order-bot-svc"
+  name            = local.containers.orderbot.name
   cluster         = aws_ecs_cluster.this.id
   task_definition = aws_ecs_task_definition.orderbot.arn
   desired_count   = var.order_bot_desired_count
@@ -157,16 +158,25 @@ resource "aws_ecs_service" "orderbot" {
     for_each = var.enable_alb ? [1] : []  # [] means “iterate once if enabled, or zero times if disabled.”
     content {
       target_group_arn = var.order_bot_target_group_arn
-      container_name   = "order-bot-svc"
-      container_port   = var.order_bot_port
+      container_name   = local.containers.orderbot.name
+      container_port   = local.containers.orderbot.port
     }
+  }
+
+  # Bind the service discovery config to register an internal domain name
+  # to allow other ECS instances to call this instance
+  service_registries {
+    registry_arn = aws_service_discovery_service.orderbot.arn
+
+    # MUST match a container name in your task definition
+    container_name = local.containers.orderbot.name
   }
 
   tags = var.tags
 }
 
 resource "aws_ecs_service" "orderbot_mgmt" {
-  name            = "order-bot-mgmt-svc"
+  name            = local.containers.orderbot_mgmt.name
   cluster         = aws_ecs_cluster.this.id
   task_definition = aws_ecs_task_definition.orderbot_mgmt.arn
   desired_count   = var.order_bot_mgmt_desired_count
@@ -186,9 +196,18 @@ resource "aws_ecs_service" "orderbot_mgmt" {
     for_each = var.enable_alb ? [1] : []  # [] means “iterate once if enabled, or zero times if disabled.”
     content {
       target_group_arn = var.order_bot_mgmt_target_group_arn
-      container_name   = "order-bot-mgmt-svc"
-      container_port   = var.order_bot_mgmt_port
+      container_name   = local.containers.orderbot_mgmt.name
+      container_port   = local.containers.orderbot_mgmt.port
     }
+  }
+
+  # Bind the service discovery config to register an internal domain name
+  # to allow other ECS instances to call this instance
+  service_registries {
+    registry_arn = aws_service_discovery_service.orderbot_mgmt.arn
+
+    # MUST match a container name in your task definition
+    container_name = local.containers.orderbot_mgmt.name
   }
 
   tags = var.tags

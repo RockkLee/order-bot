@@ -70,6 +70,7 @@ module "ecs" {
   source = "../../modules/ecs"
 
   name_prefix                     = "order-bot-prod"
+  vpc_id                          = var.vpc_id
   private_subnet_ids              = var.private_subnet_ids
   app_security_group_id           = module.security_group.app_security_group_id
   enable_alb = var.enable_alb
