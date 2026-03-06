@@ -1,0 +1,101 @@
+name: terraform-apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Terraform environment name (for naming / workspace if you use it)"
+        required: true
+        default: "prod"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+
+    env:
+      # ---- From your tfvars (non-secret) ----
+      TF_VAR_aws_region: ap-northeast-1
+
+      TF_VAR_vpc_id: vpc-xxxxxxxx
+      TF_VAR_public_subnet_ids: '["subnet-public-a","subnet-public-c"]'
+      TF_VAR_private_subnet_ids: '["subnet-private-a","subnet-private-c"]'
+      TF_VAR_hosted_zone_id: ZXXXXXXXXXXXXX
+
+      TF_VAR_alb_certificate_arn: arn:aws:acm:ap-northeast-1:123456789012:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+      TF_VAR_orderbot_domain: api.example.com
+      TF_VAR_orderbot_mgmt_domain: mgmt-api.example.com
+
+      TF_VAR_order_bot_image: 123456789012.dkr.ecr.ap-northeast-1.amazonaws.com/order-bot-svc:latest
+      TF_VAR_order_bot_mgmt_image: 123456789012.dkr.ecr.ap-northeast-1.amazonaws.com/order-bot-mgmt-svc:latest
+
+      TF_VAR_default_desired_count: "1"
+
+      # ---- From your tfvars (secret / sensitive) ----
+      # Put these in GitHub repo settings -> Secrets and variables -> Actions -> Secrets
+      TF_VAR_order_bot_environment: >-
+        {
+          "HOST":"0.0.0.0",
+          "PORT":"8000",
+          "ROOT_PATH":"",
+          "IS_PRODUCTION":"true",
+          "DATABASE_URL":"${{ secrets.ORDER_BOT_DATABASE_URL }}",
+          "DATABASE_SCHEMA":"public",
+          "SEED_MENU":"false",
+          "MISTRAL_API_KEY":"${{ secrets.MISTRAL_API_KEY }}",
+          "MISTRAL_MODEL":"mistral-small-latest"
+        }
+
+      TF_VAR_order_bot_mgmt_environment: >-
+        {
+          "ADDRESS":"0.0.0.0",
+          "PORT":"8080",
+          "GIN_MODE":"release",
+          "BLUEPRINT_DB_DATABASE":"order_bot",
+          "BLUEPRINT_DB_PASSWORD":"${{ secrets.BLUEPRINT_DB_PASSWORD }}",
+          "BLUEPRINT_DB_USERNAME":"postgres",
+          "BLUEPRINT_DB_PORT":"5432",
+          "BLUEPRINT_DB_HOST":"10.0.10.10",
+          "BLUEPRINT_DB_SCHEMA":"order_bot_mgmt",
+          "BLUEPRINT_DB_ORDER_BOT_SCHEMA":"public",
+          "JWT_ACCESS_SECRET":"${{ secrets.JWT_ACCESS_SECRET }}",
+          "JWT_REFRESH_SECRET":"${{ secrets.JWT_REFRESH_SECRET }}"
+        }
+
+      # If your Terraform still requires aws_profile variable, set it to empty or a dummy value.
+      # Better: delete this variable from Terraform and provider config for CI.
+      TF_VAR_aws_profile: ""
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # OIDC -> Assume AWS role (no AWS keys)
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ap-northeast-1
+          role-to-assume: arn:aws:iam::<ACCOUNT_ID>:role/<TerraformApplyRole>
+          role-session-name: terraform-github-actions
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
+
+      - name: Terraform Init
+        run: terraform init
+
+      # Optional: if you use workspaces
+      # - name: Select workspace
+      #   run: |
+      #     terraform workspace select "${{ inputs.environment }}" || terraform workspace new "${{ inputs.environment }}"
+
+      - name: Terraform Plan
+        run: terraform plan -out tfplan
+
+      - name: Terraform Apply
+        run: terraform apply -var=enable_alb=false -auto-approve tfplan
