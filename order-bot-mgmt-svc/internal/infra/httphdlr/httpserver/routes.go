@@ -49,7 +49,7 @@ func Run(s *Server, ginMode string, addr string) {
 			c.JSON(http.StatusServiceUnavailable, gin.H{"error": httphdlr.ErrMsgFailedCheckDatabaseHealth})
 			return
 		}
-		slog.Info("httpserver.routes.Run.health(), stats: ", stats)
+		slog.Debug("httpserver.routes.Run.health(), stats: ", stats)
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 

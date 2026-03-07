@@ -78,7 +78,7 @@ func newServices(db *sqldb.DB, orderBotDb *sqldb.DB, cfg config.Config) *service
 func main() {
 
 	// Set up logger level
-	slog.SetLogLoggerLevel(slog.LevelDebug)
+	slog.SetLogLoggerLevel(slog.LevelInfo)
 
 	cfg := config.Load()
 	port := cfg.App.Port
