@@ -69,7 +69,7 @@ jobs:
           "BLUEPRINT_DB_PORT":"${{ secrets.ORDERBOT_MGMT_BLUEPRINT_DB_PORT }}",
           "BLUEPRINT_DB_HOST":"${{ secrets.ORDERBOT_MGMT_BLUEPRINT_DB_HOST }}",
           "BLUEPRINT_DB_SCHEMA":"${{ secrets.ORDERBOT_MGMT_BLUEPRINT_DB_SCHEMA }}",
-          "BLUEPRINT_DB_ORDER_BOT_SCHEMA":"${{ secrets.ORDERBOT_MGMT_BLUEPRINT_DB_SCHEMA }}"
+          "BLUEPRINT_DB_ORDER_BOT_SCHEMA":"${{ secrets.ORDERBOT_MGMT_BLUEPRINT_DB_ORDER_BOT_SCHEMA }}"
         }
 
       # If your Terraform still requires aws_profile variable, set it to empty or a dummy value.
