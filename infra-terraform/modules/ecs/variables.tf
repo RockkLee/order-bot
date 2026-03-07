@@ -9,20 +9,10 @@ variable "enable_alb" {
 variable "order_bot_target_group_arn" {
   type    = string
   default = null
-
-  validation {
-    condition     = var.enable_alb ? var.order_bot_target_group_arn != null : true
-    error_message = "order_bot_target_group_arn is required when enable_alb is true."
-  }
 }
 variable "order_bot_mgmt_target_group_arn" {
   type    = string
   default = null
-
-  validation {
-    condition     = var.enable_alb ? var.order_bot_mgmt_target_group_arn != null : true
-    error_message = "order_bot_mgmt_target_group_arn is required when enable_alb is true."
-  }
 }
 
 variable "order_bot_image" { type = string }

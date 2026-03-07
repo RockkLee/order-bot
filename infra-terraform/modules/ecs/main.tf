@@ -147,6 +147,13 @@ resource "aws_ecs_service" "orderbot" {
   deployment_minimum_healthy_percent = 100
   deployment_maximum_percent         = 200
 
+  lifecycle {
+    precondition {
+      condition     = var.enable_alb ? var.order_bot_target_group_arn != null : true
+      error_message = "order_bot_target_group_arn is required when enable_alb is true."
+    }
+  }
+
   network_configuration {
     subnets          = var.private_subnet_ids
     security_groups  = [var.app_security_group_id]
@@ -184,6 +191,13 @@ resource "aws_ecs_service" "orderbot_mgmt" {
 
   deployment_minimum_healthy_percent = 100
   deployment_maximum_percent         = 200
+
+  lifecycle {
+    precondition {
+      condition     = var.enable_alb ? var.order_bot_mgmt_target_group_arn != null : true
+      error_message = "order_bot_mgmt_target_group_arn is required when enable_alb is true."
+    }
+  }
 
   network_configuration {
     subnets          = var.private_subnet_ids
