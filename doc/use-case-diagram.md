@@ -42,6 +42,6 @@ flowchart LR
   UC_OrderItems -.-> UC_DisplayItems
   UC_OrderItems -.-> UC_SendEvent
 
-  UC_SendEvent -.-> UC_RecordEvents
+  UC_SendEvent -.-> |TODO: <br>For now, read events directly from the DB| UC_RecordEvents
 
 ```
