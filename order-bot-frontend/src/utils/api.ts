@@ -1,8 +1,14 @@
-import { useRouter } from 'vue-router'
+import router from '@/router'
+import { isBusinessOpenUtc8 } from '@/utils/businessHours'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
+const redirectToClosed = () => {
+  if (router.currentRoute.value.name === 'closed') return
 
-const router = useRouter()
+  router.push({
+    name: 'closed',
+    query: { redirect: router.currentRoute.value.fullPath },
+  })
+}
 
 type ApiMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
@@ -35,6 +41,10 @@ export const isControlledErr = (x: unknown): x is Err => {
 export const fetchApi = async <T>(basePath: string, path: string, options: FetchApiOptions<T>) => {
   const { method = 'PUT', req, jwt, headers, wrapReq = true, errMsg } = options
 
+  if (!isBusinessOpenUtc8()) {
+    redirectToClosed()
+  }
+
   console.log(`${basePath}${path}`)
   const response = await fetch(`${basePath}${path}`, {
     method,
@@ -62,6 +72,10 @@ export const fetchApi = async <T>(basePath: string, path: string, options: Fetch
 
 export const fetchAuthApi = async <T>(basePath: string, path: string, options: FetchApiOptions<T>) => {
   const { method = 'PUT', req, jwt, headers, wrapReq = true, errMsg } = options
+
+  if (!isBusinessOpenUtc8()) {
+    redirectToClosed()
+  }
 
   console.log(`${basePath}${path}`)
   const response = await fetch(`${basePath}${path}`, {
