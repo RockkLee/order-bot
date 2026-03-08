@@ -141,7 +141,7 @@ resource "aws_ecs_service" "orderbot" {
   name            = local.containers.orderbot.name
   cluster         = aws_ecs_cluster.this.id
   task_definition = aws_ecs_task_definition.orderbot.arn
-  desired_count   = var.order_bot_desired_count
+  desired_count   = var.enable_alb ? var.order_bot_desired_count : 0
   launch_type     = "FARGATE"
 
   deployment_minimum_healthy_percent = 100
@@ -186,7 +186,7 @@ resource "aws_ecs_service" "orderbot_mgmt" {
   name            = local.containers.orderbot_mgmt.name
   cluster         = aws_ecs_cluster.this.id
   task_definition = aws_ecs_task_definition.orderbot_mgmt.arn
-  desired_count   = var.order_bot_mgmt_desired_count
+  desired_count   = var.enable_alb ? var.order_bot_mgmt_desired_count : 0
   launch_type     = "FARGATE"
 
   deployment_minimum_healthy_percent = 100
@@ -227,18 +227,18 @@ resource "aws_ecs_service" "orderbot_mgmt" {
   tags = var.tags
 }
 
-resource "aws_appautoscaling_target" "orderbot" {
-  max_capacity       = 1
-  min_capacity       = 0
-  resource_id        = "service/${aws_ecs_cluster.this.name}/${aws_ecs_service.orderbot.name}"
-  scalable_dimension = "ecs:service:DesiredCount"
-  service_namespace  = "ecs"
-}
-
-resource "aws_appautoscaling_target" "orderbot_mgmt" {
-  max_capacity       = 1
-  min_capacity       = 0
-  resource_id        = "service/${aws_ecs_cluster.this.name}/${aws_ecs_service.orderbot_mgmt.name}"
-  scalable_dimension = "ecs:service:DesiredCount"
-  service_namespace  = "ecs"
-}
+# resource "aws_appautoscaling_target" "orderbot" {
+#   max_capacity       = 1
+#   min_capacity       = 0
+#   resource_id        = "service/${aws_ecs_cluster.this.name}/${aws_ecs_service.orderbot.name}"
+#   scalable_dimension = "ecs:service:DesiredCount"
+#   service_namespace  = "ecs"
+# }
+#
+# resource "aws_appautoscaling_target" "orderbot_mgmt" {
+#   max_capacity       = 1
+#   min_capacity       = 0
+#   resource_id        = "service/${aws_ecs_cluster.this.name}/${aws_ecs_service.orderbot_mgmt.name}"
+#   scalable_dimension = "ecs:service:DesiredCount"
+#   service_namespace  = "ecs"
+# }

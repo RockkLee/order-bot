@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+
+# npm run build:cloudfront
+# aws sso login --profile <profile-name>
+# # cd to the dist dir first
+# aws s3 sync ./ s3://<bucket-name> --delete --profile <profile-name>
+
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

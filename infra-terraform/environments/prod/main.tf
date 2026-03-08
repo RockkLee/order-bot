@@ -93,15 +93,15 @@ module "ecs" {
   tags = local.tags
 }
 
-module "schedule" {
-  source = "../../modules/schedule"
-
-  resources = {
-    "order-bot-svc"      = module.ecs.order_bot_autoscaling_resource_id
-    "order-bot-mgmt-svc" = module.ecs.order_bot_mgmt_autoscaling_resource_id
-  }
-
-  timezone        = var.autoscaling_timezone
-  scale_up_cron   = var.scale_up_cron
-  scale_down_cron = var.scale_down_cron
-}
+# module "schedule" {
+#   source = "../../modules/schedule"
+#
+#   resources = {
+#     "order-bot-svc"      = module.ecs.order_bot_autoscaling_resource_id
+#     "order-bot-mgmt-svc" = module.ecs.order_bot_mgmt_autoscaling_resource_id
+#   }
+#
+#   timezone        = var.autoscaling_timezone
+#   scale_up_cron   = var.scale_up_cron
+#   scale_down_cron = var.scale_down_cron
+# }
