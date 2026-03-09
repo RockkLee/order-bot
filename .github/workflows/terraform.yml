@@ -7,15 +7,19 @@ on:
         description: "Terraform environment name"
         required: true
         default: "prod"
+      schedule_type: # "on", "off", and "none"
+        description: "True if the action is run by a scheduler"
+        required: true
+        default: "none"
       enable_alb:
         description: "Enable ALB"
         required: false
         default: "false"
-  schedule:
-    # 01:00 UTC = 09:00 Taiwan
-    - cron: '0 1 * * 1-5'
-    # 09:00 UTC = 17:00 Taiwan
-    - cron: '0 9 * * 1-5'
+#   schedule:
+#     # 01:00 UTC = 09:00 Taiwan
+#     - cron: '0 1 * * 1-5'
+#     # 09:00 UTC = 17:00 Taiwan
+#     - cron: '0 9 * * 1-5'
 
 permissions:
   id-token: write
@@ -79,10 +83,10 @@ jobs:
     steps:
       - name: Decide enable_alb
         run: |
-          if [ "${{ github.event_name }}" = "schedule" ]; then
-            if [ "${{ github.event.schedule }}" = "0 1 * * 1-5" ]; then
+          if [ "${{ inputs.schedule_type }}" != "none" ]; then
+            if [ "${{ inputs.schedule_type }}" = "on" ]; then
               echo "TF_VAR_enable_alb=true" >> "$GITHUB_ENV"
-            elif [ "${{ github.event.schedule }}" = "0 9 * * 1-5" ]; then
+            elif [ "${{ inputs.schedule_type }}" = "off" ]; then
               echo "TF_VAR_enable_alb=false" >> "$GITHUB_ENV"
             fi
           else
