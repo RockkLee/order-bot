@@ -44,9 +44,9 @@ erDiagram
     int    line_total_cents
   }
 
-  CART  ||--o{ CART_ITEM : has
-  CART  ||--o{ "ORDER"   : produces
-  "ORDER" ||--|{ ORDER_ITEM : has
+  CART  ||--o{ CART_ITEM : ""
+  CART  ||--o{ "ORDER"   : ""
+  "ORDER" ||--|{ ORDER_ITEM : ""
 
 
 

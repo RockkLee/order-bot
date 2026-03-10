@@ -35,9 +35,9 @@ erDiagram
     float  price
   }
 
-  USER ||--o{ USER_BOT : has
-  BOT  ||--o{ USER_BOT : shared_with
-  BOT  ||--|| MENU : owns
-  MENU ||--|{ MENU_ITEM : contains
+  USER ||--o{ USER_BOT : ""
+  BOT  ||--o{ USER_BOT : ""
+  BOT  ||--|| MENU : ""
+  MENU ||--|{ MENU_ITEM : ""
 
 ```
