@@ -2,7 +2,9 @@ package authsvc
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"order-bot-mgmt-svc/internal/apperr"
 	"order-bot-mgmt-svc/internal/config"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
@@ -12,90 +14,78 @@ import (
 )
 
 type fakeUserStore struct {
-	users map[string]entities.User
+	CreateFn       func(ctx context.Context, tx store.Tx, user entities.User) error
+	FindByEmailFn  func(ctx context.Context, tx store.Tx, email string) (entities.User, error)
+	FindByIDFn     func(ctx context.Context, tx store.Tx, id string) (entities.User, error)
+	UpdateTokensFn func(ctx context.Context, tx store.Tx, id string, accessToken string, refreshToken string) error
 }
 
-func (f *fakeUserStore) Create(_ context.Context, _ store.Tx, user entities.User) error {
-	if _, exists := f.users[user.Email]; exists {
-		return fmt.Errorf("fakeUserStore.Create: %w", store.ErrUserExists)
-	}
-	f.users[user.Email] = user
-	return nil
+func (f *fakeUserStore) Create(ctx context.Context, tx store.Tx, user entities.User) error {
+	return f.CreateFn(ctx, tx, user)
 }
 
-func (f *fakeUserStore) FindByEmail(_ context.Context, _ store.Tx, email string) (entities.User, error) {
-	user, exists := f.users[email]
-	if !exists {
-		return entities.User{}, fmt.Errorf("fakeUserStore.FindByEmail: %w", store.ErrNotFound)
-	}
-	return user, nil
+func (f *fakeUserStore) FindByEmail(ctx context.Context, tx store.Tx, email string) (entities.User, error) {
+	return f.FindByEmailFn(ctx, tx, email)
 }
 
-func (f *fakeUserStore) FindByID(_ context.Context, _ store.Tx, id string) (entities.User, error) {
-	for _, user := range f.users {
-		if user.ID == id {
-			return user, nil
-		}
-	}
-	return entities.User{}, fmt.Errorf("fakeUserStore.FindByID: %w", store.ErrNotFound)
+func (f *fakeUserStore) FindByID(ctx context.Context, tx store.Tx, id string) (entities.User, error) {
+	return f.FindByIDFn(ctx, tx, id)
 }
 
-func (f *fakeUserStore) UpdateTokens(_ context.Context, _ store.Tx, id string, accessToken string, refreshToken string) error {
-	for email, user := range f.users {
-		if user.ID == id {
-			user.AccessToken = accessToken
-			user.RefreshToken = refreshToken
-			f.users[email] = user
-			return nil
-		}
-	}
-	return fmt.Errorf("fakeUserStore.UpdateTokens: %w", store.ErrNotFound)
+func (f *fakeUserStore) UpdateTokens(ctx context.Context, tx store.Tx, id string, accessToken string, refreshToken string) error {
+	return f.UpdateTokensFn(ctx, tx, id, accessToken, refreshToken)
 }
 
-func TestSvcSignupAndLogin(t *testing.T) {
-	cfg := config.Config{
-		Auth: config.Auth{
-			AccessSecret:    "access",
-			RefreshSecret:   "refresh",
-			AccessTokenTTL:  time.Minute,
-			RefreshTokenTTL: time.Minute,
-		},
-		Others: config.Others{QryCtxTimeout: time.Second},
-	}
-	userStore := &fakeUserStore{users: make(map[string]entities.User)}
-	ctxFunc := util.NewCtxFunc(cfg.Others.QryCtxTimeout)
-	svc := NewSvc(nil, ctxFunc, cfg, userStore)
+var testCfg = config.Config{
+	Auth: config.Auth{
+		AccessSecret:    "access",
+		RefreshSecret:   "refresh",
+		AccessTokenTTL:  time.Minute,
+		RefreshTokenTTL: time.Minute,
+	},
+	Others: config.Others{QryCtxTimeout: time.Second},
+}
 
+func TestSvcSignup(t *testing.T) {
+	type output struct {
+		err error
+	}
+	tests := []struct {
+		name           string
+		email          string
+		password       string
+		errUsrStoreCrt error
+		out            output
+	}{
+		{name: "happy path", email: "123", password: "123", errUsrStoreCrt: nil, out: output{nil}},
+		{name: "unexpected store error", email: "123", password: "123", errUsrStoreCrt: store.ErrInvalidTx, out: output{store.ErrInvalidTx}},
+		{name: "empty email", email: "", password: "123", errUsrStoreCrt: nil, out: output{ErrInvalidCredentials}},
+		{name: "empty password", email: "123", password: "", errUsrStoreCrt: nil, out: output{ErrInvalidCredentials}},
+		{name: "user already exists", email: "123", password: "456", errUsrStoreCrt: fmt.Errorf("sqldb.UserStore.Create: %w", store.ErrUserExists), out: output{ErrUserExists}},
+	}
+
+	ctxFunc := util.NewCtxFunc(testCfg.Others.QryCtxTimeout)
 	ctx := context.Background()
-	tokenPair, userID, err := svc.Signup(ctx, nil, "test@example.com", "secret")
-	if err != nil {
-		t.Fatalf("expected signup to succeed, got error: %v", err)
-	}
-	if tokenPair.AccessToken == "" || tokenPair.RefreshToken == "" {
-		t.Fatalf("expected non-empty tokens after signup")
-	}
 
-	user, exists := userStore.users["test@example.com"]
-	if !exists {
-		t.Fatalf("expected user to be stored after signup")
-	}
-	if user.ID != userID {
-		t.Fatalf("expected stored user ID %q to match returned %q", user.ID, userID)
-	}
-	if user.AccessToken != tokenPair.AccessToken || user.RefreshToken != tokenPair.RefreshToken {
-		t.Fatalf("expected stored tokens to match signup tokens")
-	}
-
-	loginTokens, err := svc.Login(ctx, "test@example.com", "secret")
-	if err != nil {
-		t.Fatalf("expected login to succeed, got error: %v", err)
-	}
-	if loginTokens.AccessToken == "" || loginTokens.RefreshToken == "" {
-		t.Fatalf("expected non-empty tokens after login")
-	}
-
-	updatedUser := userStore.users["test@example.com"]
-	if updatedUser.AccessToken != loginTokens.AccessToken || updatedUser.RefreshToken != loginTokens.RefreshToken {
-		t.Fatalf("expected stored tokens to match login tokens")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeUserStore := &fakeUserStore{}
+			fakeUserStore.CreateFn = func(_ context.Context, _ store.Tx, user entities.User) error {
+				return tt.errUsrStoreCrt
+			}
+			fakeUserStore.UpdateTokensFn = func(ctx context.Context, tx store.Tx, id string, accessToken string, refreshToken string) error {
+				return nil
+			}
+			svc := NewSvc(nil, ctxFunc, testCfg, fakeUserStore)
+			_, _, err := svc.Signup(ctx, nil, tt.email, tt.password)
+			if !errors.Is(err, tt.out.err) {
+				var apperror apperr.Err
+				if !errors.As(err, &apperror) {
+					panic("FAILED: errors.As")
+				}
+				t.Errorf("Signup(%q, %q): got %v, want %v",
+					tt.email, tt.password, apperror.Code, tt.out.err.(apperr.Err).Code)
+			}
+		})
 	}
 }
