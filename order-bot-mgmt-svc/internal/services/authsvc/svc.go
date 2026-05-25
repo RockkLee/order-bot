@@ -108,7 +108,7 @@ func (s *Svc) ValidateAccessToken(_ context.Context, accessToken string) error {
 	if accessToken == "" {
 		return fmt.Errorf("authsvc.ValidateAccessToken(): accessToken is empty %w", jwtutil.ErrInvalidToken)
 	}
-	claims, err := jwtutil.ParseJWT(s.accessSecret, accessToken)
+	claims, err := jwtutil.ParseJWT(s.accessSecret, accessToken, time.Now())
 	if err != nil {
 		return fmt.Errorf("authsvc.ValidateAccessToken(): %w", err)
 	}
@@ -125,7 +125,7 @@ func (s *Svc) ValidateRefreshToken(ctx context.Context, refreshToken string) (st
 	if refreshToken == "" {
 		return "", fmt.Errorf("authsvc.ValidateRefreshToken(): %w", jwtutil.ErrInvalidToken)
 	}
-	claims, err := jwtutil.ParseJWT(s.refreshSecret, refreshToken)
+	claims, err := jwtutil.ParseJWT(s.refreshSecret, refreshToken, time.Now())
 	if err != nil {
 		return "", fmt.Errorf("authsvc.ValidateRefreshToken(): %w", err)
 	}

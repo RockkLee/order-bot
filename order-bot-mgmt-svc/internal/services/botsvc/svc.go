@@ -9,6 +9,7 @@ import (
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/util"
 	"order-bot-mgmt-svc/internal/util/jwtutil"
+	"time"
 )
 
 type Svc struct {
@@ -57,7 +58,7 @@ func (s *Svc) GetBotId(ctx context.Context, tokenStr string) (botId string, err 
 	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
 	defer cancel()
 
-	claims, err := jwtutil.ParseJWT(s.accessSecret, tokenStr)
+	claims, err := jwtutil.ParseJWT(s.accessSecret, tokenStr, time.Now())
 	if err != nil {
 		return "", fmt.Errorf("botsvc.GetBotId(): %w", err)
 	}

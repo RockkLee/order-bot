@@ -38,7 +38,7 @@ func SignJWT(secret []byte, claims models.Claims) (string, error) {
 	return signingInput + "." + sigB64, nil
 }
 
-func ParseJWT(secret []byte, token string) (models.Claims, error) {
+func ParseJWT(secret []byte, token string, now time.Time) (models.Claims, error) {
 	parts := strings.Split(token, ".")
 	if len(parts) != 3 {
 		return models.Claims{}, fmt.Errorf("jwtutil.ParseJWT(), len(parts) != 3: %w", ErrInvalidToken)
@@ -62,7 +62,7 @@ func ParseJWT(secret []byte, token string) (models.Claims, error) {
 	if err := json.Unmarshal(payloadBytes, &claims); err != nil {
 		return models.Claims{}, fmt.Errorf("jwtutil.ParseJWT: %w", ErrInvalidToken)
 	}
-	if claims.Exp <= time.Now().Unix() {
+	if claims.Exp <= now.Unix() {
 		return models.Claims{}, fmt.Errorf("jwtutil.ParseJWT: %w", ErrExpiredToken)
 	}
 	return claims, nil
