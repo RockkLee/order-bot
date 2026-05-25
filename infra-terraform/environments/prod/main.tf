@@ -17,8 +17,21 @@ module "security_group" {
   tags                = local.tags
 }
 
+module "vpc" {
+  source = "../../modules/vpc"
+  count  = var.enable_alb ? 1 : 0
+
+  region             = var.aws_region
+  vpc_id             = var.vpc_id
+  subnet_ids         = var.private_subnet_ids
+  security_group_ids = [module.security_group.app_security_group_id]
+  tags               = local.tags
+}
+
 module "alb" {
   source = "../../modules/alb"
+  # "count" is a meta-argument
+  # count = 0: the whole module is absent / count = 1: the module exists as a list with one item, so references must use module.alb[0]
   count  = var.enable_alb ? 1 : 0
 
   name_prefix           = "order-bot-prod"
@@ -69,11 +82,11 @@ resource "aws_route53_record" "orderbot_alias" {
 module "ecs" {
   source = "../../modules/ecs"
 
-  name_prefix                     = "order-bot-prod"
-  vpc_id                          = var.vpc_id
-  private_subnet_ids              = var.private_subnet_ids
-  app_security_group_id           = module.security_group.app_security_group_id
-  enable_alb = var.enable_alb
+  name_prefix           = "order-bot-prod"
+  vpc_id                = var.vpc_id
+  private_subnet_ids    = var.private_subnet_ids
+  app_security_group_id = module.security_group.app_security_group_id
+  enable_alb            = var.enable_alb
   # In Terraform, a counted module becomes a list of instances. So you must index it.
   order_bot_target_group_arn      = var.enable_alb ? module.alb[0].order_bot_target_group_arn : null
   order_bot_mgmt_target_group_arn = var.enable_alb ? module.alb[0].order_bot_mgmt_target_group_arn : null
