@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package orderbot.v1;
+
+option go_package = "order-bot-mgmt-svc/internal/infra/grpcpb;grpcpb";
+
+message OrderItem {
+  string id = 1;
+  string menu_item_id = 2;
+  string name = 3;
+  int32 quantity = 4;
+  int32 unit_price_scaled = 5;
+  int32 total_price_scaled = 6;
+}
+
+message CreateOrderRequest {
+  string order_id = 1;
+  string bot_id = 2;
+  string cart_id = 3;
+  string session_id = 4;
+  int32 total_scaled = 5;
+  repeated OrderItem items = 6;
+}
+
+message CreateOrderResponse {
+  bool ok = 1;
+}
+
+message MarkOrderCompletedRequest {
+  string order_id = 1;
+}
+
+message MarkOrderCompletedResponse {
+  bool ok = 1;
+}

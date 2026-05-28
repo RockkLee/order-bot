@@ -5,5 +5,7 @@ package orderbot.v1;
 option go_package = "order-bot-mgmt-svc/internal/infra/grpcpb;grpcpb";
 
 import "orderbot/v1/common.proto";
-import "orderbot/v1/order_status_service.proto";
-import "orderbot/v1/order_sync_service.proto";
+
+service OrderSyncService {
+  rpc CreateOrder (CreateOrderRequest) returns (CreateOrderResponse);
+}
