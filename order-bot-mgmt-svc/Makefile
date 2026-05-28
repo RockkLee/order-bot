@@ -1,27 +1,11 @@
 # Simple Makefile for a Go project
 
-PROTO_DIR := ../proto
-PROTO_V1_DIR := $(PROTO_DIR)/orderbot/v1
-GO_PROTO_OUT := .
-PROTO_FILES := \
-	$(PROTO_V1_DIR)/common.proto \
-	$(PROTO_V1_DIR)/order_sync_service.proto \
-	$(PROTO_V1_DIR)/order_status_service.proto
-
 # Build the application
 all: build test
 
 build:
 	@echo "Building..."
 	@go build -o main cmd/api/main.go
-
-# Generate Go gRPC stubs from shared proto contracts
-gen-proto-go:
-	@echo "Generating Go protobuf/grpc stubs..."
-	@protoc -I $(PROTO_DIR) \
-		--go_out=$(GO_PROTO_OUT) \
-		--go-grpc_out=$(GO_PROTO_OUT) \
-		$(PROTO_FILES)
 
 # Run the application
 run:
@@ -77,4 +61,4 @@ watch:
 		fi; \
 	fi
 
-.PHONY: all build run test clean watch docker-run docker-down itest gen-proto-go
+.PHONY: all build run test clean watch docker-run docker-down itest gen-proto-go gen-datamodels-from-protobuf gen-rpccode-from-protobuf

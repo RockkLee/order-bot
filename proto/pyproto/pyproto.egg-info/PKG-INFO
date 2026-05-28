@@ -1,0 +1,8 @@
+Metadata-Version: 2.4
+Name: pyproto
+Version: 0.1.0
+Summary: Shared generated Python protobuf and gRPC code for order-bot
+Requires-Python: >=3.11
+Requires-Dist: grpcio>=1.76.0
+Requires-Dist: grpcio-tools>=1.76.0
+Requires-Dist: protobuf>=6.33.1

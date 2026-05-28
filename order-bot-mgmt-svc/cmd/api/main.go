@@ -64,6 +64,7 @@ func newServices(db *sqldb.DB, orderBotDb *sqldb.DB, cfg config.Config) *service
 		},
 		func() *botsvc.Svc {
 			botStore := sqldb.NewBotStore(db)
+
 			userBotStore := sqldb.NewUserBotStore(db)
 			return botsvc.NewSvc(db, ctxFunc, cfg, botStore, userBotStore)
 		},

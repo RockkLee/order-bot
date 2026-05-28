@@ -82,6 +82,59 @@ flowchart LR
   * [architecture.md](./infra-terraform/docs/architecture.md)
   * [start_flow.md](./infra-terraform/docs/start_flow.md)
 
+## gRPC
+### Installation
+Before running the project locally, install the core development tools first: 
+For protobuf generation, install `protoc`, `protoc-gen-go`, `protoc-gen-go-grpc`, and Python `grpcio-tools` before running any proto generation targets.
+
+### Workflow
+#### `goproto`: Go Library that stores generated code from protobuf files
+```mermaid
+flowchart TD
+  A["Update shared .proto files under proto/orderbot/v1/..."]
+  B["Run: make -C goproto gen-proto-go"]
+  C["goproto/Makefile runs protoc for each app-owned proto group"]
+  D["Generated Go code is written to goproto/orderbot/v1/..."]
+  E["order-bot-mgmt-svc imports github.com/RockkLee/order-bot/goproto/...<br>(Run `go mod tidy` first)"]
+  F["Go gRPC server implements generated service interfaces"]
+  G["Go gRPC client uses generated New...Client stubs"]
+  H["Run: go test ./... in order-bot-mgmt-svc"]
+
+  A --> B
+  B --> C
+  C --> D
+  D --> E
+  E --> F
+  E --> G
+  F --> H
+  G --> H
+```
+
+#### `pyproto`: Python Library that stores generated code from protobuf files
+```mermaid
+flowchart TD
+  A["Update shared .proto files under proto/orderbot/v1/..."]
+  B["Ensure grpcio-tools is available for pyproto"]
+  C["Run: make -C pyproto gen-proto-py"]
+  D["pyproto/Makefile runs grpc_tools.protoc for each app-owned proto group"]
+  E["Generated Python code is written to pyproto/orderbot/v1/..."]
+  F["Python service exposes pyproto via editable install or PYTHONPATH<br>`pip install -e ../pyproto` / `PYTHONPATH=../pyproto`"]
+  G["gRPC server imports *_pb2_grpc servicer base classes"]
+  H["gRPC client imports *_pb2 request/response models and *_pb2_grpc stubs"]
+  I["Run import/runtime verification in the Python service"]
+
+  A --> B
+  B --> C
+  C --> D
+  D --> E
+  E --> F
+  F --> G
+  F --> H
+  G --> I
+  H --> I
+```
+
+
 ## How to run the app in local environment
 1 **Run the local PostgresDB service first mentioned in `./docker-compose.yml`**:
    ```bash

@@ -8,6 +8,8 @@ from src.schemas import IntentResult, ChatResponse
 from src.services import cart_service
 from src.services.order_mgmt_grpc_service import (
     OrderMgmtGrpcService,
+)
+from src.grpc.order_mgmt_types import (
     CheckoutOrderItem,
     CheckoutOrderRequest,
 )
@@ -44,6 +46,7 @@ async def checkout(db: AsyncSession, session_id: str, bot_id: str, intent: Inten
     grpc_request = CheckoutOrderRequest(
         order_id=order.id,
         bot_id=bot_id,
+        cart_id=cart.id,
         session_id=cart.session_id,
         total_scaled=total_scaled,
         items=[
