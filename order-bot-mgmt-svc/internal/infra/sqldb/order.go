@@ -58,3 +58,21 @@ func (s *OrderStore) FindByBotID(ctx context.Context, tx store.Tx, botId string)
 	}
 	return orders, nil
 }
+
+func (s *OrderStore) Insert(ctx context.Context, tx store.Tx, order entities.Order) error {
+	db, errDb := resolveDB(s.db, tx)
+	if errDb != nil {
+		return fmt.Errorf("sqldb.OrderStore.Insert: %w", errDb)
+	}
+	record := OrderRecord{
+		ID:          order.ID,
+		BotID:       order.BotID,
+		CartID:      order.CartID,
+		SessionID:   order.SessionID,
+		TotalScaled: order.TotalScaled,
+	}
+	if err := db.WithContext(ctx).Create(&record).Error; err != nil {
+		return fmt.Errorf("sqldb.OrderStore.Insert: %w", err)
+	}
+	return nil
+}
