@@ -1,5 +1,5 @@
-from src.grpc.order_mgmt_client import OrderMgmtGrpcClient
-from src.grpc.order_mgmt_types import CheckoutOrderItem, CheckoutOrderRequest
+from src.grpc_api.order_mgmt_client import OrderMgmtGrpcClient
+from src.grpc_api.order_mgmt_types import CheckoutOrderItem, CheckoutOrderRequest
 
 
 class OrderMgmtGrpcService:

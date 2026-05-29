@@ -20,6 +20,7 @@ gen-proto-py-mgmt:
 	@echo "Generating Python protobuf/grpc stubs for order-bot-mgmt-svc..."
 	@$(PYTHON) -m grpc_tools.protoc -I $(PROTO_DIR) \
 		--python_out=$(PY_PROTO_OUT) \
+		--pyi_out=$(PY_PROTO_OUT) \
 		--grpc_python_out=$(PY_PROTO_OUT) \
 		$(MGMT_PROTO_FILES)
 	@for file in $(PY_INIT_FILES); do \
@@ -31,6 +32,7 @@ gen-proto-py-svc:
 	@echo "Generating Python protobuf/grpc stubs for order-bot-svc..."
 	@$(PYTHON) -m grpc_tools.protoc -I $(PROTO_DIR) \
 		--python_out=$(PY_PROTO_OUT) \
+		--pyi_out=$(PY_PROTO_OUT) \
 		--grpc_python_out=$(PY_PROTO_OUT) \
 		$(SVC_PROTO_FILES)
 	@for file in $(PY_INIT_FILES); do \

@@ -12,6 +12,11 @@ type App struct {
 	GinMode string
 }
 
+type Grpc struct {
+	Address string
+	Port    int
+}
+
 type Db struct {
 	Database string
 	Password string
@@ -34,6 +39,7 @@ type Others struct {
 
 type Config struct {
 	App        App
+	Grpc       Grpc
 	Db         Db
 	OrderBotDb Db
 	Auth       Auth
@@ -46,6 +52,10 @@ func Load() Config {
 			Address: getEnv("ADDRESS"),
 			Port:    getIntEnv("PORT"),
 			GinMode: getEnv("GIN_MODE"),
+		},
+		Grpc: Grpc{
+			Address: getEnv("GRPC_ADDRESS"),
+			Port:    getIntEnv("GRPC_PORT"),
 		},
 		Db: Db{
 			Database: getEnv("BLUEPRINT_DB_DATABASE"),

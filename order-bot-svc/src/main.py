@@ -9,6 +9,7 @@ from src.config import settings
 from src.db import engine, SessionLocal, Base
 from src.api import routes
 from src.api import health_route
+from src.grpc_api.grpc_server import serve_grpc
 
 
 _LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -23,7 +24,14 @@ def create_app() -> FastAPI:
     async def lifespan(_: FastAPI):
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-        yield
+
+        grpc_server = await serve_grpc()
+        await grpc_server.start()
+
+        try:
+            yield
+        finally:
+            await grpc_server.stop(grace=5)
 
     app_root_path = settings.root_path
     app = FastAPI(
@@ -46,7 +54,6 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
         expose_headers=["*"],
     )
-
 
     app.include_router(routes.router, prefix=routes.API_PREFIX)
     app.include_router(health_route.router, prefix=health_route.API_PREFIX)

@@ -9,7 +9,7 @@ from src.services import cart_service
 from src.services.order_mgmt_grpc_service import (
     OrderMgmtGrpcService,
 )
-from src.grpc.order_mgmt_types import (
+from src.grpc_api.order_mgmt_types import (
     CheckoutOrderItem,
     CheckoutOrderRequest,
 )

@@ -19,8 +19,8 @@ type OrderSyncServer struct {
 	db       sqldb.Service
 }
 
-func NewOrderSyncServer(orderSvc *ordersvc.Svc, txSvc sqldb.Service) *OrderSyncServer {
-	return &OrderSyncServer{orderSvc: orderSvc, db: txSvc}
+func NewOrderSyncServer(orderSvc *ordersvc.Svc, db sqldb.Service) *OrderSyncServer {
+	return &OrderSyncServer{orderSvc: orderSvc, db: db}
 }
 
 func (s *OrderSyncServer) CreateOrder(ctx context.Context, req *orderbotv1pb.CreateOrderRequest) (*orderbotv1pb.CreateOrderResponse, error) {

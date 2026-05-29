@@ -9,6 +9,8 @@ import (
 	orderbotv1pb "github.com/RockkLee/order-bot/goproto/orderbot/v1"
 	orderbotsvcpb "github.com/RockkLee/order-bot/goproto/orderbot/v1/order_bot_svc"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/test/bufconn"
 )
 
 type testOrderStatusServer struct {
@@ -22,11 +24,8 @@ func (s *testOrderStatusServer) MarkOrderCompleted(ctx context.Context, req *ord
 }
 
 func TestOrderStatusClientMarkOrderCompleted(t *testing.T) {
-	lis, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("listen: %v", err)
-	}
-	defer lis.Close()
+	lis := bufconn.Listen(1024 * 1024)
+	defer func() { _ = lis.Close() }()
 
 	grpcServer := grpc.NewServer()
 	svc := &testOrderStatusServer{}
@@ -37,7 +36,13 @@ func TestOrderStatusClientMarkOrderCompleted(t *testing.T) {
 		_ = grpcServer.Serve(lis)
 	}()
 
-	client := NewOrderStatusClient(lis.Addr().String())
+	client := newOrderStatusClient(
+		"passthrough:///bufnet",
+		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
+			return lis.Dial()
+		}),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 

@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"context"
+	"net/http"
 	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/services"
 	"order-bot-mgmt-svc/internal/services/authsvc"
@@ -11,27 +12,34 @@ import (
 	"order-bot-mgmt-svc/internal/store"
 )
 
-type Server struct {
+type ServerContainer struct {
 	port int
 
 	db       sqldb.Service
 	services *services.Services
 }
 
-func NewServer(port int, db sqldb.Service, services *services.Services) *Server {
-	return &Server{port: port, db: db, services: services}
+func NewServerContainer(port int, db sqldb.Service, services *services.Services) *ServerContainer {
+	return &ServerContainer{port: port, db: db, services: services}
 }
 
-func (s *Server) dbService() sqldb.Service { return s.db }
-func (s *Server) WithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) error) error {
+func (s *ServerContainer) dbService() sqldb.Service { return s.db }
+func (s *ServerContainer) WithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) error) error {
 	return s.db.WithTx(ctx, fn)
 }
-func (s *Server) GetWithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) (any, error)) (any, error) {
+func (s *ServerContainer) GetWithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) (any, error)) (any, error) {
 	return s.db.GetWithTx(ctx, fn)
 }
-func (s *Server) AuthService() *authsvc.Svc { return s.services.Auth.Get() }
-func (s *Server) MenuService() *menusvc.Svc { return s.services.Menu.Get() }
-func (s *Server) BotService() *botsvc.Svc   { return s.services.Bot.Get() }
-func (s *Server) OrderService() *ordersvc.Svc {
+func (s *ServerContainer) AuthService() *authsvc.Svc { return s.services.Auth.Get() }
+func (s *ServerContainer) MenuService() *menusvc.Svc { return s.services.Menu.Get() }
+func (s *ServerContainer) BotService() *botsvc.Svc   { return s.services.Bot.Get() }
+func (s *ServerContainer) OrderService() *ordersvc.Svc {
 	return s.services.Order.Get()
+}
+
+func NewHTTPServer(s *ServerContainer, ginMode string, addr string) *http.Server {
+	return &http.Server{
+		Addr:    addr,
+		Handler: NewRouters(s, ginMode),
+	}
 }

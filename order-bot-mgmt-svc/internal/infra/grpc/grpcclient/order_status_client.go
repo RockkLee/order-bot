@@ -11,15 +11,20 @@ import (
 )
 
 type OrderStatusClient struct {
-	target string
+	target      string
+	dialOptions []grpc.DialOption
 }
 
 func NewOrderStatusClient(target string) *OrderStatusClient {
-	return &OrderStatusClient{target: target}
+	return newOrderStatusClient(target, grpc.WithTransportCredentials(insecure.NewCredentials()))
+}
+
+func newOrderStatusClient(target string, dialOptions ...grpc.DialOption) *OrderStatusClient {
+	return &OrderStatusClient{target: target, dialOptions: dialOptions}
 }
 
 func (c *OrderStatusClient) MarkOrderCompleted(ctx context.Context, orderID string) error {
-	conn, err := grpc.DialContext(ctx, c.target, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.DialContext(ctx, c.target, c.dialOptions...)
 	if err != nil {
 		return fmt.Errorf("grpcclient.OrderStatusClient.MarkOrderCompleted dial: %w", err)
 	}
