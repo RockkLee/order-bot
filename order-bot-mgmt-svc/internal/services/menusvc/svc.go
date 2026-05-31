@@ -7,6 +7,7 @@ import (
 	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/infra/sqldb/orderbotsqldb"
 	"order-bot-mgmt-svc/internal/models/entities"
+	"order-bot-mgmt-svc/internal/resource"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/util"
 )
@@ -21,22 +22,21 @@ type Svc struct {
 }
 
 func NewSvc(
-	db *sqldb.DB,
-	orderBotDb *sqldb.DB,
+	rsrc *resource.Resource,
 	ctxFunc util.CtxFunc,
 	menuStore store.Menu,
 	menuItemStore store.MenuItem,
 	publishedMenuStore *orderbotsqldb.PublishedMenuStore,
 ) *Svc {
-	if menuStore == nil || menuItemStore == nil || db == nil || orderBotDb == nil || publishedMenuStore == nil {
+	if menuStore == nil || menuItemStore == nil || rsrc == nil || rsrc.DB == nil || rsrc.OrderBotDB == nil || publishedMenuStore == nil {
 		panic("menusvc.NewSvc(), menuStore, menuItemStore, publishedMenuStore, db, or orderBotDb is nil")
 	}
 	return &Svc{
 		menuStore:          menuStore,
 		menuItemStore:      menuItemStore,
 		publishedMenuStore: publishedMenuStore,
-		db:                 db,
-		orderBotDb:         orderBotDb,
+		db:                 rsrc.DB,
+		orderBotDb:         rsrc.OrderBotDB,
 		ctxFunc:            ctxFunc,
 	}
 }

@@ -23,7 +23,7 @@ func (s *testOrderStatusServer) MarkOrderCompleted(ctx context.Context, req *ord
 	return &orderbotv1pb.MarkOrderCompletedResponse{Ok: true}, nil
 }
 
-func TestOrderStatusClientMarkOrderCompleted(t *testing.T) {
+func TestMarkOrderCompleted(t *testing.T) {
 	lis := bufconn.Listen(1024 * 1024)
 	defer func() { _ = lis.Close() }()
 
@@ -36,17 +36,22 @@ func TestOrderStatusClientMarkOrderCompleted(t *testing.T) {
 		_ = grpcServer.Serve(lis)
 	}()
 
-	client := newOrderStatusClient(
+	conn, err := grpc.NewClient(
 		"passthrough:///bufnet",
 		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 			return lis.Dial()
 		}),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
+	if err != nil {
+		t.Fatalf("grpc.NewClient() error = %v", err)
+	}
+	defer func() { _ = conn.Close() }()
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	if err := client.MarkOrderCompleted(ctx, "order-123"); err != nil {
+	if err := MarkOrderCompleted(ctx, conn, "order-123"); err != nil {
 		t.Fatalf("MarkOrderCompleted() error = %v", err)
 	}
 	if svc.lastOrderID != "order-123" {

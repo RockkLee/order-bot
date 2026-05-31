@@ -8,6 +8,7 @@ import (
 	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/models"
 	"order-bot-mgmt-svc/internal/models/entities"
+	"order-bot-mgmt-svc/internal/resource"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/util"
 	"order-bot-mgmt-svc/internal/util/jwtutil"
@@ -26,12 +27,12 @@ type Svc struct {
 	refreshTokenTTL time.Duration
 }
 
-func NewSvc(db *sqldb.DB, ctxFunc util.CtxFunc, cfg config.Config, userStore store.User) *Svc {
-	if userStore == nil || ctxFunc == nil {
-		panic("authSvc.NewSvc(), userStore or ctxFunc is nil")
+func NewSvc(rsrc *resource.Resource, ctxFunc util.CtxFunc, cfg config.Config, userStore store.User) *Svc {
+	if userStore == nil || ctxFunc == nil || rsrc.DB == nil {
+		panic("authSvc.NewSvc(), userStore, ctxFunc or rsrc.DB is nil")
 	}
 	return &Svc{
-		db:              db,
+		db:              rsrc.DB,
 		ctxFunc:         ctxFunc,
 		userStore:       userStore,
 		accessSecret:    []byte(cfg.Auth.AccessSecret),

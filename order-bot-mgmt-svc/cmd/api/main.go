@@ -12,6 +12,7 @@ import (
 	"order-bot-mgmt-svc/internal/infra/httphdlr/httpserver"
 	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/infra/sqldb/orderbotsqldb"
+	"order-bot-mgmt-svc/internal/resource"
 	"order-bot-mgmt-svc/internal/services/authsvc"
 	"order-bot-mgmt-svc/internal/services/botsvc"
 	"order-bot-mgmt-svc/internal/services/menusvc"
@@ -27,27 +28,27 @@ import (
 	"order-bot-mgmt-svc/internal/services"
 )
 
-func newServices(db *sqldb.DB, orderBotDb *sqldb.DB, cfg config.Config) *services.Services {
+func newServices(rsrc *resource.Resource, cfg config.Config) *services.Services {
 	ctxFunc := util.NewCtxFunc(cfg.Others.QryCtxTimeout)
 	return services.NewServices(
 		func() *authsvc.Svc {
-			return authsvc.NewSvc(db, ctxFunc, cfg, sqldb.NewUserStore(db))
+			return authsvc.NewSvc(rsrc, ctxFunc, cfg, sqldb.NewUserStore(rsrc.DB))
 		},
 		func() *menusvc.Svc {
-			menuStore := sqldb.NewMenuStore(db)
-			menuItemStore := sqldb.NewMenuItemStore(db)
-			publishedMenuStore := orderbotsqldb.NewPublishedMenuStore(orderBotDb)
-			return menusvc.NewSvc(db, orderBotDb, ctxFunc, menuStore, menuItemStore, publishedMenuStore)
+			menuStore := sqldb.NewMenuStore(rsrc.DB)
+			menuItemStore := sqldb.NewMenuItemStore(rsrc.DB)
+			publishedMenuStore := orderbotsqldb.NewPublishedMenuStore(rsrc.OrderBotDB)
+			return menusvc.NewSvc(rsrc, ctxFunc, menuStore, menuItemStore, publishedMenuStore)
 		},
 		func() *botsvc.Svc {
-			botStore := sqldb.NewBotStore(db)
+			botStore := sqldb.NewBotStore(rsrc.DB)
 
-			userBotStore := sqldb.NewUserBotStore(db)
-			return botsvc.NewSvc(db, ctxFunc, cfg, botStore, userBotStore)
+			userBotStore := sqldb.NewUserBotStore(rsrc.DB)
+			return botsvc.NewSvc(rsrc, ctxFunc, cfg, botStore, userBotStore)
 		},
 		func() *ordersvc.Svc {
-			orderStore := sqldb.NewOrderStore(orderBotDb)
-			orderItemStore := sqldb.NewOrderItemStore(orderBotDb)
+			orderStore := sqldb.NewOrderStore(rsrc.OrderBotDB)
+			orderItemStore := sqldb.NewOrderItemStore(rsrc.OrderBotDB)
 			return ordersvc.NewSvc(ctxFunc, orderStore, orderItemStore)
 		},
 	)
@@ -67,24 +68,26 @@ func main() {
 	if orderBotDbErr != nil {
 		log.Fatalf("failed to connect to order-bot database: \n%v", orderBotDbErr)
 	}
+	orderBotConn, err := resource.NewOrderBotGRPCConn(cfg.OrderBotGrpc)
+	if err != nil {
+		log.Fatalf("failed to create order-bot grpc client connection: \n%v", errutil.FormatErrChain(err))
+	}
+	rsrc := resource.New(db, orderBotDb, resource.GRPCConn{OrderBot: orderBotConn})
 	defer func() {
-		if err := db.Close(); err != nil {
-			log.Printf("failed to close database: \n%v", errutil.FormatErrChain(err))
-		}
-		if err := orderBotDb.Close(); err != nil {
-			log.Printf("failed to close order-bot database: \n%v", errutil.FormatErrChain(err))
+		if err := rsrc.Close(); err != nil {
+			log.Printf("failed to close resources: \n%v", errutil.FormatErrChain(err))
 		}
 	}()
-	serviceContainer := newServices(db, orderBotDb, cfg)
+	serviceContainer := newServices(rsrc, cfg)
 
 	// Build the Gin-backed HTTP server explicitly so main owns startup and shutdown.
-	httpServContainer := httpserver.NewServerContainer(cfg.App.Port, db, serviceContainer)
+	httpServContainer := httpserver.NewServerContainer(cfg.App.Port, rsrc.DB, serviceContainer)
 	httpAddr := fmt.Sprintf("%s:%d", cfg.App.Address, cfg.App.Port)
 	httpSrv := httpserver.NewHTTPServer(httpServContainer, cfg.App.GinMode, httpAddr)
 
 	// Create the gRPC listener before starting goroutines so bind failures surface immediately.
 	grpcAddr := fmt.Sprintf("%s:%d", cfg.Grpc.Address, cfg.Grpc.Port)
-	grpcSrv, grpcLis, err := grpcserver.NewListeningServer(grpcAddr, serviceContainer.Order.Get(), orderBotDb)
+	grpcSrv, grpcLis, err := grpcserver.NewListeningServer(grpcAddr, serviceContainer.Order.Get(), rsrc.OrderBotDB)
 	if err != nil {
 		log.Fatal(err)
 	}

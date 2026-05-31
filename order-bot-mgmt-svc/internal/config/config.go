@@ -38,12 +38,13 @@ type Others struct {
 }
 
 type Config struct {
-	App        App
-	Grpc       Grpc
-	Db         Db
-	OrderBotDb Db
-	Auth       Auth
-	Others     Others
+	App          App
+	Grpc         Grpc
+	OrderBotGrpc Grpc
+	Db           Db
+	OrderBotDb   Db
+	Auth         Auth
+	Others       Others
 }
 
 func Load() Config {
@@ -56,6 +57,10 @@ func Load() Config {
 		Grpc: Grpc{
 			Address: getEnv("GRPC_ADDRESS"),
 			Port:    getIntEnv("GRPC_PORT"),
+		},
+		OrderBotGrpc: Grpc{
+			Address: envOrDefault("ORDER_BOT_GRPC_ADDRESS", getEnv("GRPC_ADDRESS")),
+			Port:    getIntEnvOrDefault("ORDER_BOT_GRPC_PORT", getIntEnv("GRPC_PORT")),
 		},
 		Db: Db{
 			Database: getEnv("BLUEPRINT_DB_DATABASE"),
@@ -91,6 +96,18 @@ func envOrDefault(key, fallback string) string {
 		return fallback
 	}
 	return value
+}
+
+func getIntEnvOrDefault(key string, fallback int) int {
+	value := os.Getenv(key)
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil {
+		return fallback
+	}
+	return parsed
 }
 
 func parseDurationEnv(key string, fallback time.Duration) time.Duration {
