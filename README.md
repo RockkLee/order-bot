@@ -113,8 +113,8 @@ flowchart LR
 
 
 ## ER-Diagram
-* [order-bot-mgmt-svc-erd](./doc/order-bot-mgmt-svc-erd.md)
-* [order-bot-svc-erd](./doc/order-bot-svc-erd.md)
+* [order-bot-mgmt-svc-erd](doc/er-diagrams/order-bot-mgmt-svc-erd.md)
+* [order-bot-svc-erd](doc/er-diagrams/order-bot-svc-erd.md)
 
 <br>
 
