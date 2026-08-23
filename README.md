@@ -30,8 +30,8 @@ flowchart LR
     direction TB
     UC_OrderItems(["Order items"])
     UC_BotValidation(["Check if the botID & menuID are correct"])
-    UC_TextToItems(["Text to order items"])
-    UC_DisplayItems(["Display order items"])
+    UC_TextToItems(["Text to cart items"])
+    UC_DisplayItems(["Display cart items & menu items"])
     UC_SendEvent(["Send an event to Admin Service"])
   end
 
