@@ -83,14 +83,11 @@ flowchart LR
   * [start_flow.md](./infra-terraform/docs/start_flow.md)
 
 ## How to run the app in local environment
-1. **Build service images from each service Dockerfile** (or let Compose build automatically):
-   * `order-bot-mgmt-svc/Dockerfile`
-   * `order-bot-svc/Dockerfile`
-2. **Run Docker Compose from the repository root**:
+1 **Run the local PostgresDB service first mentioned in `./docker-compose.yml`**:
    ```bash
-   docker compose up --build -d
+   docker compose up -d postgres
    ```
-3. **Create two PostgreSQL schemas**:
+2 **Create two PostgreSQL schemas**:
    * `order_bot`
    * `order_bot_mgmt`
 
@@ -99,7 +96,7 @@ flowchart LR
    CREATE SCHEMA IF NOT EXISTS order_bot;
    CREATE SCHEMA IF NOT EXISTS order_bot_mgmt;
    ```
-4. **Run DDL files to create tables**:
+3 **Run DDL files to create tables**:
    * `ddl/order_bot_ddl.sql`
    * `ddl/order_bot_mgmt_ddl.sql`
 
@@ -108,9 +105,12 @@ flowchart LR
    psql -h <host> -U <user> -d <database> -f ddl/order_bot_ddl.sql
    psql -h <host> -U <user> -d <database> -f ddl/order_bot_mgmt_ddl.sql
    ```
+4 **Run the other services mentioned in `./docker-compose.yml`**:
+   ```bash
+   docker compose up --build -d
+   ```
 
 <br>
-
 
 ## ER-Diagram
 * [order-bot-mgmt-svc-erd](doc/er-diagrams/order-bot-mgmt-svc-erd.md)
