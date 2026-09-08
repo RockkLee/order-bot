@@ -2,14 +2,17 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
 	"order-bot-mgmt-svc/internal/config"
+	"order-bot-mgmt-svc/internal/infra/grpc/grpcserver"
 	"order-bot-mgmt-svc/internal/infra/httphdlr/httpserver"
 	"order-bot-mgmt-svc/internal/infra/sqldb"
-	"order-bot-mgmt-svc/internal/infra/sqldb/orderbotmgmtsqldb"
+	"order-bot-mgmt-svc/internal/infra/sqldb/orderbotsqldb"
+	"order-bot-mgmt-svc/internal/resource"
 	"order-bot-mgmt-svc/internal/services/authsvc"
 	"order-bot-mgmt-svc/internal/services/botsvc"
 	"order-bot-mgmt-svc/internal/services/menusvc"
@@ -25,51 +28,27 @@ import (
 	"order-bot-mgmt-svc/internal/services"
 )
 
-func gracefulShutdown(apiServer *http.Server, done chan bool) {
-	// Create context that listens for the interrupt signal from the OS.
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
-
-	// Listen for the interrupt signal.
-	<-ctx.Done()
-
-	log.Println("shutting down gracefully, press Ctrl+C again to force")
-	stop() // Allow Ctrl+C to force shutdown
-
-	// The context is used to inform the server it has 5 seconds to finish
-	// the request it is currently handling
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := apiServer.Shutdown(ctx); err != nil {
-		log.Printf("Server forced to shutdown with error: %v", err)
-	}
-
-	log.Println("Server exiting")
-
-	// Notify the main goroutine that the shutdown is complete
-	done <- true
-}
-
-func newServices(db *sqldb.DB, orderBotDb *sqldb.DB, cfg config.Config) *services.Services {
+func newServices(rsrc *resource.Resource, cfg config.Config) *services.Services {
 	ctxFunc := util.NewCtxFunc(cfg.Others.QryCtxTimeout)
 	return services.NewServices(
 		func() *authsvc.Svc {
-			return authsvc.NewSvc(db, ctxFunc, cfg, sqldb.NewUserStore(db))
+			return authsvc.NewSvc(rsrc, ctxFunc, cfg, sqldb.NewUserStore(rsrc.DB))
 		},
 		func() *menusvc.Svc {
-			menuStore := sqldb.NewMenuStore(db)
-			menuItemStore := sqldb.NewMenuItemStore(db)
-			publishedMenuStore := orderbotmgmtsqldb.NewPublishedMenuStore(orderBotDb)
-			return menusvc.NewSvc(db, orderBotDb, ctxFunc, menuStore, menuItemStore, publishedMenuStore)
+			menuStore := sqldb.NewMenuStore(rsrc.DB)
+			menuItemStore := sqldb.NewMenuItemStore(rsrc.DB)
+			publishedMenuStore := orderbotsqldb.NewPublishedMenuStore(rsrc.OrderBotDB)
+			return menusvc.NewSvc(rsrc, ctxFunc, menuStore, menuItemStore, publishedMenuStore)
 		},
 		func() *botsvc.Svc {
-			botStore := sqldb.NewBotStore(db)
-			userBotStore := sqldb.NewUserBotStore(db)
-			return botsvc.NewSvc(db, ctxFunc, cfg, botStore, userBotStore)
+			botStore := sqldb.NewBotStore(rsrc.DB)
+
+			userBotStore := sqldb.NewUserBotStore(rsrc.DB)
+			return botsvc.NewSvc(rsrc, ctxFunc, cfg, botStore, userBotStore)
 		},
 		func() *ordersvc.Svc {
-			orderStore := sqldb.NewOrderStore(orderBotDb)
-			orderItemStore := sqldb.NewOrderItemStore(orderBotDb)
+			orderStore := sqldb.NewOrderStore(rsrc.OrderBotDB)
+			orderItemStore := sqldb.NewOrderItemStore(rsrc.OrderBotDB)
 			return ordersvc.NewSvc(ctxFunc, orderStore, orderItemStore)
 		},
 	)
@@ -81,7 +60,6 @@ func main() {
 	slog.SetLogLoggerLevel(slog.LevelInfo)
 
 	cfg := config.Load()
-	port := cfg.App.Port
 	db, err := sqldb.New(cfg.Db)
 	if err != nil {
 		log.Fatalf("failed to connect to database: \n%v", errutil.FormatErrChain(err))
@@ -90,37 +68,88 @@ func main() {
 	if orderBotDbErr != nil {
 		log.Fatalf("failed to connect to order-bot database: \n%v", orderBotDbErr)
 	}
+	orderBotConn, err := resource.NewOrderBotGRPCConn(cfg.OrderBotGrpc)
+	if err != nil {
+		log.Fatalf("failed to create order-bot grpc client connection: \n%v", errutil.FormatErrChain(err))
+	}
+	rsrc := resource.New(db, orderBotDb, resource.GRPCConn{OrderBot: orderBotConn})
 	defer func() {
-		if err := db.Close(); err != nil {
-			log.Printf("failed to close database: \n%v", errutil.FormatErrChain(err))
-		}
-		if err := orderBotDb.Close(); err != nil {
-			log.Printf("failed to close order-bot database: \n%v", errutil.FormatErrChain(err))
+		if err := rsrc.Close(); err != nil {
+			log.Printf("failed to close resources: \n%v", errutil.FormatErrChain(err))
 		}
 	}()
-	serviceContainer := newServices(db, orderBotDb, cfg)
+	serviceContainer := newServices(rsrc, cfg)
 
-	server := httpserver.NewServer(
-		port,
-		db,
-		serviceContainer,
-	)
-	addr := fmt.Sprintf("%s:%d", cfg.App.Address, cfg.App.Port)
-	httpserver.Run(server, cfg.App.GinMode, addr)
+	// Build the Gin-backed HTTP server explicitly so main owns startup and shutdown.
+	httpServContainer := httpserver.NewServerContainer(cfg.App.Port, rsrc.DB, serviceContainer)
+	httpAddr := fmt.Sprintf("%s:%d", cfg.App.Address, cfg.App.Port)
+	httpSrv := httpserver.NewHTTPServer(httpServContainer, cfg.App.GinMode, httpAddr)
 
-	// // Create a done channel to signal when the shutdown is complete
-	// done := make(chan bool, 1)
+	// Create the gRPC listener before starting goroutines so bind failures surface immediately.
+	grpcAddr := fmt.Sprintf("%s:%d", cfg.Grpc.Address, cfg.Grpc.Port)
+	grpcSrv, grpcLis, err := grpcserver.NewListeningServer(grpcAddr, serviceContainer.Order.Get(), rsrc.OrderBotDB)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() { _ = grpcLis.Close() }()
 
-	// // Run graceful shutdown in a separate goroutine
-	// go gracefulShutdown(server, done)
+	// Cancel on SIGINT/SIGTERM so both servers can drain gracefully.
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 
-	// slog.Info("running http.ListAndServer...")
-	// err = server.ListenAndServe()
-	// if err != nil && !errors.Is(err, http.ErrServerClosed) {
-	// 	panic(fmt.Sprintf("http server error: %s", err))
-	// }
+	errCh := make(chan error, 2)
 
-	// // Wait for the graceful shutdown to complete
-	// <-done
-	// log.Println("Graceful shutdown complete.")
+	// HTTP and gRPC both block while serving, so they run concurrently in separate goroutines.
+	go func() {
+		if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			errCh <- fmt.Errorf("http server: %w", err)
+		}
+	}()
+	go func() {
+		if err := grpcSrv.Serve(grpcLis); err != nil {
+			errCh <- fmt.Errorf("grpc server: %w", err)
+		}
+	}()
+
+	// Stop when either the process receives a shutdown signal or one of the servers fails.
+	var runErr error
+	select {
+	case <-ctx.Done():
+		slog.Info("shutdown signal received")
+	case runErr = <-errCh:
+		stop()
+	}
+
+	shutdownHttpCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Stop accepting new HTTP requests and wait for in-flight work to finish.
+	if err := httpSrv.Shutdown(shutdownHttpCtx); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		slog.Error("http shutdown failed", "error", err)
+		if runErr == nil {
+			runErr = err
+		}
+	}
+
+	// No goroutine sends a value on grpcStopped. Closing the channel is the signal
+	// that GracefulStop has finished, which lets the main goroutine continue.
+	grpcStopped := make(chan struct{})
+	go func() {
+		// GracefulStop blocks this goroutine until active RPCs complete.
+		grpcSrv.GracefulStop()
+		close(grpcStopped)
+	}()
+
+	select {
+	// This receive blocks the main goroutine until grpcStopped is closed.
+	case <-grpcStopped:
+		// The goroutine above finished GracefulStop and unblocked this select by closing the channel.
+	case <-shutdownHttpCtx.Done():
+		// Fall back to an immediate stop if graceful shutdown exceeds the timeout.
+		grpcSrv.Stop()
+	}
+
+	if runErr != nil {
+		log.Fatal(runErr)
+	}
 }

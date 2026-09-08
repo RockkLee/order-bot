@@ -8,6 +8,7 @@ import (
 	"order-bot-mgmt-svc/internal/config"
 	"order-bot-mgmt-svc/internal/models"
 	"order-bot-mgmt-svc/internal/models/entities"
+	"order-bot-mgmt-svc/internal/resource"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/store/fake"
 	"order-bot-mgmt-svc/internal/util"
@@ -58,7 +59,7 @@ func TestSvcSignup(t *testing.T) {
 			fakeUserStore.UpdateTokensFn = func(ctx context.Context, tx store.Tx, id string, accessToken string, refreshToken string) error {
 				return nil
 			}
-			svc := NewSvc(nil, ctxFunc, testCfg, fakeUserStore)
+			svc := NewSvc(resource.New(nil, nil, resource.GRPCConn{}), ctxFunc, testCfg, fakeUserStore)
 			_, _, err := svc.Signup(ctx, nil, tt.email, tt.password)
 			if !errors.Is(err, tt.out.err) {
 				var apperror apperr.Err
@@ -166,7 +167,7 @@ func TestSvcLogin(t *testing.T) {
 				return nil
 			}
 
-			svc := NewSvc(nil, util.NewCtxFunc(testCfg.Others.QryCtxTimeout), testCfg, fakeUserStore)
+			svc := NewSvc(resource.New(nil, nil, resource.GRPCConn{}), util.NewCtxFunc(testCfg.Others.QryCtxTimeout), testCfg, fakeUserStore)
 			got, err := svc.Login(tt.args.ctx, tt.args.email, tt.args.password)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Login() error = %v, wantErr %v", err, tt.wantErr)

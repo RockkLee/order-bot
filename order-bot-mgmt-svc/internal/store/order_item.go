@@ -7,4 +7,5 @@ import (
 
 type OrderItem interface {
 	FindByOrderIDs(ctx context.Context, orderIDs []string) ([]entities.OrderItem, error)
+	InsertMany(ctx context.Context, tx Tx, items []entities.OrderItem) error
 }

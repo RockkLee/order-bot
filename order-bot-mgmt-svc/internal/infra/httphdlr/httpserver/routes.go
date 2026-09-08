@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Run(s *Server, ginMode string, addr string) {
+func NewRouters(s *ServerContainer, ginMode string) http.Handler {
 	// gin.SetMode(gin.ReleaseMode)
 	gin.SetMode(ginMode)
 	routers := gin.New()
@@ -53,8 +53,5 @@ func Run(s *Server, ginMode string, addr string) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
-	err := routers.Run(addr)
-	if err != nil {
-		panic(err.Error())
-	}
+	return routers
 }

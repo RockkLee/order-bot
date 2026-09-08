@@ -24,7 +24,7 @@ func corsMiddleware() gin.HandlerFunc {
 	}
 }
 
-func authMiddleware(s *Server) gin.HandlerFunc {
+func authMiddleware(s *ServerContainer) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		accessToken, ok := bearerToken(c.GetHeader("Authorization"))
 		if !ok {
