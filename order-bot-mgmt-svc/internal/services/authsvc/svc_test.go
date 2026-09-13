@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"order-bot-mgmt-svc/internal/apperr"
 	"order-bot-mgmt-svc/internal/config"
+	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/models"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/resource"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/store/fake"
-	"order-bot-mgmt-svc/internal/util"
 	"order-bot-mgmt-svc/internal/util/jwtutil"
 	"testing"
 	"time"
@@ -47,7 +47,6 @@ func TestSvcSignup(t *testing.T) {
 		{name: "user already exists", email: "123", password: "456", errUsrStoreCrt: fmt.Errorf("sqldb.UserStore.Create: %w", store.ErrUserExists), out: output{ErrUserExists}},
 	}
 
-	ctxFunc := util.NewCtxFunc(testCfg.Others.QryCtxTimeout)
 	ctx := context.Background()
 
 	for _, tt := range tests {
@@ -59,7 +58,7 @@ func TestSvcSignup(t *testing.T) {
 			fakeUserStore.UpdateTokensFn = func(ctx context.Context, tx store.Tx, id string, accessToken string, refreshToken string) error {
 				return nil
 			}
-			svc := NewSvc(resource.New(nil, nil, resource.GrpcClientConn{}), ctxFunc, testCfg, fakeUserStore)
+			svc := NewSvc(resource.New(&sqldb.DB{}, nil, resource.GrpcClientConn{}), testCfg, fakeUserStore)
 			_, _, err := svc.Signup(ctx, nil, tt.email, tt.password)
 			if !errors.Is(err, tt.out.err) {
 				var apperror apperr.Err
@@ -167,7 +166,7 @@ func TestSvcLogin(t *testing.T) {
 				return nil
 			}
 
-			svc := NewSvc(resource.New(nil, nil, resource.GrpcClientConn{}), util.NewCtxFunc(testCfg.Others.QryCtxTimeout), testCfg, fakeUserStore)
+			svc := NewSvc(resource.New(&sqldb.DB{}, nil, resource.GrpcClientConn{}), testCfg, fakeUserStore)
 			got, err := svc.Login(tt.args.ctx, tt.args.email, tt.args.password)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Login() error = %v, wantErr %v", err, tt.wantErr)

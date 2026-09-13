@@ -15,7 +15,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-type Service interface {
+type IDB interface {
 	Health() (map[string]string, error)
 	Close() error
 	Conn() *sql.DB

@@ -11,13 +11,13 @@ import (
 	"google.golang.org/grpc"
 )
 
-func NewServer(orderSvc *ordersvc.Svc, db sqldb.Service) *grpc.Server {
+func NewServer(orderSvc *ordersvc.Svc, db sqldb.IDB) *grpc.Server {
 	server := grpc.NewServer()
 	orderbotmgmtsvcpb.RegisterOrderSyncServiceServer(server, NewOrderSyncServer(orderSvc, db))
 	return server
 }
 
-func NewListeningServer(addr string, orderSvc *ordersvc.Svc, db sqldb.Service) (*grpc.Server, net.Listener, error) {
+func NewListeningServer(addr string, orderSvc *ordersvc.Svc, db sqldb.IDB) (*grpc.Server, net.Listener, error) {
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		return nil, nil, fmt.Errorf("grpcserver.NewListeningServer listen %s: %w", addr, err)

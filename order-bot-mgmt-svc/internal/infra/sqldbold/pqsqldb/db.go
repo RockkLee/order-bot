@@ -14,8 +14,7 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 )
 
-// Service represents a service that interacts with a database.
-type Service interface {
+type IDB interface {
 	// Health returns a map of health status information.
 	// The keys and values in the map are service-specific.
 	Health() (map[string]string, error)

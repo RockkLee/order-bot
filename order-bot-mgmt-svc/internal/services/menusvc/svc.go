@@ -18,12 +18,10 @@ type Svc struct {
 	publishedMenuStore *orderbotsqldb.PublishedMenuStore
 	db                 *sqldb.DB
 	orderBotDb         *sqldb.DB
-	ctxFunc            util.CtxFunc
 }
 
 func NewSvc(
 	rsrc *resource.Resource,
-	ctxFunc util.CtxFunc,
 	menuStore store.Menu,
 	menuItemStore store.MenuItem,
 	publishedMenuStore *orderbotsqldb.PublishedMenuStore,
@@ -37,13 +35,10 @@ func NewSvc(
 		publishedMenuStore: publishedMenuStore,
 		db:                 rsrc.DB,
 		orderBotDb:         rsrc.OrderBotDB,
-		ctxFunc:            ctxFunc,
 	}
 }
 
 func (s *Svc) CreateMenu(ctx context.Context, botID string, menuItems []entities.MenuItem) (entities.Menu, []entities.MenuItem, error) {
-	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
-	defer cancel()
 	var (
 		menu  entities.Menu
 		items []entities.MenuItem
@@ -79,8 +74,6 @@ func (s *Svc) CreateMenu(ctx context.Context, botID string, menuItems []entities
 }
 
 func (s *Svc) GetMenu(ctx context.Context, botId string) (entities.Menu, error) {
-	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
-	defer cancel()
 	menu, err := s.menuStore.FindByBotID(ctx, botId)
 	if err != nil {
 		return entities.Menu{}, fmt.Errorf("menusvc.GetMenu: %w", err)
@@ -89,8 +82,6 @@ func (s *Svc) GetMenu(ctx context.Context, botId string) (entities.Menu, error) 
 }
 
 func (s *Svc) GetMenuMenuItems(ctx context.Context, botId string) (entities.Menu, []entities.MenuItem, error) {
-	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
-	defer cancel()
 	menu, err := s.menuStore.FindByBotID(ctx, botId)
 	if err != nil {
 		return entities.Menu{}, nil, fmt.Errorf("menusvc.GetMenuMenuItems: %w", err)
@@ -103,8 +94,6 @@ func (s *Svc) GetMenuMenuItems(ctx context.Context, botId string) (entities.Menu
 }
 
 func (s *Svc) UpdateMenu(ctx context.Context, botID string, items []entities.MenuItem) (entities.Menu, []entities.MenuItem, error) {
-	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
-	defer cancel()
 	var menu entities.Menu
 	err := s.db.WithTx(ctx, func(ctx context.Context, tx store.Tx) error {
 		menu, errMenu := s.menuStore.FindByBotID(ctx, botID)
@@ -129,8 +118,6 @@ func (s *Svc) UpdateMenu(ctx context.Context, botID string, items []entities.Men
 }
 
 func (s *Svc) PublishMenu(ctx context.Context, botID string) (entities.Menu, []entities.MenuItem, error) {
-	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
-	defer cancel()
 	menu, items, err := s.GetMenuMenuItems(ctx, botID)
 	if err != nil {
 		return entities.Menu{}, nil, fmt.Errorf("menusvc.PublishMenu: %w", err)
@@ -147,8 +134,6 @@ func (s *Svc) PublishMenu(ctx context.Context, botID string) (entities.Menu, []e
 }
 
 func (s *Svc) IsMenuPublished(ctx context.Context, menuID string) (bool, error) {
-	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
-	defer cancel()
 	exists, err := s.publishedMenuStore.IsMenuPublished(ctx, menuID)
 	if err != nil {
 		return false, fmt.Errorf("menusvc.IsMenuPublished: %w", err)

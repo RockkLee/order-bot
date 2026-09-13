@@ -15,26 +15,26 @@ import (
 type ServerContainer struct {
 	port int
 
-	db       sqldb.Service
+	db       sqldb.IDB
 	services *services.Services
 }
 
-func NewServerContainer(port int, db sqldb.Service, services *services.Services) *ServerContainer {
+func NewServerContainer(port int, db sqldb.IDB, services *services.Services) *ServerContainer {
 	return &ServerContainer{port: port, db: db, services: services}
 }
 
-func (s *ServerContainer) dbService() sqldb.Service { return s.db }
+func (s *ServerContainer) dbService() sqldb.IDB { return s.db }
 func (s *ServerContainer) WithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) error) error {
 	return s.db.WithTx(ctx, fn)
 }
 func (s *ServerContainer) GetWithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) (any, error)) (any, error) {
 	return s.db.GetWithTx(ctx, fn)
 }
-func (s *ServerContainer) AuthService() *authsvc.Svc { return s.services.Auth.Get() }
-func (s *ServerContainer) MenuService() *menusvc.Svc { return s.services.Menu.Get() }
-func (s *ServerContainer) BotService() *botsvc.Svc   { return s.services.Bot.Get() }
+func (s *ServerContainer) AuthService() *authsvc.Svc { return s.services.Auth }
+func (s *ServerContainer) MenuService() *menusvc.Svc { return s.services.Menu }
+func (s *ServerContainer) BotService() *botsvc.Svc   { return s.services.Bot }
 func (s *ServerContainer) OrderService() *ordersvc.Svc {
-	return s.services.Order.Get()
+	return s.services.Order
 }
 
 func NewHTTPServer(s *ServerContainer, ginMode string, addr string) *http.Server {

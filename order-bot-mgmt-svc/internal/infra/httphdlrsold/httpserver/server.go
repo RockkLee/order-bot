@@ -17,11 +17,11 @@ import (
 type Server struct {
 	port int
 
-	db       pqsqldb.Service
+	db       pqsqldb.IDB
 	services *services.Services
 }
 
-func NewServer(port int, db pqsqldb.Service, services *services.Services) *http.Server {
+func NewServer(port int, db pqsqldb.IDB, services *services.Services) *http.Server {
 	srv := &Server{
 		port: port,
 		db:   db,
@@ -41,7 +41,7 @@ func NewServer(port int, db pqsqldb.Service, services *services.Services) *http.
 	return server
 }
 
-func (s *Server) dbService() pqsqldb.Service {
+func (s *Server) dbService() pqsqldb.IDB {
 	return s.db
 }
 
@@ -54,13 +54,13 @@ func (s *Server) GetWithTx(ctx context.Context, fn func(ctx context.Context, tx 
 }
 
 func (s *Server) AuthService() *authsvc.Svc {
-	return s.services.Auth.Get()
+	return s.services.Auth
 }
 
 func (s *Server) MenuService() *menusvc.Svc {
-	return s.services.Menu.Get()
+	return s.services.Menu
 }
 
 func (s *Server) BotService() *botsvc.Svc {
-	return s.services.Bot.Get()
+	return s.services.Bot
 }

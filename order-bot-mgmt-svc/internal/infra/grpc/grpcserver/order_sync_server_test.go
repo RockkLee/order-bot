@@ -4,12 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"testing"
-	"time"
 
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/services/ordersvc"
 	"order-bot-mgmt-svc/internal/store"
-	"order-bot-mgmt-svc/internal/util"
 
 	orderbotv1pb "github.com/RockkLee/order-bot/goproto/orderbot/v1"
 )
@@ -55,7 +53,7 @@ func (s *fakeDb) WithTx(ctx context.Context, fn func(ctx context.Context, tx sto
 func TestOrderSyncServerCreateOrderMapsProtoRequest(t *testing.T) {
 	orderStore := &fakeOrderStore{}
 	orderItemStore := &fakeOrderItemStore{}
-	orderSvc := ordersvc.NewSvc(util.NewCtxFunc(time.Second), orderStore, orderItemStore)
+	orderSvc := ordersvc.NewSvc(orderStore, orderItemStore)
 	server := NewOrderSyncServer(orderSvc, &fakeDb{})
 
 	resp, err := server.CreateOrder(context.Background(), &orderbotv1pb.CreateOrderRequest{

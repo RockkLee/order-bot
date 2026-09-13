@@ -13,13 +13,12 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 
 	"order-bot-mgmt-svc/internal/services/ordersvc"
-	"order-bot-mgmt-svc/internal/util"
 )
 
 func TestNewServerServesOrderSyncService(t *testing.T) {
 	orderStore := &fakeOrderStore{}
 	orderItemStore := &fakeOrderItemStore{}
-	orderSvc := ordersvc.NewSvc(util.NewCtxFunc(time.Second), orderStore, orderItemStore)
+	orderSvc := ordersvc.NewSvc(orderStore, orderItemStore)
 
 	lis := bufconn.Listen(1024 * 1024)
 	defer func() { _ = lis.Close() }()

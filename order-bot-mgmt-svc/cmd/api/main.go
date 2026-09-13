@@ -17,7 +17,6 @@ import (
 	"order-bot-mgmt-svc/internal/services/botsvc"
 	"order-bot-mgmt-svc/internal/services/menusvc"
 	"order-bot-mgmt-svc/internal/services/ordersvc"
-	"order-bot-mgmt-svc/internal/util"
 	"order-bot-mgmt-svc/internal/util/errutil"
 	"os/signal"
 	"syscall"
@@ -29,28 +28,26 @@ import (
 )
 
 func newServices(rsrc *resource.Resource, cfg config.Config) *services.Services {
-	ctxFunc := util.NewCtxFunc(cfg.Others.QryCtxTimeout)
-	return services.NewServices(
-		func() *authsvc.Svc {
-			return authsvc.NewSvc(rsrc, ctxFunc, cfg, sqldb.NewUserStore(rsrc.DB))
-		},
-		func() *menusvc.Svc {
-			menuStore := sqldb.NewMenuStore(rsrc.DB)
-			menuItemStore := sqldb.NewMenuItemStore(rsrc.DB)
-			publishedMenuStore := orderbotsqldb.NewPublishedMenuStore(rsrc.OrderBotDB)
-			return menusvc.NewSvc(rsrc, ctxFunc, menuStore, menuItemStore, publishedMenuStore)
-		},
-		func() *botsvc.Svc {
-			botStore := sqldb.NewBotStore(rsrc.DB)
+	auth := authsvc.NewSvc(rsrc, cfg, sqldb.NewUserStore(rsrc.DB))
 
-			userBotStore := sqldb.NewUserBotStore(rsrc.DB)
-			return botsvc.NewSvc(rsrc, ctxFunc, cfg, botStore, userBotStore)
-		},
-		func() *ordersvc.Svc {
-			orderStore := sqldb.NewOrderStore(rsrc.OrderBotDB)
-			orderItemStore := sqldb.NewOrderItemStore(rsrc.OrderBotDB)
-			return ordersvc.NewSvc(ctxFunc, orderStore, orderItemStore)
-		},
+	menuStore := sqldb.NewMenuStore(rsrc.DB)
+	menuItemStore := sqldb.NewMenuItemStore(rsrc.DB)
+	publishedMenuStore := orderbotsqldb.NewPublishedMenuStore(rsrc.OrderBotDB)
+	menu := menusvc.NewSvc(rsrc, menuStore, menuItemStore, publishedMenuStore)
+
+	botStore := sqldb.NewBotStore(rsrc.DB)
+	userBotStore := sqldb.NewUserBotStore(rsrc.DB)
+	bot := botsvc.NewSvc(rsrc, cfg, botStore, userBotStore)
+
+	orderStore := sqldb.NewOrderStore(rsrc.OrderBotDB)
+	orderItemStore := sqldb.NewOrderItemStore(rsrc.OrderBotDB)
+	order := ordersvc.NewSvc(orderStore, orderItemStore)
+
+	return services.NewServices(
+		auth,
+		menu,
+		bot,
+		order,
 	)
 }
 
@@ -87,7 +84,7 @@ func main() {
 
 	// Create the gRPC listener before starting goroutines so bind failures surface immediately.
 	grpcAddr := fmt.Sprintf("%s:%d", cfg.GrpcServer.Address, cfg.GrpcServer.Port)
-	grpcSrv, grpcLis, err := grpcserver.NewListeningServer(grpcAddr, svcs.Order.Get(), rsrc.OrderBotDB)
+	grpcSrv, grpcLis, err := grpcserver.NewListeningServer(grpcAddr, svcs.Order, rsrc.OrderBotDB)
 	if err != nil {
 		log.Fatal(err)
 	}

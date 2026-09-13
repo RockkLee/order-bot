@@ -16,10 +16,10 @@ import (
 type OrderSyncServer struct {
 	orderbotmgmtsvcpb.UnimplementedOrderSyncServiceServer
 	orderSvc *ordersvc.Svc
-	db       sqldb.Service
+	db       sqldb.IDB
 }
 
-func NewOrderSyncServer(orderSvc *ordersvc.Svc, db sqldb.Service) *OrderSyncServer {
+func NewOrderSyncServer(orderSvc *ordersvc.Svc, db sqldb.IDB) *OrderSyncServer {
 	return &OrderSyncServer{orderSvc: orderSvc, db: db}
 }
 

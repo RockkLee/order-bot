@@ -15,13 +15,12 @@ import (
 
 type Svc struct {
 	db           *sqldb.DB
-	ctxFunc      util.CtxFunc
 	botStore     store.Bot
 	userBotStore store.UserBot
 	accessSecret []byte
 }
 
-func NewSvc(rsrc *resource.Resource, ctxFunc util.CtxFunc, cfg config.Config, botStore store.Bot, userBotStore store.UserBot) *Svc {
+func NewSvc(rsrc *resource.Resource, cfg config.Config, botStore store.Bot, userBotStore store.UserBot) *Svc {
 	if botStore == nil || rsrc == nil || rsrc.DB == nil {
 		panic("botsvc.NewSvc(), botStore, menuItemStore or db is nil")
 	}
@@ -29,14 +28,11 @@ func NewSvc(rsrc *resource.Resource, ctxFunc util.CtxFunc, cfg config.Config, bo
 		botStore:     botStore,
 		userBotStore: userBotStore,
 		db:           rsrc.DB,
-		ctxFunc:      ctxFunc,
 		accessSecret: []byte(cfg.Auth.AccessSecret),
 	}
 }
 
 func (s *Svc) CreateBot(ctx context.Context, tx store.Tx, name string, userId string) error {
-	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
-	defer cancel()
 	newBot := entities.Bot{
 		ID:      util.NewID(),
 		BotName: name,
@@ -56,8 +52,6 @@ func (s *Svc) CreateBot(ctx context.Context, tx store.Tx, name string, userId st
 }
 
 func (s *Svc) GetBotId(ctx context.Context, tokenStr string) (botId string, err error) {
-	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
-	defer cancel()
 
 	claims, err := jwtutil.ParseJWT(s.accessSecret, tokenStr, time.Now())
 	if err != nil {

@@ -13,7 +13,6 @@ import (
 	"order-bot-mgmt-svc/internal/services/botsvc"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/store/fake"
-	"order-bot-mgmt-svc/internal/util"
 	"strings"
 	"testing"
 	"time"
@@ -57,7 +56,6 @@ func TestSignupHdlrFunc(t *testing.T) {
 			name: "happy path",
 			body: `{"email":"test@example.com","password":"secret","bot_name":"my-bot"}`,
 			server: func() AuthServer {
-				ctxFunc := util.NewCtxFunc(cfgFakeAuthHdlr.Others.QryCtxTimeout)
 				userStore := &fake.UserStore{
 					CreateFn:       func(_ context.Context, _ store.Tx, _ entities.User) error { return nil },
 					UpdateTokensFn: func(_ context.Context, _ store.Tx, _ string, _, _ string) error { return nil },
@@ -69,8 +67,8 @@ func TestSignupHdlrFunc(t *testing.T) {
 					CreateFn: func(_ context.Context, _ store.Tx, _ entities.UserBot) error { return nil },
 				}
 				return &fakeAuthServer{
-					authSvc: authsvc.NewSvc(resource.New(nil, nil, resource.GrpcClientConn{}), ctxFunc, cfgFakeAuthHdlr, userStore),
-					botSvc:  botsvc.NewSvc(resource.New(&sqldb.DB{}, nil, resource.GrpcClientConn{}), ctxFunc, cfgFakeAuthHdlr, botStore, userBotStore),
+					authSvc: authsvc.NewSvc(resource.New(&sqldb.DB{}, nil, resource.GrpcClientConn{}), cfgFakeAuthHdlr, userStore),
+					botSvc:  botsvc.NewSvc(resource.New(&sqldb.DB{}, nil, resource.GrpcClientConn{}), cfgFakeAuthHdlr, botStore, userBotStore),
 					WithTxFn: func(ctx context.Context, fn func(context.Context, store.Tx) error) error {
 						return fn(ctx, nil)
 					},
@@ -99,7 +97,6 @@ func TestSignupHdlrFunc(t *testing.T) {
 			name: "user already exists",
 			body: `{"email":"test@example.com","password":"secret","bot_name":"my-bot"}`,
 			server: func() AuthServer {
-				ctxFunc := util.NewCtxFunc(cfgFakeAuthHdlr.Others.QryCtxTimeout)
 				userStore := &fake.UserStore{
 					CreateFn: func(_ context.Context, _ store.Tx, _ entities.User) error {
 						return fmt.Errorf("sqldb.UserStore.Create: %w", store.ErrUserExists)
@@ -112,8 +109,8 @@ func TestSignupHdlrFunc(t *testing.T) {
 					CreateFn: func(_ context.Context, _ store.Tx, _ entities.UserBot) error { return nil },
 				}
 				return &fakeAuthServer{
-					authSvc: authsvc.NewSvc(resource.New(nil, nil, resource.GrpcClientConn{}), ctxFunc, cfgFakeAuthHdlr, userStore),
-					botSvc:  botsvc.NewSvc(resource.New(&sqldb.DB{}, nil, resource.GrpcClientConn{}), ctxFunc, cfgFakeAuthHdlr, botStore, userBotStore),
+					authSvc: authsvc.NewSvc(resource.New(&sqldb.DB{}, nil, resource.GrpcClientConn{}), cfgFakeAuthHdlr, userStore),
+					botSvc:  botsvc.NewSvc(resource.New(&sqldb.DB{}, nil, resource.GrpcClientConn{}), cfgFakeAuthHdlr, botStore, userBotStore),
 					WithTxFn: func(ctx context.Context, fn func(context.Context, store.Tx) error) error {
 						return fn(ctx, nil)
 					},
@@ -125,7 +122,6 @@ func TestSignupHdlrFunc(t *testing.T) {
 			name: "bot creation fails",
 			body: `{"email":"test@example.com","password":"secret","bot_name":"my-bot"}`,
 			server: func() AuthServer {
-				ctxFunc := util.NewCtxFunc(cfgFakeAuthHdlr.Others.QryCtxTimeout)
 				userStore := &fake.UserStore{
 					CreateFn:       func(_ context.Context, _ store.Tx, _ entities.User) error { return nil },
 					UpdateTokensFn: func(_ context.Context, _ store.Tx, _ string, _, _ string) error { return nil },
@@ -136,8 +132,8 @@ func TestSignupHdlrFunc(t *testing.T) {
 					},
 				}
 				return &fakeAuthServer{
-					authSvc: authsvc.NewSvc(resource.New(nil, nil, resource.GrpcClientConn{}), ctxFunc, cfgFakeAuthHdlr, userStore),
-					botSvc:  botsvc.NewSvc(resource.New(&sqldb.DB{}, nil, resource.GrpcClientConn{}), ctxFunc, cfgFakeAuthHdlr, botStore, &fake.UserBotStore{}),
+					authSvc: authsvc.NewSvc(resource.New(&sqldb.DB{}, nil, resource.GrpcClientConn{}), cfgFakeAuthHdlr, userStore),
+					botSvc:  botsvc.NewSvc(resource.New(&sqldb.DB{}, nil, resource.GrpcClientConn{}), cfgFakeAuthHdlr, botStore, &fake.UserBotStore{}),
 					WithTxFn: func(ctx context.Context, fn func(context.Context, store.Tx) error) error {
 						return fn(ctx, nil)
 					},
