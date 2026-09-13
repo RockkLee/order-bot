@@ -68,26 +68,26 @@ func main() {
 	if orderBotDbErr != nil {
 		log.Fatalf("failed to connect to order-bot database: \n%v", orderBotDbErr)
 	}
-	orderBotConn, err := resource.NewOrderBotGRPCConn(cfg.OrderBotGrpc)
+	orderBotGrpcConn, err := resource.NewOrderBotGRPCConn(cfg.OrderBotGrpcClient)
 	if err != nil {
 		log.Fatalf("failed to create order-bot grpc client connection: \n%v", errutil.FormatErrChain(err))
 	}
-	rsrc := resource.New(db, orderBotDb, resource.GRPCConn{OrderBot: orderBotConn})
+	rsrc := resource.New(db, orderBotDb, resource.GrpcClientConn{OrderBot: orderBotGrpcConn})
 	defer func() {
 		if err := rsrc.Close(); err != nil {
 			log.Printf("failed to close resources: \n%v", errutil.FormatErrChain(err))
 		}
 	}()
-	serviceContainer := newServices(rsrc, cfg)
+	svcs := newServices(rsrc, cfg)
 
 	// Build the Gin-backed HTTP server explicitly so main owns startup and shutdown.
-	httpServContainer := httpserver.NewServerContainer(cfg.App.Port, rsrc.DB, serviceContainer)
+	httpServContainer := httpserver.NewServerContainer(cfg.App.Port, rsrc.DB, svcs)
 	httpAddr := fmt.Sprintf("%s:%d", cfg.App.Address, cfg.App.Port)
 	httpSrv := httpserver.NewHTTPServer(httpServContainer, cfg.App.GinMode, httpAddr)
 
 	// Create the gRPC listener before starting goroutines so bind failures surface immediately.
-	grpcAddr := fmt.Sprintf("%s:%d", cfg.Grpc.Address, cfg.Grpc.Port)
-	grpcSrv, grpcLis, err := grpcserver.NewListeningServer(grpcAddr, serviceContainer.Order.Get(), rsrc.OrderBotDB)
+	grpcAddr := fmt.Sprintf("%s:%d", cfg.GrpcServer.Address, cfg.GrpcServer.Port)
+	grpcSrv, grpcLis, err := grpcserver.NewListeningServer(grpcAddr, svcs.Order.Get(), rsrc.OrderBotDB)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -111,7 +111,7 @@ func main() {
 		}
 	}()
 
-	// Stop when either the process receives a shutdown signal or one of the servers fails.
+	// Waiting here until either the process receives a shutdown signal or one of the servers fails.
 	var runErr error
 	select {
 	case <-ctx.Done():

@@ -43,7 +43,7 @@ func BenchmarkSvcSignup(b *testing.B) {
 			fakeUserStore.UpdateTokensFn = func(ctx context.Context, tx store.Tx, id string, accessToken string, refreshToken string) error {
 				return nil
 			}
-			svc := NewSvc(resource.New(nil, nil, resource.GRPCConn{}), ctxFunc, testCfg, fakeUserStore)
+			svc := NewSvc(resource.New(nil, nil, resource.GrpcClientConn{}), ctxFunc, testCfg, fakeUserStore)
 			b.ResetTimer() // Reset the benchmark timer so setup work above is excluded from measurement.
 			for i := 0; i < b.N; i++ {
 				_, _, err := svc.Signup(ctx, nil, tt.email, tt.password)

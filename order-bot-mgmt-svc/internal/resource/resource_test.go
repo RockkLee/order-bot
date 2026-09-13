@@ -15,15 +15,15 @@ func TestNewStoresInfrastructureHandles(t *testing.T) {
 		t.Fatalf("grpc.NewClient() error = %v", err)
 	}
 
-	res := New(nil, nil, GRPCConn{OrderBot: conn})
+	res := New(nil, nil, GrpcClientConn{OrderBot: conn})
 	if res.DB != nil {
 		t.Fatalf("expected DB to be nil")
 	}
 	if res.OrderBotDB != nil {
 		t.Fatalf("expected OrderBotDB to be nil")
 	}
-	if res.GRPCConn.OrderBot != conn {
-		t.Fatalf("expected GRPCConn.OrderBot to match input conn")
+	if res.GrpcClientConn.OrderBot != conn {
+		t.Fatalf("expected GrpcClientConn.OrderBot to match input conn")
 	}
 	if err := res.Close(); err != nil {
 		t.Fatalf("Close() error = %v", err)

@@ -10,21 +10,21 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-type GRPCConn struct {
+type GrpcClientConn struct {
 	OrderBot *grpc.ClientConn
 }
 
 type Resource struct {
-	DB         *sqldb.DB
-	OrderBotDB *sqldb.DB
-	GRPCConn   GRPCConn
+	DB             *sqldb.DB
+	OrderBotDB     *sqldb.DB
+	GrpcClientConn GrpcClientConn
 }
 
-func New(db, orderBotDB *sqldb.DB, grpcConn GRPCConn) *Resource {
+func New(db, orderBotDB *sqldb.DB, grpcConn GrpcClientConn) *Resource {
 	return &Resource{
-		DB:         db,
-		OrderBotDB: orderBotDB,
-		GRPCConn:   grpcConn,
+		DB:             db,
+		OrderBotDB:     orderBotDB,
+		GrpcClientConn: grpcConn,
 	}
 }
 
@@ -34,8 +34,8 @@ func (r *Resource) Close() error {
 	}
 
 	var errs []error
-	if r.GRPCConn.OrderBot != nil {
-		if err := r.GRPCConn.OrderBot.Close(); err != nil {
+	if r.GrpcClientConn.OrderBot != nil {
+		if err := r.GrpcClientConn.OrderBot.Close(); err != nil {
 			errs = append(errs, fmt.Errorf("resource.Resource.Close grpc order bot conn: %w", err))
 		}
 	}
