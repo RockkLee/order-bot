@@ -154,7 +154,7 @@ class OrderServiceTests(AsyncServiceTestCase):
         ]
         intent = IntentResult(valid=True, intent_type="checkout", confirmed=False)
 
-        response = await order_service.checkout(None, "session-4", intent, cart)
+        response = await order_service.checkout(None, "session-4", "bot-4", intent, cart)
 
         self.assertIn("confirm", response.reply.lower())
         self.assertIsNone(response.order_id)
@@ -169,7 +169,7 @@ class OrderServiceTests(AsyncServiceTestCase):
                 _ = await cart.awaitable_attrs.items
                 intent = IntentResult(valid=True, intent_type="checkout", confirmed=True)
 
-            response = await order_service.checkout(session, "session-5", intent, cart)
+            response = await order_service.checkout(session, "session-5", "bot-5", intent, cart)
 
         self.assertIsNotNone(response.order_id)
         self.assertEqual(response.cart.status, CartStatus.CLOSED)

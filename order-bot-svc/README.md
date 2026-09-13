@@ -51,3 +51,24 @@
 
         Z([Request finished])
 ```
+
+
+```mermaid
+flowchart LR
+    client[Client] -->|checkout| orderBotService[order-bot-svc]
+
+    orderBotService -->|insert a row of order<br/>status: PROCESSING| orderBotServiceDb[(order-bot-svc-db)]
+
+    orderBotService -->|gRPC| orderBotMgmtSvc[order-bot-mgmt-svc]
+
+    orderBotMgmtSvc -->|insert records of 'Order' and 'OrderItem'| orderBotMgmtSvcDb[(order-bot-mgmt-svc-db)]
+
+```
+
+```mermaid
+flowchart LR
+    orderBotMgmtSvc -->|gRPC| orderBotService
+
+    orderBotService -->|update the order<br/>status: COMPLETED| orderBotServiceDb
+
+```

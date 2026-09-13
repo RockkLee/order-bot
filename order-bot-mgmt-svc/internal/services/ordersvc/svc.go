@@ -52,3 +52,16 @@ func (s *Svc) GetOrdersWithItems(ctx context.Context, botId string) ([]OrderWith
 	}
 	return result, nil
 }
+
+func (s *Svc) CreateOrderWithItems(ctx context.Context, tx store.Tx, order entities.Order, items []entities.OrderItem) error {
+	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
+	defer cancel()
+
+	if err := s.orderStore.Insert(ctx, tx, order); err != nil {
+		return fmt.Errorf("ordersvc.CreateOrderWithItems, insert order: %w", err)
+	}
+	if err := s.orderItemStore.InsertMany(ctx, tx, items); err != nil {
+		return fmt.Errorf("ordersvc.CreateOrderWithItems, insert items: %w", err)
+	}
+	return nil
+}

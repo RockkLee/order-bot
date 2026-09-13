@@ -1,6 +1,7 @@
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.entities import MenuItem, Cart, CartItem, Order, OrderItem, Menu
+from src.enums import OrderStatus
 
 
 async def get_menu_by_query(db: AsyncSession, menu_id: str) -> list[MenuItem]:
@@ -54,7 +55,13 @@ async def upsert_cart_item(
 
 
 async def insert_order(db: AsyncSession, cart: Cart, bot_id: str, total_scaled: int) -> Order:
-    order = Order(cart_id=cart.id, bot_id=bot_id, session_id=cart.session_id, total_scaled=total_scaled)
+    order = Order(
+        cart_id=cart.id,
+        bot_id=bot_id,
+        session_id=cart.session_id,
+        total_scaled=total_scaled,
+        status=OrderStatus.PROCESSING,
+    )
     db.add(order)
     await db.flush()
     return order
@@ -73,3 +80,8 @@ async def insert_order_items(
             total_price_scaled=item.total_price_scaled,
         )
         db.add(order_item)
+
+
+async def update_order_status(db: AsyncSession, order: Order, status: OrderStatus) -> None:
+    order.status = status
+    await db.flush()

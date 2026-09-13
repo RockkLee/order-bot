@@ -6,6 +6,7 @@ import (
 	"order-bot-mgmt-svc/internal/config"
 	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/models/entities"
+	"order-bot-mgmt-svc/internal/resource"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/util"
 	"order-bot-mgmt-svc/internal/util/jwtutil"
@@ -20,14 +21,14 @@ type Svc struct {
 	accessSecret []byte
 }
 
-func NewSvc(db *sqldb.DB, ctxFunc util.CtxFunc, cfg config.Config, botStore store.Bot, userBotStore store.UserBot) *Svc {
-	if botStore == nil || db == nil {
+func NewSvc(rsrc *resource.Resource, ctxFunc util.CtxFunc, cfg config.Config, botStore store.Bot, userBotStore store.UserBot) *Svc {
+	if botStore == nil || rsrc == nil || rsrc.DB == nil {
 		panic("botsvc.NewSvc(), botStore, menuItemStore or db is nil")
 	}
 	return &Svc{
 		botStore:     botStore,
 		userBotStore: userBotStore,
-		db:           db,
+		db:           rsrc.DB,
 		ctxFunc:      ctxFunc,
 		accessSecret: []byte(cfg.Auth.AccessSecret),
 	}

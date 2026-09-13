@@ -39,24 +39,7 @@ export const isControlledErr = (x: unknown): x is Err => {
 }
 
 export const fetchApi = async <T>(basePath: string, path: string, options: FetchApiOptions<T>) => {
-  const { method = 'PUT', req, jwt, headers, wrapReq = true, errMsg } = options
-
-  if (!isBusinessOpenUtc8()) {
-    redirectToClosed()
-  }
-
-  console.log(`${basePath}${path}`)
-  const response = await fetch(`${basePath}${path}`, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
-      ...(headers ?? {}),
-    },
-    ...(req === undefined
-      ? {}
-      : { body: JSON.stringify(wrapReq ? { req } : req) }),
-  })
+  const { errMsg, response } = await doFetch(basePath, path, options)
 
   if (response.status === 401) {
     localStorage.removeItem('access_token')
@@ -71,6 +54,19 @@ export const fetchApi = async <T>(basePath: string, path: string, options: Fetch
 }
 
 export const fetchAuthApi = async <T>(basePath: string, path: string, options: FetchApiOptions<T>) => {
+  const { errMsg, response } = await doFetch(basePath, path, options)
+
+  if (response.status === 401 || response.status === 409) {
+    return response
+  }
+  if (!response.ok) {
+    throw new Error(errMsg)
+  }
+
+  return response
+}
+
+async function doFetch<T>(basePath: string, path: string, options: FetchApiOptions<T>) {
   const { method = 'PUT', req, jwt, headers, wrapReq = true, errMsg } = options
 
   if (!isBusinessOpenUtc8()) {
@@ -89,13 +85,5 @@ export const fetchAuthApi = async <T>(basePath: string, path: string, options: F
       ? {}
       : { body: JSON.stringify(wrapReq ? { req } : req) }),
   })
-
-  if (response.status === 401 || response.status === 409) {
-    return response
-  }
-  if (!response.ok) {
-    throw new Error(errMsg)
-  }
-
-  return response
+  return { errMsg, response }
 }

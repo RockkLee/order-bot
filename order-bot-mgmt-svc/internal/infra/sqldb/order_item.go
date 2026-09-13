@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"order-bot-mgmt-svc/internal/models/entities"
+	"order-bot-mgmt-svc/internal/store"
 
 	"gorm.io/gorm"
 )
@@ -55,4 +56,30 @@ func (s *OrderItemStore) FindByOrderIDs(ctx context.Context, orderIDs []string) 
 		items = append(items, rec.ToModel())
 	}
 	return items, nil
+}
+
+func (s *OrderItemStore) InsertMany(ctx context.Context, tx store.Tx, items []entities.OrderItem) error {
+	if len(items) == 0 {
+		return nil
+	}
+	db, errDb := resolveDB(s.db, tx)
+	if errDb != nil {
+		return fmt.Errorf("sqldb.OrderItemStore.InsertMany: %w", errDb)
+	}
+	records := make([]OrderItemRecord, 0, len(items))
+	for _, item := range items {
+		records = append(records, OrderItemRecord{
+			ID:               item.ID,
+			OrderID:          item.OrderID,
+			MenuItemID:       item.MenuItemID,
+			Name:             item.Name,
+			Quantity:         item.Quantity,
+			UnitPriceScaled:  item.UnitPriceScaled,
+			TotalPriceScaled: item.TotalPriceScaled,
+		})
+	}
+	if err := db.WithContext(ctx).Create(&records).Error; err != nil {
+		return fmt.Errorf("sqldb.OrderItemStore.InsertMany: %w", err)
+	}
+	return nil
 }

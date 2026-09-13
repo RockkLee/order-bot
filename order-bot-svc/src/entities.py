@@ -4,7 +4,7 @@ from datetime import datetime, UTC
 from sqlalchemy import String, Integer, Double, Enum, ForeignKey, DateTime, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.db import Base
-from src.enums import CartStatus
+from src.enums import CartStatus, OrderStatus
 
 
 def _uuid_str() -> str:
@@ -87,6 +87,11 @@ class Order(BaseModel):
     bot_id: Mapped[str] = mapped_column(String(64), index=True)
     session_id: Mapped[str] = mapped_column(String(36), index=True)
     total_scaled: Mapped[int] = mapped_column(Integer)
+    status: Mapped[OrderStatus] = mapped_column(
+        Enum(OrderStatus, name="order_status", native_enum=False),
+        default=OrderStatus.PROCESSING,
+        nullable=False,
+    )
 
     order_items: Mapped[list["OrderItem"]] = relationship(
         "OrderItem",
