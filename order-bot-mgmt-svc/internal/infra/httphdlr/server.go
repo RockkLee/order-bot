@@ -1,7 +1,6 @@
-package httpserver
+package httphdlr
 
 import (
-	"context"
 	"net/http"
 	"order-bot-mgmt-svc/internal/services"
 	"order-bot-mgmt-svc/internal/services/authsvc"
@@ -14,21 +13,15 @@ import (
 type ServerContainer struct {
 	port int
 
-	db       store.DB
+	idb      store.DB
 	services *services.Services
 }
 
 func NewServerContainer(port int, db store.DB, services *services.Services) *ServerContainer {
-	return &ServerContainer{port: port, db: db, services: services}
+	return &ServerContainer{port: port, idb: db, services: services}
 }
 
-func (s *ServerContainer) dbService() store.DB { return s.db }
-func (s *ServerContainer) WithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) error) error {
-	return s.db.WithTx(ctx, fn)
-}
-func (s *ServerContainer) GetWithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) (any, error)) (any, error) {
-	return s.db.GetWithTx(ctx, fn)
-}
+func (s *ServerContainer) db() store.DB              { return s.idb }
 func (s *ServerContainer) AuthService() *authsvc.Svc { return s.services.Auth }
 func (s *ServerContainer) MenuService() *menusvc.Svc { return s.services.Menu }
 func (s *ServerContainer) BotService() *botsvc.Svc   { return s.services.Bot }

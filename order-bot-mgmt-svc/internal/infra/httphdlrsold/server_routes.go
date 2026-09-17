@@ -1,11 +1,10 @@
-package httpserver
+package httphdlrsold
 
 import (
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"order-bot-mgmt-svc/internal/infra/httphdlrsold"
 )
 
 func (s *Server) RegisterRoutes() http.Handler {
@@ -14,16 +13,16 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("/", s.helloWorldHandler)
 	mux.HandleFunc("/health", s.healthHandler)
 	mux.Handle(
-		fmt.Sprintf("%s/", httphdlrsold.AuthPrefix),
-		http.StripPrefix(httphdlrsold.AuthPrefix, httphdlrsold.AuthHdlr(s)),
+		fmt.Sprintf("%s/", AuthPrefix),
+		http.StripPrefix(AuthPrefix, AuthHdlr(s)),
 	)
 	mux.Handle(
-		fmt.Sprintf("%s/", httphdlrsold.MenuPrefix),
-		http.StripPrefix(httphdlrsold.MenuPrefix, httphdlrsold.MenuHdlr(s)),
+		fmt.Sprintf("%s/", MenuPrefix),
+		http.StripPrefix(MenuPrefix, MenuHdlr(s)),
 	)
 	mux.Handle(
-		fmt.Sprintf("%s/", httphdlrsold.BotPrefix),
-		http.StripPrefix(httphdlrsold.BotPrefix, httphdlrsold.BotHdlr(s)),
+		fmt.Sprintf("%s/", BotPrefix),
+		http.StripPrefix(BotPrefix, BotHdlr(s)),
 	)
 
 	// Wrap the mux with CORS middleware
@@ -38,28 +37,28 @@ func (s *Server) helloWorldHandler(w http.ResponseWriter, r *http.Request) {
 	resp := map[string]string{"message": "Hello World"}
 	jsonResp, err := json.Marshal(resp)
 	if err != nil {
-		httphdlrsold.WriteError(w, http.StatusInternalServerError, httphdlrsold.ErrMsgFailedMarshalResponse.Error())
+		WriteError(w, http.StatusInternalServerError, ErrMsgFailedMarshalResponse.Error())
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if _, err := w.Write(jsonResp); err != nil {
-		log.Printf("%s: %v", httphdlrsold.LogMsgFailedWriteResponse, err)
+		log.Printf("%s: %v", LogMsgFailedWriteResponse, err)
 	}
 }
 
 func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
-	stats, err := s.dbService().Health()
+	stats, err := s.db().Health()
 	if err != nil {
-		httphdlrsold.WriteError(w, http.StatusServiceUnavailable, httphdlrsold.ErrMsgFailedCheckDatabaseHealth.Error())
+		WriteError(w, http.StatusServiceUnavailable, ErrMsgFailedCheckDatabaseHealth.Error())
 		return
 	}
 	resp, err := json.Marshal(stats)
 	if err != nil {
-		httphdlrsold.WriteError(w, http.StatusInternalServerError, httphdlrsold.ErrMsgFailedMarshalHealthCheck.Error())
+		WriteError(w, http.StatusInternalServerError, ErrMsgFailedMarshalHealthCheck.Error())
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if _, err := w.Write(resp); err != nil {
-		log.Printf("%s: %v", httphdlrsold.LogMsgFailedWriteResponse, err)
+		log.Printf("%s: %v", LogMsgFailedWriteResponse, err)
 	}
 }

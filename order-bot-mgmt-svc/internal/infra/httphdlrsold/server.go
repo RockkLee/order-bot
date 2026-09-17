@@ -1,7 +1,6 @@
-package httpserver
+package httphdlrsold
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"order-bot-mgmt-svc/internal/services/authsvc"
@@ -16,14 +15,14 @@ import (
 type Server struct {
 	port int
 
-	db       store.DB
+	idb      store.DB
 	services *services.Services
 }
 
 func NewServer(port int, db store.DB, services *services.Services) *http.Server {
 	srv := &Server{
 		port: port,
-		db:   db,
+		idb:  db,
 
 		services: services,
 	}
@@ -40,16 +39,8 @@ func NewServer(port int, db store.DB, services *services.Services) *http.Server 
 	return server
 }
 
-func (s *Server) dbService() store.DB {
-	return s.db
-}
-
-func (s *Server) WithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) error) error {
-	return s.db.WithTx(ctx, fn)
-}
-
-func (s *Server) GetWithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) (any, error)) (any, error) {
-	return s.db.GetWithTx(ctx, fn)
+func (s *Server) db() store.DB {
+	return s.idb
 }
 
 func (s *Server) AuthService() *authsvc.Svc {

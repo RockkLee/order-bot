@@ -1,10 +1,9 @@
-package httpserver
+package httphdlr
 
 import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"order-bot-mgmt-svc/internal/infra/httphdlr"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -33,20 +32,20 @@ func NewRouters(s *ServerContainer, ginMode string) http.Handler {
 	public := root.Group("")
 	protected := root.Group("")
 	protected.Use(authMiddleware(s))
-	auth := public.Group(httphdlr.AuthPrefix)
-	httphdlr.RegisterAuthRoutes(auth, s)
-	menus := protected.Group(httphdlr.MenuPrefix)
-	httphdlr.RegisterMenuRoutes(menus, s)
-	bot := protected.Group(httphdlr.BotPrefix)
-	httphdlr.RegisterBotRoutes(bot, s)
-	orders := protected.Group(httphdlr.OrderPrefix)
-	httphdlr.RegisterOrderRoutes(orders, s)
+	auth := public.Group(AuthPrefix)
+	RegisterAuthRoutes(auth, s)
+	menus := protected.Group(MenuPrefix)
+	RegisterMenuRoutes(menus, s)
+	bot := protected.Group(BotPrefix)
+	RegisterBotRoutes(bot, s)
+	orders := protected.Group(OrderPrefix)
+	RegisterOrderRoutes(orders, s)
 
 	health := public.Group("/health")
 	health.GET("/chk", func(c *gin.Context) {
-		stats, err := s.dbService().Health()
+		stats, err := s.db().Health()
 		if err != nil {
-			c.JSON(http.StatusServiceUnavailable, gin.H{"error": httphdlr.ErrMsgFailedCheckDatabaseHealth})
+			c.JSON(http.StatusServiceUnavailable, gin.H{"error": ErrMsgFailedCheckDatabaseHealth})
 			return
 		}
 		slog.Debug("httpserver.routes.Run.health()", "stats", stats)

@@ -25,10 +25,19 @@ type fakeAuthServer struct {
 	WithTxFn func(ctx context.Context, fn func(ctx context.Context, tx store.Tx) error) error
 }
 
+type fakeAuthDB struct {
+	store.DB
+	withTxFn func(ctx context.Context, fn func(ctx context.Context, tx store.Tx) error) error
+}
+
+func (f *fakeAuthDB) WithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) error) error {
+	return f.withTxFn(ctx, fn)
+}
+
 func (f *fakeAuthServer) AuthService() *authsvc.Svc { return f.authSvc }
 func (f *fakeAuthServer) BotService() *botsvc.Svc   { return f.botSvc }
-func (f *fakeAuthServer) WithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) error) error {
-	return f.WithTxFn(ctx, fn)
+func (f *fakeAuthServer) db() store.DB {
+	return &fakeAuthDB{withTxFn: f.WithTxFn}
 }
 
 var cfgFakeAuthHdlr = config.Config{

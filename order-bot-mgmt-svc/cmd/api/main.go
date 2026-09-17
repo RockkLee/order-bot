@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"order-bot-mgmt-svc/internal/config"
 	"order-bot-mgmt-svc/internal/infra/grpc/grpcserver"
-	"order-bot-mgmt-svc/internal/infra/httphdlr/httpserver"
+	"order-bot-mgmt-svc/internal/infra/httphdlr"
 	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/infra/sqldb/orderbotsqldb"
 	"order-bot-mgmt-svc/internal/services/authsvc"
@@ -86,9 +86,9 @@ func main() {
 	svcs := newServices(rsrc, cfg)
 
 	// Build the Gin-backed HTTP server explicitly so main owns startup and shutdown.
-	httpServContainer := httpserver.NewServerContainer(cfg.App.Port, rsrc.DB, svcs)
+	httpServContainer := httphdlr.NewServerContainer(cfg.App.Port, rsrc.DB, svcs)
 	httpAddr := fmt.Sprintf("%s:%d", cfg.App.Address, cfg.App.Port)
-	httpSrv := httpserver.NewHTTPServer(httpServContainer, cfg.App.GinMode, httpAddr)
+	httpSrv := httphdlr.NewHTTPServer(httpServContainer, cfg.App.GinMode, httpAddr)
 
 	// Create the gRPC listener before starting goroutines so bind failures surface immediately.
 	grpcAddr := fmt.Sprintf("%s:%d", cfg.GrpcServer.Address, cfg.GrpcServer.Port)

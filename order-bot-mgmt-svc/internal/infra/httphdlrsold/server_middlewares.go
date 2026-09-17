@@ -1,9 +1,8 @@
-package httpserver
+package httphdlrsold
 
 import (
 	"log/slog"
 	"net/http"
-	"order-bot-mgmt-svc/internal/infra/httphdlrsold"
 	"order-bot-mgmt-svc/internal/util/errutil"
 	"order-bot-mgmt-svc/internal/util/jwtutil"
 	"strings"
@@ -47,7 +46,7 @@ func corsMiddleware(s *Server) Middleware {
 func authMiddleware(s *Server) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if strings.HasPrefix(r.URL.Path, httphdlrsold.AuthPrefix+"/") || r.URL.Path == httphdlrsold.AuthPrefix {
+			if strings.HasPrefix(r.URL.Path, AuthPrefix+"/") || r.URL.Path == AuthPrefix {
 				next.ServeHTTP(w, r)
 				return
 			}
