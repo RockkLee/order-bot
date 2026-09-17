@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package orderbot.v1;
+
+option go_package = "github.com/RockkLee/order-bot/goproto/orderbot/v1/order_bot_svc;orderbotsvcpb";
+
+import "orderbot/v1/order_bot_svc/order_status_service.proto";

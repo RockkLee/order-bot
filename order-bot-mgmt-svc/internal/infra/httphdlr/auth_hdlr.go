@@ -17,7 +17,7 @@ import (
 type AuthServer interface {
 	AuthService() *authsvc.Svc
 	BotService() *botsvc.Svc
-	WithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) error) error
+	db() store.DB
 }
 
 const AuthPrefix = "/auth"
@@ -40,7 +40,7 @@ func signupHdlrFunc(s AuthServer) gin.HandlerFunc {
 			tokens any
 			userID string
 		)
-		err := s.WithTx(c.Request.Context(), func(ctx context.Context, tx store.Tx) error {
+		err := s.db().WithTx(c.Request.Context(), func(ctx context.Context, tx store.Tx) error {
 			var err error
 			tokens, userID, err = s.AuthService().Signup(ctx, tx, req.Email, req.Password)
 			if err != nil {

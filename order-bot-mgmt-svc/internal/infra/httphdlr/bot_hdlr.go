@@ -1,7 +1,6 @@
 package httphdlr
 
 import (
-	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -17,7 +16,6 @@ import (
 type BotServer interface {
 	BotService() *botsvc.Svc
 	MenuService() *menusvc.Svc
-	GetWithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) (any, error)) (any, error)
 }
 
 const BotPrefix = "/bot"

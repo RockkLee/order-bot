@@ -21,6 +21,8 @@ class AppSettings(BaseModel):
     seed_menu: bool = os.environ["SEED_MENU"].lower() == "true"
     mistral_api_key: str = os.environ["MISTRAL_API_KEY"]
     mistral_model: str = os.environ["MISTRAL_MODEL"]
+    grpc_target_order_bot_mgmt_svc: str = os.getenv("GRPC_TARGET_ORDER_BOT_MGMT_SVC", "order-bot-mgmt-svc:50051")
+    grpc_server_port: str = os.getenv("GRPC_SERVER_PORT", "50051")
 
 
 settings = AppSettings()

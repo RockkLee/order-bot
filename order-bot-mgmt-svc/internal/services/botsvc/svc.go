@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"order-bot-mgmt-svc/internal/config"
-	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/util"
@@ -13,29 +12,25 @@ import (
 )
 
 type Svc struct {
-	db           *sqldb.DB
-	ctxFunc      util.CtxFunc
+	db           store.DB
 	botStore     store.Bot
 	userBotStore store.UserBot
 	accessSecret []byte
 }
 
-func NewSvc(db *sqldb.DB, ctxFunc util.CtxFunc, cfg config.Config, botStore store.Bot, userBotStore store.UserBot) *Svc {
-	if botStore == nil || db == nil {
+func NewSvc(rsrc *config.Resource, cfg config.Config, botStore store.Bot, userBotStore store.UserBot) *Svc {
+	if botStore == nil || rsrc == nil || rsrc.DB == nil {
 		panic("botsvc.NewSvc(), botStore, menuItemStore or db is nil")
 	}
 	return &Svc{
 		botStore:     botStore,
 		userBotStore: userBotStore,
-		db:           db,
-		ctxFunc:      ctxFunc,
+		db:           rsrc.DB,
 		accessSecret: []byte(cfg.Auth.AccessSecret),
 	}
 }
 
 func (s *Svc) CreateBot(ctx context.Context, tx store.Tx, name string, userId string) error {
-	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
-	defer cancel()
 	newBot := entities.Bot{
 		ID:      util.NewID(),
 		BotName: name,
@@ -55,8 +50,6 @@ func (s *Svc) CreateBot(ctx context.Context, tx store.Tx, name string, userId st
 }
 
 func (s *Svc) GetBotId(ctx context.Context, tokenStr string) (botId string, err error) {
-	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
-	defer cancel()
 
 	claims, err := jwtutil.ParseJWT(s.accessSecret, tokenStr, time.Now())
 	if err != nil {

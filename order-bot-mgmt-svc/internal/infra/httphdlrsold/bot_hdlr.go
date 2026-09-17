@@ -12,7 +12,7 @@ import (
 
 type BotServer interface {
 	BotService() *botsvc.Svc
-	GetWithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) (any, error)) (any, error)
+	db() store.DB
 }
 
 const BotPrefix = "/bot"
@@ -29,7 +29,7 @@ func getBotHdlrFunc(s BotServer) http.HandlerFunc {
 		if done {
 			return
 		}
-		botIdAny, err := s.GetWithTx(r.Context(), func(ctx context.Context, tx store.Tx) (any, error) {
+		botIdAny, err := s.db().GetWithTx(r.Context(), func(ctx context.Context, tx store.Tx) (any, error) {
 			botId, err := s.BotService().GetBotId(ctx, tokenStr)
 			if err != nil {
 				return nil, err

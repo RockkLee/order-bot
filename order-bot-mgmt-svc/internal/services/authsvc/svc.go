@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"order-bot-mgmt-svc/internal/config"
-	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/models"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
@@ -17,8 +16,7 @@ import (
 )
 
 type Svc struct {
-	db              *sqldb.DB
-	ctxFunc         util.CtxFunc
+	db              store.DB
 	userStore       store.User
 	accessSecret    []byte
 	refreshSecret   []byte
@@ -26,13 +24,12 @@ type Svc struct {
 	refreshTokenTTL time.Duration
 }
 
-func NewSvc(db *sqldb.DB, ctxFunc util.CtxFunc, cfg config.Config, userStore store.User) *Svc {
-	if userStore == nil || ctxFunc == nil {
-		panic("authSvc.NewSvc(), userStore or ctxFunc is nil")
+func NewSvc(rsrc *config.Resource, cfg config.Config, userStore store.User) *Svc {
+	if userStore == nil || rsrc.DB == nil {
+		panic("authSvc.NewSvc(), userStore or rsrc.DB is nil")
 	}
 	return &Svc{
-		db:              db,
-		ctxFunc:         ctxFunc,
+		db:              rsrc.DB,
 		userStore:       userStore,
 		accessSecret:    []byte(cfg.Auth.AccessSecret),
 		refreshSecret:   []byte(cfg.Auth.RefreshSecret),
@@ -56,8 +53,6 @@ func (s *Svc) Signup(ctx context.Context, tx store.Tx, email, password string) (
 		AccessToken:  "",
 		RefreshToken: "",
 	}
-	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
-	defer cancel()
 	if err := s.userStore.Create(ctx, tx, newUser); err != nil {
 		if errors.Is(err, store.ErrUserExists) {
 			return models.TokenPair{}, "", fmt.Errorf("authsvc.Signup: %w", ErrUserExists)
@@ -72,8 +67,6 @@ func (s *Svc) Signup(ctx context.Context, tx store.Tx, email, password string) (
 }
 
 func (s *Svc) Login(ctx context.Context, email, password string) (models.TokenPair, error) {
-	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
-	defer cancel()
 	user, errFindUsr := s.userStore.FindByEmail(ctx, nil, email)
 	if errFindUsr != nil {
 		if errors.Is(errFindUsr, store.ErrNotFound) {
@@ -96,8 +89,6 @@ func (s *Svc) Logout(ctx context.Context, refreshToken string) error {
 	if errValidation != nil {
 		return fmt.Errorf("authsvc.Logout: %w", errValidation)
 	}
-	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
-	defer cancel()
 	if err := s.userStore.UpdateTokens(ctx, nil, userID, "", ""); err != nil {
 		return fmt.Errorf("authsvc.Logout: %w", err)
 	}
@@ -132,8 +123,6 @@ func (s *Svc) ValidateRefreshToken(ctx context.Context, refreshToken string) (st
 	if claims.Typ != "refresh" {
 		return "", fmt.Errorf("authsvc.ValidateRefreshToken(), claims.Typ != 'refresh': %w", err)
 	}
-	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
-	defer cancel()
 	user, err := s.userStore.FindByID(ctx, nil, claims.Sub)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
@@ -171,8 +160,6 @@ func (s *Svc) issueTokens(ctx context.Context, tx store.Tx, user entities.User) 
 	if err != nil {
 		return models.TokenPair{}, fmt.Errorf("authsvc.issueTokens: %w", err)
 	}
-	ctx, cancel := util.CallCtxFunc(ctx, s.ctxFunc)
-	defer cancel()
 	if err := s.userStore.UpdateTokens(ctx, tx, user.ID, accessToken, refreshToken); err != nil {
 		return models.TokenPair{}, fmt.Errorf("authsvc.issueTokens: %w", err)
 	}

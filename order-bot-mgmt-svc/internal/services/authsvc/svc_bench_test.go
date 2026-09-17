@@ -5,10 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"order-bot-mgmt-svc/internal/apperr"
+	"order-bot-mgmt-svc/internal/config"
+	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/store/fake"
-	"order-bot-mgmt-svc/internal/util"
 	"testing"
 )
 
@@ -30,7 +31,6 @@ func BenchmarkSvcSignup(b *testing.B) {
 		{name: "user already exists", email: "123", password: "456", errUsrStoreCrt: fmt.Errorf("sqldb.UserStore.Create: %w", store.ErrUserExists), out: output{ErrUserExists}},
 	}
 
-	ctxFunc := util.NewCtxFunc(testCfg.Others.QryCtxTimeout)
 	ctx := context.Background()
 
 	for _, tt := range tests {
@@ -42,7 +42,7 @@ func BenchmarkSvcSignup(b *testing.B) {
 			fakeUserStore.UpdateTokensFn = func(ctx context.Context, tx store.Tx, id string, accessToken string, refreshToken string) error {
 				return nil
 			}
-			svc := NewSvc(nil, ctxFunc, testCfg, fakeUserStore)
+			svc := NewSvc(config.New(&sqldb.DB{}, nil, config.GrpcClientConn{}), testCfg, fakeUserStore)
 			b.ResetTimer() // Reset the benchmark timer so setup work above is excluded from measurement.
 			for i := 0; i < b.N; i++ {
 				_, _, err := svc.Signup(ctx, nil, tt.email, tt.password)
