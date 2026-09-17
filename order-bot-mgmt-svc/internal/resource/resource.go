@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"order-bot-mgmt-svc/internal/config"
-	"order-bot-mgmt-svc/internal/infra/sqldb"
+	"order-bot-mgmt-svc/internal/store"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -15,12 +15,12 @@ type GrpcClientConn struct {
 }
 
 type Resource struct {
-	DB             *sqldb.DB
-	OrderBotDB     *sqldb.DB
+	DB             store.DB
+	OrderBotDB     store.DB
 	GrpcClientConn GrpcClientConn
 }
 
-func New(db, orderBotDB *sqldb.DB, grpcConn GrpcClientConn) *Resource {
+func New(db, orderBotDB store.DB, grpcConn GrpcClientConn) *Resource {
 	return &Resource{
 		DB:             db,
 		OrderBotDB:     orderBotDB,

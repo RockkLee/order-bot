@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/infra/sqldb/orderbotsqldb"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/resource"
@@ -16,8 +15,8 @@ type Svc struct {
 	menuStore          store.Menu
 	menuItemStore      store.MenuItem
 	publishedMenuStore *orderbotsqldb.PublishedMenuStore
-	db                 *sqldb.DB
-	orderBotDb         *sqldb.DB
+	db                 store.DB
+	orderBotDb         store.DB
 }
 
 func NewSvc(

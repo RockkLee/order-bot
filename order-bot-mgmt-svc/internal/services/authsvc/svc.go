@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"order-bot-mgmt-svc/internal/config"
-	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/models"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/resource"
@@ -18,7 +17,7 @@ import (
 )
 
 type Svc struct {
-	db              *sqldb.DB
+	db              store.DB
 	userStore       store.User
 	accessSecret    []byte
 	refreshSecret   []byte

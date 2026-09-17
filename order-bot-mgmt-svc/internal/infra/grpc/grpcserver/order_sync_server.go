@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/services/ordersvc"
 	"order-bot-mgmt-svc/internal/store"
@@ -16,10 +15,10 @@ import (
 type OrderSyncServer struct {
 	orderbotmgmtsvcpb.UnimplementedOrderSyncServiceServer
 	orderSvc *ordersvc.Svc
-	db       sqldb.IDB
+	db       store.DB
 }
 
-func NewOrderSyncServer(orderSvc *ordersvc.Svc, db sqldb.IDB) *OrderSyncServer {
+func NewOrderSyncServer(orderSvc *ordersvc.Svc, db store.DB) *OrderSyncServer {
 	return &OrderSyncServer{orderSvc: orderSvc, db: db}
 }
 

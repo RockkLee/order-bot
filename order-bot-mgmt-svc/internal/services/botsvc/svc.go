@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"order-bot-mgmt-svc/internal/config"
-	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/models/entities"
 	"order-bot-mgmt-svc/internal/resource"
 	"order-bot-mgmt-svc/internal/store"
@@ -14,7 +13,7 @@ import (
 )
 
 type Svc struct {
-	db           *sqldb.DB
+	db           store.DB
 	botStore     store.Bot
 	userBotStore store.UserBot
 	accessSecret []byte

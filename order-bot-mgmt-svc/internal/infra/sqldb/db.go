@@ -15,14 +15,6 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-type IDB interface {
-	Health() (map[string]string, error)
-	Close() error
-	Conn() *sql.DB
-	WithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) error) error
-	GetWithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) (any, error)) (any, error)
-}
-
 type DB struct {
 	gormDB *gorm.DB
 	sqlDB  *sql.DB

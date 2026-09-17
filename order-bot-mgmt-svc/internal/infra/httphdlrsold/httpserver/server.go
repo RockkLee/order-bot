@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"order-bot-mgmt-svc/internal/infra/sqldbold/pqsqldb"
 	"order-bot-mgmt-svc/internal/services/authsvc"
 	"order-bot-mgmt-svc/internal/services/botsvc"
 	"order-bot-mgmt-svc/internal/services/menusvc"
@@ -17,11 +16,11 @@ import (
 type Server struct {
 	port int
 
-	db       pqsqldb.IDB
+	db       store.DB
 	services *services.Services
 }
 
-func NewServer(port int, db pqsqldb.IDB, services *services.Services) *http.Server {
+func NewServer(port int, db store.DB, services *services.Services) *http.Server {
 	srv := &Server{
 		port: port,
 		db:   db,
@@ -41,7 +40,7 @@ func NewServer(port int, db pqsqldb.IDB, services *services.Services) *http.Serv
 	return server
 }
 
-func (s *Server) dbService() pqsqldb.IDB {
+func (s *Server) dbService() store.DB {
 	return s.db
 }
 

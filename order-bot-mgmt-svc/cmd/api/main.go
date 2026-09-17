@@ -28,19 +28,28 @@ import (
 )
 
 func newServices(rsrc *resource.Resource, cfg config.Config) *services.Services {
-	auth := authsvc.NewSvc(rsrc, cfg, sqldb.NewUserStore(rsrc.DB))
+	db, ok := rsrc.DB.(*sqldb.DB)
+	if !ok {
+		panic("newServices: resource DB must be *sqldb.DB for GORM-backed stores")
+	}
+	orderBotDB, ok := rsrc.OrderBotDB.(*sqldb.DB)
+	if !ok {
+		panic("newServices: resource order bot DB must be *sqldb.DB for GORM-backed stores")
+	}
 
-	menuStore := sqldb.NewMenuStore(rsrc.DB)
-	menuItemStore := sqldb.NewMenuItemStore(rsrc.DB)
-	publishedMenuStore := orderbotsqldb.NewPublishedMenuStore(rsrc.OrderBotDB)
+	auth := authsvc.NewSvc(rsrc, cfg, sqldb.NewUserStore(db))
+
+	menuStore := sqldb.NewMenuStore(db)
+	menuItemStore := sqldb.NewMenuItemStore(db)
+	publishedMenuStore := orderbotsqldb.NewPublishedMenuStore(orderBotDB)
 	menu := menusvc.NewSvc(rsrc, menuStore, menuItemStore, publishedMenuStore)
 
-	botStore := sqldb.NewBotStore(rsrc.DB)
-	userBotStore := sqldb.NewUserBotStore(rsrc.DB)
+	botStore := sqldb.NewBotStore(db)
+	userBotStore := sqldb.NewUserBotStore(db)
 	bot := botsvc.NewSvc(rsrc, cfg, botStore, userBotStore)
 
-	orderStore := sqldb.NewOrderStore(rsrc.OrderBotDB)
-	orderItemStore := sqldb.NewOrderItemStore(rsrc.OrderBotDB)
+	orderStore := sqldb.NewOrderStore(orderBotDB)
+	orderItemStore := sqldb.NewOrderItemStore(orderBotDB)
 	order := ordersvc.NewSvc(orderStore, orderItemStore)
 
 	return services.NewServices(

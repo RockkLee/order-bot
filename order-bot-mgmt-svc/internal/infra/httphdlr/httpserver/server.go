@@ -3,7 +3,6 @@ package httpserver
 import (
 	"context"
 	"net/http"
-	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/services"
 	"order-bot-mgmt-svc/internal/services/authsvc"
 	"order-bot-mgmt-svc/internal/services/botsvc"
@@ -15,15 +14,15 @@ import (
 type ServerContainer struct {
 	port int
 
-	db       sqldb.IDB
+	db       store.DB
 	services *services.Services
 }
 
-func NewServerContainer(port int, db sqldb.IDB, services *services.Services) *ServerContainer {
+func NewServerContainer(port int, db store.DB, services *services.Services) *ServerContainer {
 	return &ServerContainer{port: port, db: db, services: services}
 }
 
-func (s *ServerContainer) dbService() sqldb.IDB { return s.db }
+func (s *ServerContainer) dbService() store.DB { return s.db }
 func (s *ServerContainer) WithTx(ctx context.Context, fn func(ctx context.Context, tx store.Tx) error) error {
 	return s.db.WithTx(ctx, fn)
 }
