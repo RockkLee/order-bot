@@ -1,9 +1,8 @@
-package resource
+package config
 
 import (
 	"errors"
 	"fmt"
-	"order-bot-mgmt-svc/internal/config"
 	"order-bot-mgmt-svc/internal/store"
 
 	"google.golang.org/grpc"
@@ -52,7 +51,7 @@ func (r *Resource) Close() error {
 	return errors.Join(errs...)
 }
 
-func NewOrderBotGRPCConn(cfg config.Grpc) (*grpc.ClientConn, error) {
+func NewOrderBotGRPCConn(cfg Grpc) (*grpc.ClientConn, error) {
 	target := fmt.Sprintf("%s:%d", cfg.Address, cfg.Port)
 	conn, err := grpc.NewClient(target, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {

@@ -8,7 +8,6 @@ import (
 	"order-bot-mgmt-svc/internal/config"
 	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/models/entities"
-	"order-bot-mgmt-svc/internal/resource"
 	"order-bot-mgmt-svc/internal/services/authsvc"
 	"order-bot-mgmt-svc/internal/services/botsvc"
 	"order-bot-mgmt-svc/internal/store"
@@ -67,8 +66,8 @@ func TestSignupHdlrFunc(t *testing.T) {
 					CreateFn: func(_ context.Context, _ store.Tx, _ entities.UserBot) error { return nil },
 				}
 				return &fakeAuthServer{
-					authSvc: authsvc.NewSvc(resource.New(&sqldb.DB{}, nil, resource.GrpcClientConn{}), cfgFakeAuthHdlr, userStore),
-					botSvc:  botsvc.NewSvc(resource.New(&sqldb.DB{}, nil, resource.GrpcClientConn{}), cfgFakeAuthHdlr, botStore, userBotStore),
+					authSvc: authsvc.NewSvc(config.New(&sqldb.DB{}, nil, config.GrpcClientConn{}), cfgFakeAuthHdlr, userStore),
+					botSvc:  botsvc.NewSvc(config.New(&sqldb.DB{}, nil, config.GrpcClientConn{}), cfgFakeAuthHdlr, botStore, userBotStore),
 					WithTxFn: func(ctx context.Context, fn func(context.Context, store.Tx) error) error {
 						return fn(ctx, nil)
 					},
@@ -109,8 +108,8 @@ func TestSignupHdlrFunc(t *testing.T) {
 					CreateFn: func(_ context.Context, _ store.Tx, _ entities.UserBot) error { return nil },
 				}
 				return &fakeAuthServer{
-					authSvc: authsvc.NewSvc(resource.New(&sqldb.DB{}, nil, resource.GrpcClientConn{}), cfgFakeAuthHdlr, userStore),
-					botSvc:  botsvc.NewSvc(resource.New(&sqldb.DB{}, nil, resource.GrpcClientConn{}), cfgFakeAuthHdlr, botStore, userBotStore),
+					authSvc: authsvc.NewSvc(config.New(&sqldb.DB{}, nil, config.GrpcClientConn{}), cfgFakeAuthHdlr, userStore),
+					botSvc:  botsvc.NewSvc(config.New(&sqldb.DB{}, nil, config.GrpcClientConn{}), cfgFakeAuthHdlr, botStore, userBotStore),
 					WithTxFn: func(ctx context.Context, fn func(context.Context, store.Tx) error) error {
 						return fn(ctx, nil)
 					},
@@ -132,8 +131,8 @@ func TestSignupHdlrFunc(t *testing.T) {
 					},
 				}
 				return &fakeAuthServer{
-					authSvc: authsvc.NewSvc(resource.New(&sqldb.DB{}, nil, resource.GrpcClientConn{}), cfgFakeAuthHdlr, userStore),
-					botSvc:  botsvc.NewSvc(resource.New(&sqldb.DB{}, nil, resource.GrpcClientConn{}), cfgFakeAuthHdlr, botStore, &fake.UserBotStore{}),
+					authSvc: authsvc.NewSvc(config.New(&sqldb.DB{}, nil, config.GrpcClientConn{}), cfgFakeAuthHdlr, userStore),
+					botSvc:  botsvc.NewSvc(config.New(&sqldb.DB{}, nil, config.GrpcClientConn{}), cfgFakeAuthHdlr, botStore, &fake.UserBotStore{}),
 					WithTxFn: func(ctx context.Context, fn func(context.Context, store.Tx) error) error {
 						return fn(ctx, nil)
 					},

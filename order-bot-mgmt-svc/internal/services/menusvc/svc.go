@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"order-bot-mgmt-svc/internal/config"
 	"order-bot-mgmt-svc/internal/infra/sqldb/orderbotsqldb"
 	"order-bot-mgmt-svc/internal/models/entities"
-	"order-bot-mgmt-svc/internal/resource"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/util"
 )
@@ -20,7 +20,7 @@ type Svc struct {
 }
 
 func NewSvc(
-	rsrc *resource.Resource,
+	rsrc *config.Resource,
 	menuStore store.Menu,
 	menuItemStore store.MenuItem,
 	publishedMenuStore *orderbotsqldb.PublishedMenuStore,

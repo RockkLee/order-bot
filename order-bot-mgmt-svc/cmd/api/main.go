@@ -12,7 +12,6 @@ import (
 	"order-bot-mgmt-svc/internal/infra/httphdlr/httpserver"
 	"order-bot-mgmt-svc/internal/infra/sqldb"
 	"order-bot-mgmt-svc/internal/infra/sqldb/orderbotsqldb"
-	"order-bot-mgmt-svc/internal/resource"
 	"order-bot-mgmt-svc/internal/services/authsvc"
 	"order-bot-mgmt-svc/internal/services/botsvc"
 	"order-bot-mgmt-svc/internal/services/menusvc"
@@ -27,7 +26,7 @@ import (
 	"order-bot-mgmt-svc/internal/services"
 )
 
-func newServices(rsrc *resource.Resource, cfg config.Config) *services.Services {
+func newServices(rsrc *config.Resource, cfg config.Config) *services.Services {
 	db, ok := rsrc.DB.(*sqldb.DB)
 	if !ok {
 		panic("newServices: resource DB must be *sqldb.DB for GORM-backed stores")
@@ -74,11 +73,11 @@ func main() {
 	if orderBotDbErr != nil {
 		log.Fatalf("failed to connect to order-bot database: \n%v", orderBotDbErr)
 	}
-	orderBotGrpcConn, err := resource.NewOrderBotGRPCConn(cfg.OrderBotGrpcClient)
+	orderBotGrpcConn, err := config.NewOrderBotGRPCConn(cfg.OrderBotGrpcClient)
 	if err != nil {
 		log.Fatalf("failed to create order-bot grpc client connection: \n%v", errutil.FormatErrChain(err))
 	}
-	rsrc := resource.New(db, orderBotDb, resource.GrpcClientConn{OrderBot: orderBotGrpcConn})
+	rsrc := config.New(db, orderBotDb, config.GrpcClientConn{OrderBot: orderBotGrpcConn})
 	defer func() {
 		if err := rsrc.Close(); err != nil {
 			log.Printf("failed to close resources: \n%v", errutil.FormatErrChain(err))

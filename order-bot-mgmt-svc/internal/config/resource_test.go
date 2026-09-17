@@ -1,9 +1,7 @@
-package resource
+package config
 
 import (
 	"testing"
-
-	"order-bot-mgmt-svc/internal/config"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -31,7 +29,7 @@ func TestNewStoresInfrastructureHandles(t *testing.T) {
 }
 
 func TestNewOrderBotGRPCConn(t *testing.T) {
-	conn, err := NewOrderBotGRPCConn(config.Grpc{
+	conn, err := NewOrderBotGRPCConn(Grpc{
 		Address: "127.0.0.1",
 		Port:    9090,
 	})

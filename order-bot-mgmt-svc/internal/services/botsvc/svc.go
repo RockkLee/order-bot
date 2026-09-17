@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"order-bot-mgmt-svc/internal/config"
 	"order-bot-mgmt-svc/internal/models/entities"
-	"order-bot-mgmt-svc/internal/resource"
 	"order-bot-mgmt-svc/internal/store"
 	"order-bot-mgmt-svc/internal/util"
 	"order-bot-mgmt-svc/internal/util/jwtutil"
@@ -19,7 +18,7 @@ type Svc struct {
 	accessSecret []byte
 }
 
-func NewSvc(rsrc *resource.Resource, cfg config.Config, botStore store.Bot, userBotStore store.UserBot) *Svc {
+func NewSvc(rsrc *config.Resource, cfg config.Config, botStore store.Bot, userBotStore store.UserBot) *Svc {
 	if botStore == nil || rsrc == nil || rsrc.DB == nil {
 		panic("botsvc.NewSvc(), botStore, menuItemStore or db is nil")
 	}
